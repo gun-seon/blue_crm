@@ -15,13 +15,11 @@ public class JwtUtil {
   private final String SECRET = "psnsSecretKeymySecretBluemySecretWhale20251005";
   private final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
   
-  // 엑세스 토큰 활성화 시간
-  private final long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 1; // 5분
-  // 리프레시 토큰 활성화 시간
-  private final long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 3; // 10분
-  
   // 엑세스 토큰 발급
   public String generateAccessToken(UserDto user) {
+    // 엑세스 토큰 활성화 시간
+    long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 5; // 5분
+    
     return Jwts.builder()
         // 토큰에 추가하고 싶은 정보
         .setSubject(user.getUserEmail())
@@ -35,6 +33,9 @@ public class JwtUtil {
   
   // 리프레시 토큰 발급
   public String generateRefreshToken(UserDto user) {
+    // 리프레시 토큰 활성화 시간
+    long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 10; // 10분
+    
     return Jwts.builder()
         // 토큰에 추가하고 싶은 정보
         .setSubject(user.getUserEmail())
