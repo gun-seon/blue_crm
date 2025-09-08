@@ -10,18 +10,21 @@ export const useAuthStore = defineStore('auth', {
         role: null // 사용자 권한
     }),
     actions: {
-        // 사용자 정보 세팅
-        setUser(user) {
-            // 사용자 정보만 설정 (인증수단인 엑세스 토큰은 설정하지 않음)
-            this.user = user
-            this.role = user?.role || null
+        // 사용자 정보 설정
+        setAuth(data) {
+            this.accessToken = data.accessToken
+            this.user = data.email
+            this.role = data.role
+            this.refreshExp = data.refreshExp
+            axios.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`
         },
 
-        // 사용자 정보 초기화
+        // 사용자 정보 clear
         clearUser() {
             this.user = null
             this.role = null
             this.accessToken = null
+            this.refreshExp = null
             delete axios.defaults.headers.common['Authorization']
         },
 
@@ -32,27 +35,28 @@ export const useAuthStore = defineStore('auth', {
 
         // 로그인
         async login(payload) {
-            // 서버 응답: { accessToken, refreshToken: null, role, email }
-            const { data } = await axios.post('/api/auth/login', payload, { withCredentials: true })
+            try {
+                // 서버 응답: { accessToken, refreshToken: null, role, email }
+                const { data } = await axios.post('/api/auth/login', payload, { withCredentials: true })
 
-            // Access Token만 저장
-            this.accessToken = data.accessToken
-
-            // 사용자 정보 구성
-            this.user = data.email
-            this.role = data.role
-            this.refreshExp = data.refreshExp
-
-            // Axios 기본 Authorization 헤더에 Access Token 세팅
-            axios.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`
+                // 사용자 정보 초기화
+                this.setAuth(data)
+            } catch (err) {
+                const msg = err.response?.data?.error || '로그인 중 오류가 발생했습니다.'
+                alert(msg)
+                await this.logout()
+            }
         },
 
         // 로그아웃
-        logout() {
-            // 서버에서 내려온 에러 메시지 읽기
-            const msg = err.response?.data?.error || '로그인 중 오류가 발생했습니다.'
-            alert(msg)
-            this.clearUser()
+        async logout() {
+            try {
+                await axios.post('/api/auth/token/logout', {}, { withCredentials: true })
+            } catch (err) {
+                console.warn('로그아웃 요청 실패:', err)
+            } finally {
+                this.clearUser()
+            }
         },
 
         // Access Token 갱신
@@ -61,58 +65,67 @@ export const useAuthStore = defineStore('auth', {
                 // Refresh Token은 쿠키에서 자동 전송됨
                 const { data } = await axios.post('/api/auth/token/refresh', {}, { withCredentials: true })
 
-                // 새 Access Token 갱신
-                this.accessToken = data.accessToken
-                this.user = data.email
-                this.role = data.role
-                this.refreshExp = data.refreshExp
-
-                // Axios Authorization 헤더 갱신
-                axios.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`
+                // 사용자 정보 초기화
+                this.setAuth(data)
 
                 return true
             } catch (err) {
-                this.clearUser()
+                const msg = err.response?.data?.error || '세션 연장에 실패했습니다. 다시 로그인 해주세요.'
+                alert(msg)
+
+                await this.logout()
                 return false
             }
         },
 
         // 리프레시 토큰 수동 갱신
         async extendSession() {
-            // Refresh Token은 쿠키에서 자동 전송됨
-            const { data } = await axios.post('/api/auth/token/extend', {}, { withCredentials: true })
+            try {
+                // Refresh Token은 쿠키에서 자동 전송됨
+                const {data} = await axios.post('/api/auth/token/extend', {}, {withCredentials: true})
 
-            // 새 Access Token 갱신
-            this.accessToken = data.accessToken
-            this.user = data.email
-            this.role = data.role
-            this.refreshExp = data.refreshExp
+                // 사용자 정보 초기화
+                this.setAuth(data)
 
-            // Axios Authorization 헤더 갱신
-            axios.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`
+                return true
+            } catch (err) {
+                const msg = err.response?.data?.error || '세션 연장에 실패했습니다. 다시 로그인 해주세요.'
+                alert(msg)
+
+                await this.logout()
+                return false
+            }
         },
 
         // 앱 시작 시 호출
         async initialize() {
+            // 1. 아직 리프레시 토큰이 살아있지만
+            // 2. 엑세스 토큰이 만료되었다면
             if (!this.accessToken) {
                 try {
+                    // 1. 쿠키 체크
+                    const checkRes = await axios.post('/api/auth/token/check', {}, { withCredentials: true })
+                    if (checkRes.status === 204) {
+                        this.clearUser()
+                        return false
+                    }
+
+                    // 2. 쿠키가 있으니 refresh 시도
                     // Refresh Token은 쿠키에서 자동 전송됨
                     const { data } = await axios.post('/api/auth/token/refresh', {}, { withCredentials: true })
 
-                    // 새 Access Token 갱신
-                    this.accessToken = data.accessToken
-                    this.user = data.email
-                    this.role = data.role
-                    this.refreshExp = data.refreshExp
+                    // 사용자 정보 초기화
+                    this.setAuth(data)
 
-                    // Axios Authorization 헤더 갱신
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`
                     return true
                 } catch (err) {
-                    this.clearUser()
+                    await this.logout()
                     return false
                 }
             }
+
+            // 그 외 정상 로그인 상태 유지
+            return true
         }
     }
 })

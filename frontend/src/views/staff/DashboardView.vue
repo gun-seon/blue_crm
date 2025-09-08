@@ -1,26 +1,34 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import router from "@/router/index.js";
 
 const auth = useAuthStore()
 const timeLeft = ref(0)
 let timer
 
 onMounted(() => {
+  updateTime()
   timer = setInterval(updateTime, 1000)
 })
 
 onUnmounted(() => clearInterval(timer))
 
-function updateTime() {
+async function updateTime() {
   if (auth.refreshExp) {
     const diff = Math.floor((auth.refreshExp - Date.now()) / 1000)
     timeLeft.value = diff > 0 ? diff : 0
+
+    if (timeLeft.value === 0) {
+      await auth.logout()
+      await router.push('/login')
+    }
   }
 }
 
 async function extendSession() {
   await auth.extendSession()
+  await updateTime()
 }
 </script>
 

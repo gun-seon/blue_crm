@@ -65,4 +65,22 @@ public class AuthController {
     }
     return ResponseEntity.ok(authService.extend(refreshToken, response));
   }
+  
+  // 리프레시 토큰을 가지고 있는 쿠키의 존재 여부 확인
+  @PostMapping("/token/check")
+  public ResponseEntity<Void> check(HttpServletRequest request) {
+    boolean exists = authService.checkRefreshToken(request);
+    if (!exists) {
+      return ResponseEntity.noContent().build(); // 204 → 쿠키 없음
+    }
+    return ResponseEntity.ok().build(); // 200 → 쿠키 있음
+  }
+  
+  
+  // 로그아웃
+  @PostMapping("/token/logout")
+  public ResponseEntity<Void> logout(HttpServletResponse response) {
+    authService.logout(response);
+    return ResponseEntity.ok().build();
+  }
 }

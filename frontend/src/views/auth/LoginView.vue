@@ -23,8 +23,10 @@ const doLogin = async () => {
 <template>
   <div style="padding:20px">
     <h1>로그인</h1>
-    <input v-model="email" placeholder="Email" />
-    <input v-model="password" type="password" placeholder="Password" />
-    <button @click="doLogin">로그인</button>
+    <form @submit.prevent="doLogin">
+      <input type="text" placeholder="Email" v-model="email" />
+      <input type="password" placeholder="Password" v-model="password" />
+      <button type="submit">로그인</button>
+    </form>
   </div>
 </template>

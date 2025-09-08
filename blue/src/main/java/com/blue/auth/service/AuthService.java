@@ -9,6 +9,7 @@ import com.blue.global.security.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -115,5 +116,31 @@ public class AuthService {
       log.warn("Invalid refresh token: {}", e.getMessage());
       throw new AuthException("Invalid refresh token", HttpStatus.UNAUTHORIZED);
     }
+  }
+  
+  // 리프레시 토큰을 가지고 있는 쿠키의 존재 여부 확인
+  public boolean checkRefreshToken(HttpServletRequest request) {
+    if (request.getCookies() != null) {
+      for (Cookie cookie : request.getCookies()) {
+        if ("refreshToken".equals(cookie.getName()) && cookie.getValue() != null && !cookie.getValue().isEmpty()) {
+          return true; // refreshToken 쿠키 존재
+        }
+      }
+    }
+    return false; // 없음
+  }
+  
+  // 로그아웃
+  public void logout(HttpServletResponse response) {
+    // 쿠키 제거
+    Cookie cookie = new Cookie("refreshToken", "");
+    cookie.setMaxAge(0); // 즉시 만료
+    cookie.setPath("/api/auth/token");
+    cookie.setHttpOnly(true);
+    cookie.setSecure(true);
+    response.addCookie(cookie);
+    
+    // 리프레시 토큰, 엑세스 토큰 제거
+    
   }
 }

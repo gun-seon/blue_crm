@@ -18,7 +18,7 @@ public class JwtUtil {
   // 엑세스 토큰 발급
   public String generateAccessToken(UserDto user) {
     // 엑세스 토큰 활성화 시간
-    long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 5; // 5분
+    long ACCESS_TOKEN_EXPIRATION = 1000 * 30 * 1; // 5분
     
     return Jwts.builder()
         // 토큰에 추가하고 싶은 정보
@@ -34,7 +34,7 @@ public class JwtUtil {
   // 리프레시 토큰 발급
   public String generateRefreshToken(UserDto user) {
     // 리프레시 토큰 활성화 시간
-    long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 10; // 10분
+    long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 1; // 10분
     
     return Jwts.builder()
         // 토큰에 추가하고 싶은 정보
