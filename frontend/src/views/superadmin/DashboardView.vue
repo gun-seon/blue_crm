@@ -30,6 +30,12 @@ async function extendSession() {
   await auth.extendSession()
   await updateTime()
 }
+
+// 로그아웃
+async function doLogout() {
+  await auth.logout()
+  await router.push('/login')
+}
 </script>
 
 <template>
@@ -41,5 +47,6 @@ async function extendSession() {
   <div v-if="timeLeft > 0" class="session-timer">
     남은 시간: {{ Math.floor(timeLeft / 60) }}분 {{ timeLeft % 60 }}초
     <button @click="extendSession">로그인 연장</button>
+    <button @click="doLogout" style="margin-left:10px">로그아웃</button>
   </div>
 </template>
