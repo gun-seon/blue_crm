@@ -1,4 +1,3 @@
-// src/stores/auth.js
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
@@ -30,7 +29,13 @@ export const useAuthStore = defineStore('auth', {
 
         // 회원가입
         async signup(payload) {
-            await axios.post('/api/auth/signup', payload, { withCredentials: true })
+            try {
+                await axios.post('/api/auth/signup', payload, { withCredentials: true })
+            } catch (err) {
+                const msg = err.response?.data || err.message
+                alert(msg)
+                throw err
+            }
         },
 
         // 로그인
@@ -42,7 +47,7 @@ export const useAuthStore = defineStore('auth', {
                 // 사용자 정보 초기화
                 this.setAuth(data)
             } catch (err) {
-                const msg = err.response?.data?.error || '로그인 중 오류가 발생했습니다.'
+                const msg = err.response?.data || '로그인 중 오류가 발생했습니다.'
                 alert(msg)
                 await this.logout()
             }
@@ -70,7 +75,7 @@ export const useAuthStore = defineStore('auth', {
 
                 return true
             } catch (err) {
-                const msg = err.response?.data?.error || '세션 연장에 실패했습니다. 다시 로그인 해주세요.'
+                const msg = err.response?.data || '세션 연장에 실패했습니다. 다시 로그인 해주세요.'
                 alert(msg)
 
                 await this.logout()
@@ -89,7 +94,7 @@ export const useAuthStore = defineStore('auth', {
 
                 return true
             } catch (err) {
-                const msg = err.response?.data?.error || '세션 연장에 실패했습니다. 다시 로그인 해주세요.'
+                const msg = err.response?.data || '세션 연장에 실패했습니다. 다시 로그인 해주세요.'
                 alert(msg)
 
                 await this.logout()

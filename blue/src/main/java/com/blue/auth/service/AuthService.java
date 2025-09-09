@@ -2,6 +2,7 @@ package com.blue.auth.service;
 
 import com.blue.auth.dto.AuthResponse;
 import com.blue.auth.dto.LoginRequest;
+import com.blue.auth.dto.SignupRequest;
 import com.blue.auth.dto.UserDto;
 import com.blue.auth.mapper.AuthMapper;
 import com.blue.global.exception.AuthException;
@@ -139,8 +140,26 @@ public class AuthService {
     cookie.setHttpOnly(true);
     cookie.setSecure(true);
     response.addCookie(cookie);
+  }
+  
+  // 회원가입
+  public AuthResponse signup(SignupRequest request) {
+    // 중복 이메일 확인
+    if (authMapper.findByEmail(request.getEmail()) != null) {
+      throw new AuthException("이미 존재하는 이메일입니다.", HttpStatus.CONFLICT);
+    }
     
-    // 리프레시 토큰, 엑세스 토큰 제거
+    // 비밀번호 암호화
+    String encodedPw = passwordEncoder.encode(request.getPassword());
     
+    UserDto user = new UserDto();
+    user.setUserEmail(request.getEmail());
+    user.setUserPassword(encodedPw);
+    user.setUserRole(request.getRole() != null ? request.getRole() : "STAFF");
+    user.setCenterId(null);
+    
+    authMapper.insertUser(user);
+    
+    return new AuthResponse(null, null, user.getUserRole(), user.getUserEmail(), null);
   }
 }

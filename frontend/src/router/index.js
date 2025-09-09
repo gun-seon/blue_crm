@@ -33,8 +33,14 @@ router.beforeEach(async (to, from, next) => {
     const ok = await auth.initialize()
     if (!ok) {
       ui.setLoading(false)
-      if (to.path !== '/login') return next('/login')
-      return next()
+
+      // requiresAuth(권한검사) 없는 페이지 → 그냥 통과
+      if (!to.meta.requiresAuth) {
+        return next()
+      }
+
+      // requiresAuth(권한검사) 있는 페이지만 로그인 페이지로
+      return next('/login')
     }
   }
 

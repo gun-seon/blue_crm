@@ -2,6 +2,7 @@ package com.blue.auth.controller;
 
 import com.blue.auth.dto.AuthResponse;
 import com.blue.auth.dto.LoginRequest;
+import com.blue.auth.dto.SignupRequest;
 import com.blue.auth.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -76,11 +77,16 @@ public class AuthController {
     return ResponseEntity.ok().build(); // 200 → 쿠키 있음
   }
   
-  
   // 로그아웃
   @PostMapping("/token/logout")
   public ResponseEntity<Void> logout(HttpServletResponse response) {
     authService.logout(response);
     return ResponseEntity.ok().build();
+  }
+  
+  // 회원가입
+  @PostMapping("/signup")
+  public ResponseEntity<AuthResponse> signup(@RequestBody SignupRequest request) {
+    return ResponseEntity.ok(authService.signup(request));
   }
 }
