@@ -19,7 +19,7 @@ public class MailCodeService {
   private final AsyncMailService asyncMailService;
   
   // 인증코드 유효기간
-  private static final long CODE_TTL = 60 * 1; // 3분
+  private static final long CODE_TTL = 60 * 3; // 3분
   
   // 인증코드 생성 및 이메일 발송
   public long sendCode(String email) {
