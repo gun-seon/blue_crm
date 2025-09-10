@@ -1,9 +1,6 @@
 package com.blue.auth.service;
 
-import com.blue.auth.dto.AuthResponse;
-import com.blue.auth.dto.LoginRequest;
-import com.blue.auth.dto.SignupRequest;
-import com.blue.auth.dto.UserDto;
+import com.blue.auth.dto.*;
 import com.blue.auth.mapper.AuthMapper;
 import com.blue.global.exception.AuthException;
 import com.blue.global.security.JwtUtil;
@@ -17,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -57,7 +55,11 @@ public class AuthService {
     var claims = jwtUtil.validateToken(refreshToken);
     long refreshExp = claims.getExpiration().getTime();
     
-    return new AuthResponse(accessToken, null, user.getUserRole(), user.getUserEmail(), refreshExp);
+    return new AuthResponse(accessToken, null,
+        user.getUserRole(),
+        user.getUserEmail(),
+        user.getUserName(),
+        refreshExp);
   }
   
   // 엑세스 토큰의 재발급
@@ -65,15 +67,21 @@ public class AuthService {
     try {
       var claims = jwtUtil.validateToken(refreshToken);
       
+      // 과거 데이터 백업
       UserDto user = new UserDto();
       user.setUserEmail(claims.getSubject());
       user.setUserRole(claims.get("role", String.class));
+      user.setUserName(claims.get("name", String.class));
       
       // 기존 refreshToken 그대로 쓰므로 exp도 동일
       long refreshExp = claims.getExpiration().getTime();
       
       String newAccessToken = jwtUtil.generateAccessToken(user);
-      return new AuthResponse(newAccessToken, null, user.getUserRole(), user.getUserEmail(), refreshExp);
+      return new AuthResponse(newAccessToken, null,
+          user.getUserRole(),
+          user.getUserEmail(),
+          user.getUserName(),
+          refreshExp);
     } catch (ExpiredJwtException e) {
       // Refresh Token 자체가 만료된 경우
       // 정상종료이므로 사용자의 재로그인이 필요함
@@ -91,9 +99,11 @@ public class AuthService {
     try {
       var claims = jwtUtil.validateToken(refreshToken);
       
+      // 과거 데이터 백업
       UserDto user = new UserDto();
       user.setUserEmail(claims.getSubject());
       user.setUserRole(claims.get("role", String.class));
+      user.setUserName(claims.get("name", String.class));
       
       // 새 Access Token + 새 Refresh Token 발급
       String newAccessToken = jwtUtil.generateAccessToken(user);
@@ -106,7 +116,11 @@ public class AuthService {
       var newClaims = jwtUtil.validateToken(newRefreshToken);
       long refreshExp = newClaims.getExpiration().getTime();
       
-      return new AuthResponse(newAccessToken, null, user.getUserRole(), user.getUserEmail(), refreshExp);
+      return new AuthResponse(newAccessToken, null,
+          user.getUserRole(),
+          user.getUserEmail(),
+          user.getUserName(),
+          refreshExp);
     } catch (ExpiredJwtException e) {
       // Refresh Token 자체가 만료된 경우
       // 정상종료이므로 사용자의 재로그인이 필요함
@@ -142,11 +156,21 @@ public class AuthService {
     response.addCookie(cookie);
   }
   
+  // 이메일 중복 확인
+  public boolean checkEmailDuplicate(String email) {
+    return authMapper.findByEmail(email) != null;
+  }
+  
   // 회원가입
-  public AuthResponse signup(SignupRequest request) {
+  @Transactional
+  public SignupResponse signup(SignupRequest request) {
     // 중복 이메일 확인
     if (authMapper.findByEmail(request.getEmail()) != null) {
       throw new AuthException("이미 존재하는 이메일입니다.", HttpStatus.CONFLICT);
+    }
+    // 중복 전화번호 확인
+    if (authMapper.findByPhone(request.getPhone()) != null) {
+      throw new AuthException("이미 존재하는 전화번호입니다.", HttpStatus.CONFLICT);
     }
     
     // 비밀번호 암호화
@@ -156,10 +180,14 @@ public class AuthService {
     user.setUserEmail(request.getEmail());
     user.setUserPassword(encodedPw);
     user.setUserRole(request.getRole() != null ? request.getRole() : "STAFF");
-    user.setCenterId(null);
+    user.setUserName(request.getName());
+    user.setUserPhone(request.getPhone());
+    user.setCenterId(null); // 센터ID는 가입승인시 설정
+    user.setUserApproved("N"); // 회원가입 시 무조건 회원상태 미승인
+    user.setManagerPhoneAccess("N"); // 회원가입 시 무조건 열람권한 미승인
     
     authMapper.insertUser(user);
     
-    return new AuthResponse(null, null, user.getUserRole(), user.getUserEmail(), null);
+    return new SignupResponse("회원가입이 완료되었습니다. 관리자의 승인을 기다려주세요.");
   }
 }

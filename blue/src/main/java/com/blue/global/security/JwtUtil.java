@@ -18,12 +18,13 @@ public class JwtUtil {
   // 엑세스 토큰 발급
   public String generateAccessToken(UserDto user) {
     // 엑세스 토큰 활성화 시간
-    long ACCESS_TOKEN_EXPIRATION = 1000 * 30 * 5; // 5분
+    long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 5; // 5분
     
     return Jwts.builder()
         // 토큰에 추가하고 싶은 정보
         .setSubject(user.getUserEmail())
         .claim("role", user.getUserRole())
+        .claim("name", user.getUserName())
         // 토큰 기본 정보
         .setIssuedAt(new Date())
         .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION))
@@ -40,6 +41,7 @@ public class JwtUtil {
         // 토큰에 추가하고 싶은 정보
         .setSubject(user.getUserEmail())
         .claim("role", user.getUserRole())
+        .claim("name", user.getUserName())
         // 토큰 기본 정보
         .setIssuedAt(new Date())
         .setExpiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))

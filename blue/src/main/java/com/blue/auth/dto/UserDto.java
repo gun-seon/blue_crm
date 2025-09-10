@@ -14,6 +14,10 @@ public class UserDto {
   private String userEmail;
   private String userPassword;
   private String userRole;
+  private String managerPhoneAccess;
   private Long centerId;
+  private String userName;
+  private String userPhone;
+  private String userApproved;
   private LocalDateTime userCreatedAt;
 }
