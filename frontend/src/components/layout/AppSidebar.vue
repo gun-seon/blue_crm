@@ -213,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { computed } from "vue";
 import { useRoute } from "vue-router";
 
 import {
@@ -222,7 +222,7 @@ import {
   TableIcon,
   RefreshIcon,
   TrashIconLg,
-  FolderIcon,
+  SettingsIcon,
   UserCircleIcon,
   PieChartIcon
 } from "../../icons";
@@ -276,7 +276,7 @@ const menuGroups = [
         perm: 'menu.db.revoke'
       },
       {
-        icon: FolderIcon,
+        icon: SettingsIcon,
         name: "소속정보",
         path: "/info",
         perm: 'menu.info'
