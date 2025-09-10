@@ -1,20 +1,29 @@
 <template>
   <FullScreenLayout>
-    <div class="relative 2xl:bg-gray-100 bg-white z-1 dark:bg-gray-900 sm:p-0">
-      <div class="relative flex flex-col justify-center w-full min-h-screen overflow-y-auto lg:flex-row dark:bg-gray-900">
+    <div class="relative xl:bg-gray-100 dark:xl:bg-gray-900 dark:bg-gray-800 bg-white z-1 sm:p-0">
+      <div class="relative flex flex-col justify-center w-full min-h-screen overflow-y-auto lg:flex-row">
         <!-- 카드 (왼쪽 : 로그인 / 오른쪽 : 회사소개) -->
-        <div :class="[ 'flex w-full max-w-6xl max-h-[700px] xl:bg-white xl:rounded-2xl 2xl:shadow-lg overflow-y-auto dark:bg-gray-800', mt ]">
+        <div :class="[ 'flex w-full max-w-6xl max-h-[700px] xl:bg-white xl:rounded-2xl xl:shadow-lg overflow-y-auto dark:bg-gray-800 dark:xl:bg-gray-800 dark:xl:rounded-2xl dark:xl:shadow-lg', mt ]">
 
         <!-- LEFT -->
         <div class="flex flex-col flex-1 w-full lg:w-1/2 p-10">
           <div class="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
             <div>
-              <div class="mb-5 sm:mb-8">
-                <h1 class="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">Sign In</h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400">이메일 인증 후 비밀번호를 입력하세요</p>
+              <div class="mb-5 sm:mb-8 flex justify-between items-start">
+                <!-- 제목 + 설명 -->
+                <div>
+                  <h1
+                      class="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md"
+                  >
+                    Sign In
+                  </h1>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    이메일 인증 후 비밀번호를 입력하세요
+                  </p>
+                </div>
               </div>
 
-              <form @submit.prevent="doLogin" class="space-y-5">
+              <form class="space-y-5">
                 <!-- Email -->
                 <div>
                   <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
@@ -49,6 +58,7 @@
                         ref="codeInput"
                         v-model="code"
                         placeholder="인증코드 입력"
+                        @keyup.enter="verifyCode"
                         class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs
                              placeholder:text-gray-400 focus:outline-hidden focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700
                              dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"/>
@@ -88,7 +98,7 @@
                         v-model="password"
                         :type="showPassword ? 'text' : 'password'"
                         placeholder="비밀번호를 입력하세요"
-                        @keyup.enter="doLogin"
+                        @keyup.enter.prevent="doLogin"
                         class="h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs
                              placeholder:text-gray-400 focus:outline-hidden focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700
                              dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"/>
@@ -105,7 +115,8 @@
                 <!-- Button -->
                 <div>
                   <button
-                      type="submit"
+                      type="button"
+                      @click="doLogin"
                       class="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg shadow-theme-xs
                              disabled:opacity-50 bg-brand-500 hover:bg-brand-600 disabled:hover:bg-brand-500"
                       :disabled="!verified">
@@ -117,7 +128,7 @@
               <div class="mt-5">
                 <div class="flex items-center justify-between text-sm font-normal">
                   <!-- 왼쪽 묶음 -->
-                  <span>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">
                     아직 계정이 없나요?
                     <router-link to="/signup" class="ml-1 text-brand-500 hover:text-brand-600 dark:text-brand-400">
                       회원가입
@@ -134,12 +145,12 @@
         </div>
 
         <!-- RIGHT -->
-        <div class="relative items-center hidden w-full h-full lg:w-1/2 bg-brand-950 dark:bg-white/5 2xl:grid">
+        <div class="relative items-center hidden w-full h-full lg:w-1/2 bg-brand-950 dark:bg-white/5 xl:grid">
           <div class="flex items-center justify-center z-1">
             <CommonGridShape />
             <div class="flex flex-col items-center max-w-xs">
               <router-link to="/" class="block mb-4">
-                <img width="231" height="48" src="/images/logo/menu_logo.png" alt="Logo" />
+                <img width="231" height="48" src="/images/logo/dark_menu_logo.png" alt="Logo" />
               </router-link>
               <p class="text-center text-gray-400 dark:text-white/60">
                 회사소개 한줄 소개 / 회사소개 한줄 소개 / 회사소개 한줄 소개 / 회사소개 한줄 소개
@@ -148,6 +159,11 @@
           </div>
         </div>
         </div>
+      </div>
+
+      <!-- 다크모드 토글: 오른쪽 하단 고정 -->
+      <div class="absolute bottom-4 right-4">
+        <ThemeToggler />
       </div>
     </div>
   </FullScreenLayout>
@@ -161,6 +177,7 @@ import { useRouter } from 'vue-router'
 import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline'
+import ThemeToggler from "@/components/common/ThemeToggler.vue";
 
 // 줌 비율 적용 시작
 const mt = ref('mt-[0vh]')

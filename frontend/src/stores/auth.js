@@ -13,6 +13,13 @@ export const useAuthStore = defineStore('auth', {
     actions: {
         // 사용자 정보 설정
         setAuth(data) {
+            // data.accessToken 없으면 바로 종료
+            // (ex. 로그인 두번 연속 등 사고로 인해 data에 손상이 있을 경우 대물림을 막기 위함)
+            if (!data || !data.accessToken) {
+                console.warn('refresh 응답에 accessToken 없음:', data)
+                return
+            }
+
             this.accessToken = data.accessToken
             this.email = data.email
             this.name = data.name
@@ -72,6 +79,7 @@ export const useAuthStore = defineStore('auth', {
             } catch (err) {
                 const msg = err.response?.data || '로그인 중 오류가 발생했습니다.'
                 alert(msg)
+
                 await this.logout()
                 throw err
             }
@@ -101,7 +109,7 @@ export const useAuthStore = defineStore('auth', {
                 return true
             } catch (err) {
                 const msg = err.response?.data || 'Access Token : 세션 연장에 실패했습니다. 다시 로그인 해주세요.'
-                alert(msg)
+                console.error(msg, err.response?.data || err)
 
                 await this.logout()
                 return false
@@ -112,10 +120,8 @@ export const useAuthStore = defineStore('auth', {
         async extendSession() {
             try {
                 // 1. 액세스 토큰 없으면 먼저 refresh 시도
-                if (!this.accessToken) {
-                    const ok = await this.refreshToken()
-                    if (!ok) return false
-                }
+                const ok = await this.refreshToken()
+                if (!ok) return false
 
                 // 2. refresh 이후 extend 요청
                 // Refresh Token은 쿠키에서 자동 전송됨
@@ -127,7 +133,7 @@ export const useAuthStore = defineStore('auth', {
                 return true
             } catch (err) {
                 const msg = err.response?.data || 'Refresh Token : 세션 연장에 실패했습니다. 다시 로그인 해주세요.'
-                alert(msg)
+                console.error(msg, err.response?.data || err)
 
                 await this.logout()
                 return false

@@ -21,7 +21,8 @@ const ui = useUiStore()
   <main class="bg-gray-50 dark:bg-gray-900">
     <ThemeProvider>
       <SidebarProvider>
-        <div v-if="ui.loading"> </div>
+        <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-300/70 dark:bg-gray-900/70"
+             v-if="ui.loading"> </div>
         <RouterView v-else />
       </SidebarProvider>
     </ThemeProvider>

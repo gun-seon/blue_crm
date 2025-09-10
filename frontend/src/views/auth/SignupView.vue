@@ -1,9 +1,9 @@
 <template>
   <FullScreenLayout>
-    <div class="relative 2xl:bg-gray-100 bg-white z-1 dark:bg-gray-900 sm:p-0">
-      <div class="relative flex flex-col justify-center w-full min-h-screen overflow-y-auto lg:flex-row dark:bg-gray-900">
+    <div class="relative xl:bg-gray-100 dark:xl:bg-gray-900 dark:bg-gray-800 bg-white z-1 sm:p-0">
+      <div class="relative flex flex-col justify-center w-full min-h-screen overflow-y-auto lg:flex-row">
         <!-- 카드 -->
-        <div :class="['flex w-full max-w-6xl max-h-[1000px] xl:bg-white xl:rounded-2xl 2xl:shadow-lg overflow-y-auto dark:bg-gray-800', mt]">
+        <div :class="['flex w-full max-w-6xl max-h-[1000px] xl:bg-white xl:rounded-2xl xl:shadow-lg overflow-y-auto dark:bg-gray-800 dark:xl:bg-gray-800 dark:xl:rounded-2xl dark:xl:shadow-lg', mt]">
 
         <!-- LEFT -->
         <div class="flex flex-col flex-1 w-full lg:w-1/2 p-10">
@@ -97,7 +97,7 @@
                       inputmode="text"
                       class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs
                            placeholder:text-gray-400 focus:outline-hidden focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10
-                           dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                           dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
                   />
                   <p v-if="nameError" class="mt-1 text-sm text-error-500">{{ nameError }}</p>
                 </div>
@@ -115,7 +115,7 @@
                       placeholder="010-1234-5678"
                       class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs
                            placeholder:text-gray-400 focus:outline-hidden focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10
-                           dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                           dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
                   />
                   <p v-if="phoneError" class="mt-1 text-sm text-error-500">{{ phoneError }}</p>
                 </div>
@@ -135,7 +135,7 @@
                         @blur="validatePassword"
                         class="h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs
                              placeholder:text-gray-400 focus:outline-hidden focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10
-                             dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                             dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
                     />
                     <span
                         @click="togglePasswordVisibility"
@@ -160,7 +160,7 @@
                         placeholder="비밀번호 재입력"
                         class="h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs
                                placeholder:text-gray-400 focus:outline-hidden focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10
-                               dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                               dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
                     />
                   </div>
                   <p v-if="passwordConfirm && password !== passwordConfirm" class="mt-1 text-sm text-error-500">
@@ -176,7 +176,7 @@
                   <select
                       v-model="role"
                       class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 shadow-theme-xs
-                           focus:outline-hidden focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                           focus:outline-hidden focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/30"
                   >
                     <option value="SUPERADMIN">본사</option>
                     <option value="MANAGER">관리자</option>
@@ -207,12 +207,12 @@
         </div>
 
         <!-- RIGHT -->
-        <div class="relative items-center hidden w-full h-full lg:w-1/2 bg-brand-950 dark:bg-white/5 2xl:grid">
+        <div class="relative items-center hidden w-full h-full lg:w-1/2 bg-brand-950 dark:bg-white/5 xl:grid">
           <div class="flex items-center justify-center z-1">
             <CommonGridShape />
             <div class="flex flex-col items-center max-w-xs">
               <router-link to="/" class="block mb-4">
-                <img width="231" height="48" src="/images/logo/menu_logo.png" alt="Logo" />
+                <img width="231" height="48" src="/images/logo/dark_menu_logo.png" alt="Logo" />
               </router-link>
               <p class="text-center text-gray-400 dark:text-white/60">
                 회사소개 한줄 소개 / 회사소개 한줄 소개 / 회사소개 한줄 소개 / 회사소개 한줄 소개
@@ -221,6 +221,11 @@
           </div>
         </div>
         </div>
+      </div>
+
+      <!-- 다크모드 토글: 오른쪽 하단 고정 -->
+      <div class="absolute bottom-4 right-4">
+        <ThemeToggler />
       </div>
     </div>
   </FullScreenLayout>
@@ -233,6 +238,7 @@ import { useMailStore } from '@/stores/mail'
 import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline'
+import ThemeToggler from "@/components/common/ThemeToggler.vue";
 
 const auth = useAuthStore()
 const mail = useMailStore()
