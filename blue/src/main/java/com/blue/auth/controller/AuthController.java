@@ -2,6 +2,8 @@ package com.blue.auth.controller;
 
 import com.blue.auth.dto.AuthResponse;
 import com.blue.auth.dto.LoginRequest;
+import com.blue.auth.dto.SignupRequest;
+import com.blue.auth.dto.SignupResponse;
 import com.blue.auth.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,12 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,7 +26,7 @@ public class AuthController {
       return ResponseEntity.ok(authResponse);
     } catch (RuntimeException e) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(Map.of("error", "아이디 또는 비밀번호가 올바르지 않습니다."));
+          .body("아이디 또는 비밀번호가 올바르지 않습니다.");
     }
   }
   
@@ -76,11 +73,23 @@ public class AuthController {
     return ResponseEntity.ok().build(); // 200 → 쿠키 있음
   }
   
-  
   // 로그아웃
   @PostMapping("/token/logout")
   public ResponseEntity<Void> logout(HttpServletResponse response) {
     authService.logout(response);
     return ResponseEntity.ok().build();
+  }
+  
+  // 이메일 중복 확인 API
+  @GetMapping("/check-email")
+  public ResponseEntity<Boolean> checkEmail(@RequestParam String email) {
+    boolean exists = authService.checkEmailDuplicate(email);
+    return ResponseEntity.ok(exists); // true = 중복, false = 사용 가능
+  }
+  
+  // 회원가입
+  @PostMapping("/signup")
+  public ResponseEntity<SignupResponse> signup(@RequestBody SignupRequest request) {
+    return ResponseEntity.ok(authService.signup(request));
   }
 }

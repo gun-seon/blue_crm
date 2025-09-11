@@ -25,7 +25,8 @@ public class SecurityConfig {
             .requestMatchers(
                 "/api/ping",
                 "/actuator/health",
-                "/api/auth/**").permitAll()
+                "/api/auth/**",
+                "/api/mail/**").permitAll()
             
             // 본사 (최고 관리자)
             .requestMatchers("/api/super/**").hasRole("SUPERADMIN")

@@ -7,8 +7,7 @@ public class PasswordHashTest {
   public static void main(String[] args) {
     PasswordEncoder encoder = new BCryptPasswordEncoder();
     
-    System.out.println(encoder.encode("qkrwm207@"));
-    System.out.println(encoder.encode("wm52566"));
+    // 회원가입 없이 비밀번호 생성할 때 사용
     System.out.println(encoder.encode("test"));
   }
 }

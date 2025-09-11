@@ -5,16 +5,50 @@
 
 <mapper namespace="com.blue.auth.mapper.AuthMapper">
 
+    <!-- email로 회원 찾기 -->
     <select id="findByEmail" parameterType="string" resultType="com.blue.auth.dto.UserDto">
         SELECT
-        user_id AS userId,
-        user_email AS userEmail,
-        user_password AS userPassword,
-        user_role AS userRole,
-        center_id AS centerId,
-        user_created_at AS createdAt
+            user_id         AS userId,
+            user_email      AS userEmail,
+            user_password   AS userPassword,
+            user_role       AS userRole,
+            manager_phone_access AS managerPhoneAccess,
+            center_id       AS centerId,
+            user_name       AS userName,
+            user_phone      AS userPhone,
+            user_approved   AS userApproved,
+            user_created_at AS userCreatedAt
         FROM users
         WHERE user_email = #{email}
     </select>
+
+    <!-- phone으로 회원 찾기 -->
+    <select id="findByPhone" parameterType="string" resultType="com.blue.auth.dto.UserDto">
+        SELECT
+            user_id         AS userId,
+            user_email      AS userEmail,
+            user_password   AS userPassword,
+            user_role       AS userRole,
+            manager_phone_access AS managerPhoneAccess,
+            center_id       AS centerId,
+            user_name       AS userName,
+            user_phone      AS userPhone,
+            user_approved   AS userApproved,
+            user_created_at AS userCreatedAt
+        FROM users
+        WHERE user_phone = #{phone}
+    </select>
+
+    <!-- 회원가입 (회원 추가) -->
+    <insert id="insertUser" parameterType="com.blue.auth.dto.UserDto">
+        INSERT INTO users (
+            user_email, user_password, user_role, manager_phone_access,
+            center_id, user_name, user_phone, user_approved, user_created_at
+        )
+        VALUES (
+           #{userEmail}, #{userPassword}, #{userRole}, #{managerPhoneAccess},
+           #{centerId}, #{userName}, #{userPhone}, #{userApproved}, NOW()
+        )
+    </insert>
 
 </mapper>
