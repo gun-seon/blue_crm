@@ -3,7 +3,7 @@
     <div class="relative xl:bg-gray-100 dark:xl:bg-gray-900 dark:bg-gray-800 bg-white z-1 sm:p-0">
       <div class="relative flex flex-col justify-center w-full min-h-screen overflow-y-auto lg:flex-row">
         <!-- 카드 -->
-        <div :class="['flex w-full max-w-6xl max-h-[1000px] xl:bg-white xl:rounded-2xl xl:shadow-lg overflow-y-auto dark:bg-gray-800 dark:xl:bg-gray-800 dark:xl:rounded-2xl dark:xl:shadow-lg', mt]">
+        <div :class="['flex w-full max-w-6xl max-h-[850px] xl:bg-white xl:rounded-2xl xl:shadow-lg overflow-y-auto dark:bg-gray-800 dark:xl:bg-gray-800 dark:xl:rounded-2xl dark:xl:shadow-lg', mt]">
 
         <!-- LEFT -->
         <div class="flex flex-col flex-1 w-full lg:w-1/2 p-10">
@@ -18,7 +18,7 @@
                 </p>
               </div>
 
-              <form @submit.prevent="doSignup" class="space-y-5">
+              <form @submit.prevent="doSignup" class="space-y-2">
                 <!-- Email -->
                 <div>
                   <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
@@ -69,7 +69,7 @@
                       인증하기
                     </button>
                   </div>
-                  <div class="flex items-center justify-between mt-2">
+                  <div class="flex items-center justify-between mt-0">
                     <p class="text-sm text-blue-600">남은시간 {{ mm }}:{{ ss }}</p>
                     <button
                         type="button"
@@ -197,7 +197,7 @@
                 </div>
               </form>
 
-              <div class="mt-5">
+              <div class="mt-1">
                 <router-link to="/login" class="ml-1 text-brand-500 hover:text-brand-600 dark:text-brand-400">
                   로그인으로 돌아가기
                 </router-link>

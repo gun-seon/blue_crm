@@ -1,12 +1,12 @@
 <template>
-  <div class="hidden lg:block">
+  <div class="block">
     <form>
       <div class="relative">
         <button class="absolute -translate-y-1/2 left-4 top-1/2">
           <svg
             class="fill-gray-500 dark:fill-gray-400"
-            width="20"
-            height="20"
+            width="18"
+            height="18"
             viewBox="0 0 20 20"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"

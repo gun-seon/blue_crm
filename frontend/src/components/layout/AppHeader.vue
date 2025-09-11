@@ -72,26 +72,61 @@
           </svg>
         </button>
 
-        <!-- 검색창 -->
-        <SearchBar />
-        <!-- 날짜 필터 -->
-<!--        <SearchBar />-->
-        <!-- 카테고리 필터 -->
-<!--        <SearchBar />-->
+        <!-- PC용 필터 (헤더 오른쪽) -->
+        <div
+            class="hidden lg:flex lg:flex-row lg:items-center lg:justify-end lg:gap-4 lg:px-0 lg:py-0"
+        >
+          <!-- 날짜 필터 -->
+          <div class="flex items-center">
+            <!-- 시작일 -->
+            <input
+                type="text"
+                ref="startPicker"
+                class="w-26 h-11 border border-gray-200 dark:border-gray-700 rounded-l-lg px-3 py-2 text-sm text-center
+                      focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-800 dark:text-gray-200"
+                placeholder="시작일"
+            />
+
+            <!-- 구분자 -->
+            <span
+                class="flex items-center justify-center w-8 h-11 border-t border-b border-gray-200 dark:border-gray-700
+                 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900">~</span>
+
+            <!-- 종료일 -->
+            <input
+                type="text"
+                ref="endPicker"
+                class="w-26 h-11 border border-gray-200 dark:border-gray-700 rounded-r-lg px-3 py-2 text-sm text-center
+                      focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-800 dark:text-gray-200"
+                placeholder="종료일"
+            />
+          </div>
+
+          <!-- 카테고리 필터 -->
+          <select
+              v-model="selectedCategory"
+              class="w-30 h-11 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-1 text-sm text-gray-800
+               focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+               dark:bg-gray-800 dark:text-gray-200"
+          >
+            <option disabled value="">카테고리</option>
+            <option value="stock">주식</option>
+            <option value="coin">코인</option>
+          </select>
+
+          <!-- 검색창 -->
+          <SearchBar />
+
+          <button @click="test">ping</button>
+        </div>
       </div>
 
-      <!-- 모바일에서는 숨김 처리 -->
+      <!-- 모바일용 세션 타이머, 프로필 (로고 바로 밑에) -->
       <div
-        :class="[isApplicationMenuOpen ? 'flex' : 'hidden']"
-        class="items-center justify-between w-full gap-4 px-5 py-4 shadow-theme-md lg:flex lg:justify-end lg:px-0 lg:shadow-none"
+          :class="[isApplicationMenuOpen ? 'flex' : 'hidden']"
+          class="w-full px-5 py-4 lg:flex lg:flex-row lg:items-center lg:justify-end lg:gap-4 lg:px-0 lg:py-0 lg:shadow-none
+         flex-row justify-between"
       >
-<!--        <div class="flex items-center gap-2 2xsm:gap-3 text-theme-sm text-gray-700 dark:text-gray-400">-->
-<!--          라이트테마/다크테마 전환 -->
-<!--          <ThemeToggler />-->
-<!--          서버내 알림 표시기능 -->
-<!--          <NotificationMenu />-->
-<!--        </div>-->
-
         <!-- 세션 타이머 -->
         <div v-if="timeLeft > 0" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-400">
           <span class="text-blue-500 dark:text-blue-400">
@@ -111,6 +146,41 @@
         <UserMenu />
       </div>
 
+      <!-- 모바일용 필터 (로고 바로 밑에) -->
+      <div
+          v-if="isApplicationMenuOpen"
+          class="shadow-theme-md flex flex-row justify-between items-center w-full px-5 py-4 border-gray-200 dark:border-gray-700 lg:hidden"
+      >
+        <!-- 왼쪽 그룹 -->
+        <div class="flex flex-row gap-2">
+          <!-- 날짜 필터 -->
+          <input
+              type="text"
+              ref="datepicker"
+              class="w-42 h-11 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 text-sm
+             focus:outline-none focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-200"
+              placeholder="시작일 ~ 종료일"
+          />
+
+          <!-- 카테고리 필터 -->
+          <select
+              v-model="selectedCategory"
+              class="w-20 h-11 border border-gray-200 dark:border-gray-800 rounded-lg px-2 py-1
+             text-sm focus:outline-none focus:ring-indigo-500
+             dark:bg-gray-800 dark:text-gray-200"
+          >
+            <option disabled value="">카테고리</option>
+            <option value="stock">주식</option>
+            <option value="coin">코인</option>
+          </select>
+        </div>
+
+        <!-- 오른쪽 그룹 -->
+        <div>
+          <SearchBar />
+        </div>
+      </div>
+
     </div>
   </header>
 </template>
@@ -123,7 +193,55 @@ import SearchBar from './header/SearchBar.vue'
 import HeaderLogo from './header/HeaderLogo.vue'
 import UserMenu from './header/UserMenu.vue'
 
+// 날짜 설정 관련
+import flatpickr from 'flatpickr'
+import { Korean } from 'flatpickr/dist/l10n/ko.js'
+import 'flatpickr/dist/flatpickr.css'
+
+const startPicker = ref<HTMLInputElement | null>(null)
+const endPicker = ref<HTMLInputElement | null>(null)
+const startDate = ref<Date | null>(null)
+const endDate = ref<Date | null>(null)
+
+onMounted(() => {
+  if (startPicker.value) {
+    flatpickr(startPicker.value, {
+      locale: Korean,
+      dateFormat: "Y-m-d",
+      onChange: (dates) => {
+        startDate.value = dates[0] ?? null
+      }
+    })
+  }
+
+  if (endPicker.value) {
+    flatpickr(endPicker.value, {
+      locale: Korean,
+      dateFormat: "Y-m-d",
+      onChange: (dates) => {
+        endDate.value = dates[0] ?? null
+      }
+    })
+  }
+})
+
+// 카테고리 선택 관련
+const selectedCategory = ref('')
+
+// 날짜 / 카테고리 외 설정에 관하여
 const auth = useAuthStore()
+
+// ping 테스트
+const test = async () => {
+  try {
+    const res = await auth.pingPong()
+    console.log("Ping 성공:", res)
+    alert("서버 응답: " + JSON.stringify(res))
+  } catch (e) {
+    console.error("Ping 실패:", e)
+    alert("Ping 실패: " + e)
+  }
+}
 
 // 사이드바 토글
 const { toggleSidebar, toggleMobileSidebar, isMobileOpen } = useSidebar()
@@ -170,3 +288,189 @@ const extendSession = async () => {
   await updateTime()
 }
 </script>
+
+<style>
+/* 오늘 날짜 */
+.flatpickr-day.today,
+.flatpickr-day.today:hover {
+  border-radius: 6px !important;
+  border: 1px solid var(--color-brand-500) !important;
+  background: transparent !important;
+  color: var(--color-brand-500) !important;
+}
+
+/* 오늘 날짜 + 선택됨 */
+.flatpickr-day.today.selected,
+.flatpickr-day.today.selected:hover {
+  background: var(--color-brand-500) !important;
+  border: 1px solid var(--color-brand-500) !important;
+  color: #fff !important;
+}
+
+/* 라이트 모드: hover → 달력 배경색 (#fff) */
+.flatpickr-day:hover,
+.flatpickr-day:focus,
+.flatpickr-day.inRange:hover,
+.flatpickr-day.inRange:focus,
+.flatpickr-day.prevMonthDay:hover,
+.flatpickr-day.nextMonthDay:hover,
+.flatpickr-day.prevMonthDay:focus,
+.flatpickr-day.nextMonthDay:focus {
+  background: #ffffff !important; /* 라이트 모드 달력 배경색 */
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--color-gray-800) !important;
+}
+
+/* 전월/다음월 날짜 (흐린 회색) */
+.flatpickr-day.prevMonthDay:hover,
+.flatpickr-day.nextMonthDay:hover,
+.flatpickr-day.prevMonthDay:focus,
+.flatpickr-day.nextMonthDay:focus {
+  background: #ffffff !important; /* 라이트 모드 달력 배경색 */
+  color: var(--color-gray-400) !important;
+}
+
+/* 월 선택 드롭다운 */
+.flatpickr-monthDropdown-months:hover,
+.numInputWrapper:hover,
+.flatpickr-monthDropdown-months:focus,
+.numInputWrapper:focus {
+  background: transparent !important;
+}
+
+/* 오늘 날짜(today)는 hover해도 스타일 유지 */
+.flatpickr-day.today:hover,
+.flatpickr-day.today:focus {
+  border: 1px solid var(--color-brand-500) !important;
+  background: transparent !important;
+  color: var(--color-brand-500) !important;
+}
+
+/* 선택된 날짜 */
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+  border-radius: 6px !important;
+  background: var(--color-brand-500) !important;
+  border: 1px solid var(--color-brand-500) !important;
+  color: #fff !important;
+}
+
+/* 라이트 모드: 선택된 날짜 hover 시에도 스타일 유지 */
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange:hover,
+.flatpickr-day.endRange:hover,
+.flatpickr-day.selected:focus,
+.flatpickr-day.startRange:focus,
+.flatpickr-day.endRange:focus {
+  background: var(--color-brand-500) !important;
+  border: 1px solid var(--color-brand-500) !important;
+  color: #fff !important; /* 글자색 고정 */
+}
+
+/* ------------------------- */
+/* ------------------------- */
+/* ------------------------- */
+
+/* 다크 모드: hover 제거 (우선순위 ↑) */
+.dark .flatpickr-calendar .flatpickr-day:hover,
+.dark .flatpickr-calendar .flatpickr-day:focus,
+.dark .flatpickr-calendar .flatpickr-day.inRange:hover,
+.dark .flatpickr-calendar .flatpickr-day.inRange:focus,
+.dark .flatpickr-calendar .flatpickr-day.prevMonthDay:hover,
+.dark .flatpickr-calendar .flatpickr-day.nextMonthDay:hover,
+.dark .flatpickr-calendar .flatpickr-day.prevMonthDay:focus,
+.dark .flatpickr-calendar .flatpickr-day.nextMonthDay:focus {
+  background: none !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  color:
+      color-mix(in oklab, var(--color-white) 90%, transparent) !important;
+}
+
+/* 다크 모드: 이번 달 날짜 hover 제거 */
+.dark .flatpickr-calendar .dayContainer .flatpickr-day:hover,
+.dark .flatpickr-calendar .dayContainer .flatpickr-day:focus {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  color:
+      color-mix(in oklab, var(--color-white) 90%, transparent) !important;
+}
+
+/* 다크 모드: 전월/다음달 날짜는 흐린 회색 */
+.dark .flatpickr-calendar .flatpickr-day.prevMonthDay:hover,
+.dark .flatpickr-calendar .flatpickr-day.nextMonthDay:hover {
+  color: var(--color-gray-400) !important;
+}
+
+/* 다크 모드: 오늘 날짜 */
+.dark .flatpickr-calendar .flatpickr-day.today,
+.dark .flatpickr-calendar .flatpickr-day.today:hover,
+.dark .flatpickr-calendar .flatpickr-day.today:focus {
+  border: 1px solid var(--color-brand-500) !important;
+  background: transparent !important;
+  color: var(--color-brand-500) !important;
+}
+
+/* 다크 모드: 오늘 + 선택됨 */
+.dark .flatpickr-calendar .flatpickr-day.today.selected,
+.dark .flatpickr-calendar .flatpickr-day.today.selected:hover,
+.dark .flatpickr-calendar .flatpickr-day.today.selected:focus {
+  background: var(--color-brand-500) !important;
+  border: 1px solid var(--color-brand-500) !important;
+  color: #fff !important;
+}
+
+/* 다크 모드: 선택된 날짜 */
+.dark .flatpickr-calendar .flatpickr-day.selected,
+.dark .flatpickr-calendar .flatpickr-day.startRange,
+.dark .flatpickr-calendar .flatpickr-day.endRange,
+.dark .flatpickr-calendar .flatpickr-day.selected:hover,
+.dark .flatpickr-calendar .flatpickr-day.startRange:hover,
+.dark .flatpickr-calendar .flatpickr-day.endRange:hover {
+  background: var(--color-brand-500) !important;
+  border: 1px solid var(--color-brand-500) !important;
+  color: #fff !important;
+}
+
+/* 다크 모드: 월 선택 드롭다운 */
+.dark .flatpickr-calendar .flatpickr-monthDropdown-months {
+  background: #131827 !important;   /* 드롭다운 배경 */
+  color: var(--color-gray-200) !important; /* 기본 글자색 */
+  border: 1px solid transparent !important;
+  border-radius: 6px !important;
+}
+
+/* 다크 모드: 드롭다운 옵션 */
+.dark .flatpickr-calendar .flatpickr-monthDropdown-months .flatpickr-monthDropdown-month {
+  background: #131827 !important;
+  color: var(--color-gray-200) !important;
+}
+
+/* 다크 모드: 옵션 hover */
+.dark .flatpickr-calendar .flatpickr-monthDropdown-months .flatpickr-monthDropdown-month:hover {
+  background: var(--color-brand-500) !important;
+  color: #ffffff !important;
+}
+
+/* 다크 모드: 연도 선택 화살표 (컨테이너 테두리까지 흰색) */
+.dark .flatpickr-calendar .numInputWrapper span {
+  border: 1px solid #838383 !important;  /* 흰색 테두리 */
+}
+
+/* 다크 모드: 연도 선택 화살표 */
+.dark .flatpickr-calendar .numInputWrapper span.arrowUp:after {
+  border-bottom-color: #ffffff !important; /* 위쪽 화살표 흰색 */
+}
+
+.dark .flatpickr-calendar .numInputWrapper span.arrowDown:after {
+  border-top-color: #ffffff !important; /* 아래쪽 화살표 흰색 */
+}
+
+/* ------------------------- */
+/* ------------------------- */
+/* ------------------------- */
+
+</style>

@@ -37,6 +37,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                   @NonNull HttpServletResponse response,
                                   @NonNull FilterChain chain) throws ServletException, IOException {
     
+    // token 관련 API는 AccessToken 검증 건너뜀
+    // (로그인 권한이 없어도 되는 api 이므로)
+    String path = request.getRequestURI();
+    if (path.startsWith("/api/auth/token")) {
+      chain.doFilter(request, response);
+      return;
+    }
+    
     // Authorization 헤더 추출
     String header = request.getHeader("Authorization");
     if (header == null || !header.startsWith("Bearer ")) {

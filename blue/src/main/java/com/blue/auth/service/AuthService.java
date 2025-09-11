@@ -31,8 +31,8 @@ public class AuthService {
     cookie.setHttpOnly(true);
     cookie.setSecure(true);
     cookie.setPath("/api/auth/token");
-    // 브라우저 창 닫아도 쿠키 유지 : 30분
-    // cookie.setMaxAge(60 * 30);
+    // 브라우저 창 닫아도 쿠키 유지 : 20분(리프레시 토큰 유지시간)
+    // cookie.setMaxAge(60 * 20);
     response.addCookie(cookie);
   }
   

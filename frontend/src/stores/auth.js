@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import axios from '@/plugins/axios.js'
 import router from "@/router/index.js";
 
 export const useAuthStore = defineStore('auth', {
@@ -11,6 +11,11 @@ export const useAuthStore = defineStore('auth', {
         role: null // 사용자 권한
     }),
     actions: {
+        async pingPong() {
+            const { data } = await axios.get('/api/ping')
+            return data
+        },
+
         // 사용자 정보 설정
         setAuth(data) {
             // data.accessToken 없으면 바로 종료
@@ -25,7 +30,7 @@ export const useAuthStore = defineStore('auth', {
             this.name = data.name
             this.role = data.role
             this.refreshExp = data.refreshExp
-            axios.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`
+            // axios.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`
         },
 
         // 사용자 정보 clear
