@@ -322,6 +322,7 @@ layer(base);
 }
 .tableCheckbox:checked ~ span {
     @apply border-brand-500 bg-brand-500;
+    @apply dark:border-brand-400 dark:bg-brand-400; /* 다크모드 전용 */
 }
 
 /* third-party libraries CSS */
@@ -727,9 +728,11 @@ span.flatpickr-weekday,
 }
 .taskCheckbox:checked ~ p {
     @apply text-gray-400 line-through;
+    @apply dark:text-gray-500; /* 다크모드 전용 */
 }
 .taskCheckbox:checked ~ .box {
     @apply border-brand-500 bg-brand-500 dark:border-brand-500;
+    @apply dark:border-brand-400 dark:bg-brand-400; /* 다크모드 전용 */
 }
 
 .task {

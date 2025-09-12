@@ -105,11 +105,11 @@
           <!-- 카테고리 필터 -->
           <select
               v-model="selectedCategory"
-              class="w-30 h-11 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-1 text-sm text-gray-800
-               focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-               dark:bg-gray-800 dark:text-gray-200"
+              class="w-20 h-11 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1
+             text-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+             dark:bg-gray-800 dark:text-gray-400 text-gray-500"
           >
-            <option disabled value="">카테고리</option>
+            <option value="all">전체</option>
             <option value="stock">주식</option>
             <option value="coin">코인</option>
           </select>
@@ -154,22 +154,39 @@
         <!-- 왼쪽 그룹 -->
         <div class="flex flex-row gap-2">
           <!-- 날짜 필터 -->
-          <input
-              type="text"
-              ref="datepicker"
-              class="w-42 h-11 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 text-sm
-             focus:outline-none focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-200"
-              placeholder="시작일 ~ 종료일"
-          />
+          <div class="flex items-center">
+            <!-- 시작일 -->
+            <input
+                type="text"
+                ref="startPicker"
+                class="w-26 h-11 border border-gray-200 dark:border-gray-700 rounded-l-lg px-3 py-2 text-sm text-center
+                      focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-800 dark:text-gray-200"
+                placeholder="시작일"
+            />
+
+            <!-- 구분자 -->
+            <span
+                class="flex items-center justify-center w-8 h-11 border-t border-b border-gray-200 dark:border-gray-700
+                 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900">~</span>
+
+            <!-- 종료일 -->
+            <input
+                type="text"
+                ref="endPicker"
+                class="w-26 h-11 border border-gray-200 dark:border-gray-700 rounded-r-lg px-3 py-2 text-sm text-center
+                      focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:bg-gray-800 dark:text-gray-200"
+                placeholder="종료일"
+            />
+          </div>
 
           <!-- 카테고리 필터 -->
           <select
               v-model="selectedCategory"
-              class="w-20 h-11 border border-gray-200 dark:border-gray-800 rounded-lg px-2 py-1
-             text-sm focus:outline-none focus:ring-indigo-500
-             dark:bg-gray-800 dark:text-gray-200"
+              class="w-20 h-11 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1
+             text-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+             dark:bg-gray-800 dark:text-gray-400 text-gray-500"
           >
-            <option disabled value="">카테고리</option>
+            <option value="all">전체</option>
             <option value="stock">주식</option>
             <option value="coin">코인</option>
           </select>
@@ -226,7 +243,7 @@ onMounted(() => {
 })
 
 // 카테고리 선택 관련
-const selectedCategory = ref('')
+const selectedCategory = ref('all')
 
 // 날짜 / 카테고리 외 설정에 관하여
 const auth = useAuthStore()

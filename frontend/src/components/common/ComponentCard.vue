@@ -18,8 +18,9 @@
       <div class="flex items-center gap-1 px-1 py-1">
         <!-- 고정 select (10, 20, 30) -->
         <select
-            class="w-30 h-11 border border-gray-300 dark:border-gray-700 rounded-lg px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-200"
-        >
+            class="w-25 h-11 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1
+             text-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+             dark:bg-gray-800 dark:text-gray-400 text-gray-500">
           <option v-for="n in [10,20,30]" :key="n" :value="n">{{ n }}개</option>
         </select>
 
@@ -36,8 +37,8 @@
         <template v-for="(btn, idx) in buttons" :key="'btn-' + idx">
           <button
               class="w-30 h-11 px-3 py-1 rounded-lg border border-gray-300 text-sm font-medium
-                   text-gray-700 hover:bg-gray-100
-                   dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                   text-gray-500 hover:bg-gray-100
+                   dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
           >
             {{ btn }}
           </button>
