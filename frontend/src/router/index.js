@@ -28,6 +28,12 @@ router.beforeEach(async (to, from, next) => {
   // 로딩화면 표시
   ui.setLoading(true)
 
+  console.log('auth.role : ', auth.role)
+  console.log('auth.accessToken : ', auth.accessToken)
+  console.log('auth.refreshExp : ', auth.refreshExp)
+  console.log('auth.name : ', auth.name)
+  console.log('auth.email : ', auth.email)
+
   // 1. accessToken 없으면 initialize 시도
   if (!auth.accessToken) {
     const ok = await auth.initialize()

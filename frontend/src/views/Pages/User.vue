@@ -1,21 +1,23 @@
 <template>
   <AdminLayout>
     <PageBreadcrumb :pageTitle="currentPageTitle" />
-    <div class="space-y-5 sm:space-y-6">
-      <ComponentCard
-          :buttons="['센터관리', '엑셀로 다운로드']">
-        <PsnsTable
-            :columns="columns"
-            :data="users"
-            :showCheckbox="true"
-            :page="page"
-            :totalPages="totalPages"
-            @rowSelect="onRowSelect"
-            @badgeUpdate="onBadgeUpdate"
-            @buttonClick="onButtonClick"
-            @changePage="onPageChange"
-        />
-      </ComponentCard>
+    <div class="grid grid-cols-12 gap-4 min-w-0">
+      <div class="col-span-12 space-y-6 min-w-0">
+        <ComponentCard
+            :buttons="['센터관리', '엑셀로 다운로드']">
+          <PsnsTable
+              :columns="columns"
+              :data="users"
+              :showCheckbox="true"
+              :page="page"
+              :totalPages="totalPages"
+              @rowSelect="onRowSelect"
+              @badgeUpdate="onBadgeUpdate"
+              @buttonClick="onButtonClick"
+              @changePage="onPageChange"
+          />
+        </ComponentCard>
+      </div>
     </div>
   </AdminLayout>
 </template>

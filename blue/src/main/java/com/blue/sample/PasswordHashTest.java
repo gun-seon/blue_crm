@@ -1,4 +1,4 @@
-package com.blue.auth.controller;
+package com.blue.sample;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;

@@ -48,14 +48,19 @@
             <!-- 텍스트 -->
             <span
                 v-if="col.type === 'text'"
-                :class="[ 'text-gray-500 text-theme-sm dark:text-gray-400',
-                col.ellipsis ? `truncate whitespace-nowrap overflow-hidden block max-w-[${typeof col.ellipsis === 'object' ? col.ellipsis.width : 150}px]` : '' ]"
-            >
+                :class="[
+                  'text-gray-500 text-theme-sm dark:text-gray-400 block',
+                  col.ellipsis
+                    ? 'truncate whitespace-nowrap overflow-hidden'
+                    : 'whitespace-normal break-words'
+                ]"
+                              :style="col.ellipsis ? { maxWidth: (typeof col.ellipsis === 'object' ? col.ellipsis.width : 150) + 'px' } : {}"
+                          >
                 {{ row[col.key] }}
-              </span>
+            </span>
 
             <!-- 배지 (수정 가능) -->
-            <div v-else-if="col.type === 'badge'" class="relative inline-block w-[100px] h-[28px]">
+            <div v-else-if="col.type === 'badge'" class="relative inline-block w-[65px] h-[28px]">
               <!-- 배지 표시 모드 -->
               <span
                   v-show="!(editState.row === rowIndex && editState.col === col.key)"
@@ -70,7 +75,7 @@
               <select
                   v-show="editState.row === rowIndex && editState.col === col.key"
                   v-model="editValue"
-                  class="absolute inset-0 w-full h-full px-2 py-1 text-xs rounded-md border border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                  class="absolute inset-0 w-full h-full px-1 py-1 text-xs rounded-md border border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                   @change="updateBadge(row, col.key)"
                   @blur="cancelEdit"
               >
@@ -212,47 +217,47 @@ onBeforeUnmount(() => {
 // 배지 색상
 const badgeClass = (value) => {
   switch (value) {
-      // 🔴 빨강
+      // 🔴 빨강 (본사, 관리자, 탈퇴, 거절)
     case "본사":
     case "관리자":
-      return "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
-
-      // 🔵 파랑
-    case "담당자":
-      return "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400"
-
-      // 🟢 초록
-    case "센터장":
-      return "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400"
-
-      // 🟡 노랑
-    case "대기":
-      return "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
-
-      // 🟣 보라
     case "탈퇴":
-      return "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400"
+    case "거절":
+      return "bg-[#F8D7DA] text-[#B23A48] dark:bg-[#4A1C1C]/80 dark:text-[#F28B82]/85"
 
-      // 🟠 주황
-    case "D":
-      return "bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400"
-
-      // 🩵 하늘색
-    case "":
-      return "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-400"
-
-      // 🟤 갈색
-    case "2":
-      return "bg-yellow-900/20 text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-300"
-
-      // 🌿 청록
+      // 🔵 파랑 (담당자, 신규, 승인, 최초)
+    case "담당자":
+    case "신규":
     case "승인":
-      return "bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-400"
+    case "최초":
+      return "bg-[#D6E4FF] text-[#1E40AF] dark:bg-[#1A2B4C] dark:text-[#8AB4F8]"
+
+      // 🟢 초록 (센터장, 재콜)
+    case "센터장":
+    case "재콜":
+      return "bg-[#D1F2D6] text-[#2F855A] dark:bg-[#1B3A2E] dark:text-[#5FA97A]"
+
+      // 🟡 노랑 (대기, 부재1~5)
+    case "부재1":
+    case "부재2":
+    case "부재3":
+    case "부재4":
+    case "부재5":
+    case "대기":
+      return "bg-[#FFF3CD] text-[#B7791F] dark:bg-[#4A3A12]/60 dark:text-[#C9A94B]/80"
+
+      // 🟣 보라 (미래 확장용)
+    case "now-none":
+      return "bg-[#E9D8FD] text-[#6B46C1] dark:bg-[#3B2165]/70 dark:text-[#C6A5F3]/80"
+
+      // 🟤 가망 (브론즈/코퍼)
+    case "가망":
+      return "bg-[#EADBC8] text-[#B5895A] dark:bg-[#3E2C1E] dark:text-[#D4A373]/80"
 
       // 🩶 기본값 = 회색
     default:
-      return "bg-gray-100 text-gray-600 dark:bg-gray-600/30 dark:text-gray-300"
+      return "bg-[#E5E7EB] text-[#4B5563] dark:bg-[#374151] dark:text-[#D1D5DB]"
   }
+
 }
 
 // 페이지네이션 계산 (1 ... 3 4 5 6 7 ... 20 형태)
@@ -292,3 +297,7 @@ const visiblePages = computed(() => {
   return pages
 })
 </script>
+
+<style>
+
+</style>

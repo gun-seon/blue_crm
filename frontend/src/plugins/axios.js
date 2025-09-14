@@ -13,6 +13,11 @@ api.interceptors.response.use(
     async (err) => {
         const authStore = useAuthStore()
 
+        // refresh 요청 자체는 인터셉터에서 건드리지 않음
+        if (err.config.url?.includes('/auth/token/refresh')) {
+            return Promise.reject(err)
+        }
+
         if (err.response?.status === 401 && !err.config._retry) {
             if (!refreshPromise) {
                 refreshPromise = authStore.refreshToken().finally(() => {

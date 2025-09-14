@@ -1,12 +1,12 @@
 <template>
-  <div class="min-h-screen xl:flex">
+  <div class="min-h-screen xl:flex bg-white dark:bg-gray-900">
     <app-sidebar />
 
     <!-- 모바일에서 사이드바 반투명하게 하는 기능 -->
     <Backdrop />
     <div
-      class="flex-1"
-      :class="[isExpanded || isHovered ? 'lg:ml-[290px]' : 'lg:ml-[90px]']"
+        class="flex-1 bg-white dark:bg-gray-900"
+        :class="[isExpanded || isHovered ? 'lg:ml-[290px]' : 'lg:ml-[90px]']"
     >
 
       <app-header />
