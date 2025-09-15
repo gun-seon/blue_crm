@@ -130,8 +130,9 @@
         <!-- 세션 타이머 -->
         <div v-if="timeLeft > 0" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-400">
           <span class="text-blue-500 dark:text-blue-400">
-            {{ String(Math.floor(timeLeft / 60)).padStart(2, '0') }}분
-            {{ String(timeLeft % 60).padStart(2, '0') }}초
+            {{ String(Math.floor(timeLeft / 3600)).padStart(2, '0') }}:
+            {{ String(Math.floor((timeLeft % 3600) / 60)).padStart(2, '0') }}:
+            {{ String(timeLeft % 60).padStart(2, '0') }}
           </span>
           <button
               @click="extendSession"
@@ -403,6 +404,29 @@ watch(startDate, (val) => {
 
 watch(endDate, (val) => {
   globalFilters.dateTo = val ? val.toISOString().slice(0, 10) : null
+})
+
+// --- 스크롤/휠 시 달력 강제 닫기 ---
+const closePickerOnScroll = (e: Event) => {
+  // (선택) 달력 위에서의 스크롤은 무시하고 싶으면 아래 3줄 주석 해제
+  // const t = e.target as HTMLElement | null
+  // if (t && t.closest('.flatpickr-calendar')) return
+
+  if (startFP?.isOpen) startFP.close()
+  if (endFP?.isOpen) endFP.close()
+}
+
+onMounted(() => {
+  // capture:true 로 위쪽에서 먼저 잡아서 확실하게 닫음
+  window.addEventListener('wheel',     closePickerOnScroll, { passive: true, capture: true })
+  window.addEventListener('scroll',    closePickerOnScroll, { passive: true, capture: true })
+  window.addEventListener('touchmove', closePickerOnScroll, { passive: true, capture: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('wheel',     closePickerOnScroll, true)
+  window.removeEventListener('scroll',    closePickerOnScroll, true)
+  window.removeEventListener('touchmove', closePickerOnScroll, true)
 })
 
 </script>

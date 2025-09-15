@@ -6,7 +6,7 @@
     ]"
   >
     <!-- Card Header -->
-    <div class="px-6 py-5">
+    <div class="px-6 py-4">
       <h3 class="text-base font-medium text-gray-800 dark:text-white/90">
         {{ title }}
       </h3>

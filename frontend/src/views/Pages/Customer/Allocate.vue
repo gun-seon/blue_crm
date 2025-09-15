@@ -84,15 +84,13 @@ const commonColumns = ref([
   { key: "category", label: "카테고리", type: "badge", options: ["주식", "코인"] },
   { key: "name", label: "이름", type: "text"},
   { key: "phone", label: "전화번호", type: "text" },
-  { key: "status", label: "상태", type: "badge", options: ["부재1", "부재2", "부재3", "부재4", "부재5", "재콜", "신규", "가망", "완료", "거절"] },
   { key: "source", label: "고객접속경로", type: "text" },
-  { key: "content", label: "내용", type: "text", ellipsis: { width: 200 } },
-  { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon }
+  { key: "content", label: "내용", type: "text", ellipsis: { width: 200 } }
 ])
 
 const commonCustomers = ref([
-  { createdAt: "2025-09-12", staff: "김민수 / 010-1234-5678", category: "주식", name: "박지영", phone: "010-1111-2222", status: "부재1", source: "XXX", content: "첫 상담 예약 완료" },
-  { createdAt: "2025-09-10", staff: "이은지 / 010-9876-5432", category: "코인", name: "최현우", phone: "010-3333-4444", status: "신규", source: "OOO", content: "2개월간 미접속" }
+  { createdAt: "2025-09-12", staff: "김민수 / 010-1234-5678", category: "주식", name: "박지영", phone: "010-1111-2222", source: "XXX", content: "첫 상담 예약 완료" },
+  { createdAt: "2025-09-10", staff: "이은지 / 010-9876-5432", category: "코인", name: "최현우", phone: "010-3333-4444", source: "OOO", content: "2개월간 미접속" }
 ])
 
 function onCommonRowSelect(row, e) { console.log("Row selected:", row, e.target.checked) }
@@ -112,15 +110,13 @@ const adminColumns = ref([
   { key: "category", label: "카테고리", type: "badge", options: ["주식", "코인"] },
   { key: "name", label: "이름", type: "text" },
   { key: "phone", label: "전화번호", type: "text" },
-  { key: "status", label: "상태", type: "badge", options: ["부재1", "부재2", "부재3", "부재4", "부재5", "재콜", "신규", "가망", "완료", "거절"] },
   { key: "source", label: "참여경로", type: "text" },
-  { key: "content", label: "내용", type: "text", ellipsis: { width: 200 } },
-  { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon }
+  { key: "content", label: "내용", type: "text", ellipsis: { width: 200 } }
 ])
 
 const adminCustomers = ref([
-  { createdAt: "2025-09-12", staff: "홍길동 / 010-1234-5678", category: "주식", division: "최초", name: "김영희", phone: "010-2222-3333", status: "완료", source: "APP", content: "계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료" },
-  { createdAt: "2025-09-11", staff: "이철수 / 010-9876-5432", category: "코인", division: "중복", name: "이민호", phone: "010-4444-5555", status: "거절", source: "WEB", content: "상담 거절" }
+  { createdAt: "2025-09-12", staff: "홍길동 / 010-1234-5678", category: "주식", division: "최초", name: "김영희", phone: "010-2222-3333", source: "APP", content: "계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료" },
+  { createdAt: "2025-09-11", staff: "이철수 / 010-9876-5432", category: "코인", division: "중복", name: "이민호", phone: "010-4444-5555", source: "WEB", content: "상담 거절" }
 ])
 
 function onAdminRowSelect(row, e) { console.log("Row selected:", row, e.target.checked) }

@@ -46,10 +46,6 @@
         <!-- SUPERADMIN 전용 -->
         <template v-if="isSuperAdmin">
           <div class="flex">
-            <span class="w-24 font-semibold">구분</span>
-            <span>{{ row.division || '' }}</span>
-          </div>
-          <div class="flex">
             <span class="w-24 font-semibold">현재 담당자</span>
             <span>{{ row.staff || '' }}</span>
           </div>
@@ -68,14 +64,33 @@
 
       <!-- 수정 가능 -->
       <div class="space-y-3">
-        <!-- 닉네임 -->
-        <div class="mt-[-5px]">
-          <label class="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">닉네임</label>
-          <input
-              v-model="nickname"
-              class="w-full border rounded-lg p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100"
-              placeholder="닉네임을 입력하세요"
-          />
+        <!-- 닉네임 2개 (가로 배치) -->
+        <div class="flex gap-4">
+          <div class="flex-1">
+            <label class="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+              트레이딩뷰 ID
+            </label>
+            <input
+                v-model="nickname1"
+                class="w-full border rounded-lg p-2 bg-white dark:bg-gray-800
+                focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+             border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100"
+                placeholder="트레이딩뷰 ID 입력"
+            />
+          </div>
+
+          <div class="flex-1">
+            <label class="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+              텔레그램 닉네임
+            </label>
+            <input
+                v-model="nickname2"
+                class="w-full border rounded-lg p-2 bg-white dark:bg-gray-800
+                focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+             border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100"
+                placeholder="텔레그램 닉네임 입력"
+            />
+          </div>
         </div>
 
         <!-- 메모 -->
@@ -84,7 +99,9 @@
           <textarea
               v-model="memo"
               rows="4"
-              class="w-full border rounded-lg p-3 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100"
+              class="w-full border rounded-lg p-3 bg-white
+                focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100"
           />
         </div>
 
@@ -93,10 +110,9 @@
           <label class="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">상태</label>
           <select
               v-model="status"
-              class="w-full border rounded-lg p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100"
+              class="w-full border rounded-lg p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100
+                focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 "
           >
-            <option value="없음">없음</option>
-            <option value="신규">신규</option>
             <option value="부재1">부재1</option>
             <option value="부재2">부재2</option>
             <option value="부재3">부재3</option>
@@ -120,6 +136,7 @@
               class="w-full border rounded-lg p-2
          bg-white dark:bg-gray-800
          border-gray-300 dark:border-gray-600
+         focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
          text-gray-800 dark:text-gray-100"
           />
         </div>
@@ -172,8 +189,9 @@ const auth = useAuthStore()
 const isSuperAdmin = auth.role === "SUPERADMIN"
 
 // form states
-const nickname   = ref("")
-const memo       = ref("")
+const nickname1   = ref("")
+const nickname2   = ref("")
+const memo        = ref("")
 const status     = ref("없음")
 const options    = ref([])
 const promiseTime = ref("")
@@ -181,7 +199,7 @@ const promiseTime = ref("")
 // input ref (timepicker)
 const timepicker = ref(null)
 
-/** flatpickr instance (JS만) */
+/** flatpickr instance */
 /** @type {import('flatpickr').Instance | null} */
 let fpInstance = null;
 
@@ -247,6 +265,25 @@ function initTimepicker(){
 
     // 처음 열릴 때 입력칸이 비어 있으면: 오늘 날짜 '선택 표시'(input은 그대로 비워둠)
     onReady: (_, __, ins) => {
+      ins.calendarContainer.style.position = "fixed";
+
+      // X 버튼 추가
+      if (!ins._clearButton) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = "✕";
+        btn.className =
+            "absolute right-3 top-[65%] -translate-y-1/2 text-gray-400 hover:text-red-500";
+        btn.addEventListener("click", () => {
+          promiseTime.value = "";
+          ins.clear();   // flatpickr 값 지우기
+        });
+
+        ins.input.parentNode.style.position = "relative";
+        ins.input.parentNode.appendChild(btn);
+        ins._clearButton = btn;
+      }
+
       if (!promiseTime.value) ins.setDate(new Date(), false);
     },
 
@@ -297,7 +334,8 @@ watch(
     () => props.row,
     async (v) => {
       if (!v) return
-      nickname.value   = ""
+      nickname1.value    = v.nickname1 || ""   // 새 필드
+      nickname2.value    = v.nickname2 || ""   // 새 필드
       memo.value       = v.memo || ""
       status.value     = v.status || "없음"
       promiseTime.value = v.promiseTime || ""
