@@ -18,6 +18,7 @@
       <div class="flex items-center gap-1 px-1 py-1">
         <!-- 고정 select (10, 20, 30) -->
         <select
+            @input="$emit('changeSize', $event.target.value)"
             class="w-25 h-11 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1
              text-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
              dark:bg-gray-800 dark:text-gray-400 text-gray-500">
@@ -27,6 +28,7 @@
         <!-- 부모에서 넘겨준 select 리스트 -->
         <template v-for="(selectOptions, idx) in selects" :key="'sel-' + idx">
           <select
+              @input="$emit('selectChange', { idx, value: $event.target.value })"
               class="w-30 h-11 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-200 text-gray-500"
           >
             <option v-for="opt in selectOptions" :key="opt" :value="opt">{{ opt }}</option>
@@ -36,6 +38,7 @@
         <!-- 부모에서 넘겨준 버튼 리스트 -->
         <template v-for="(btn, idx) in buttons" :key="'btn-' + idx">
           <button
+              @click="$emit('buttonClick', btn)"
               class="w-30 h-11 px-3 py-1 rounded-lg border border-gray-200 text-sm font-medium
                    text-gray-500 hover:bg-gray-100
                    dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"

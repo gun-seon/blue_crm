@@ -6,6 +6,18 @@ const api = axios.create({
     withCredentials: true
 })
 
+// 요청마다 accessToken 붙여주기
+api.interceptors.request.use(
+    (config) => {
+        const authStore = useAuthStore()
+        if (authStore.accessToken) {
+            config.headers['Authorization'] = `Bearer ${authStore.accessToken}`
+        }
+        return config
+    },
+    (err) => Promise.reject(err)
+)
+
 let refreshPromise = null
 
 api.interceptors.response.use(

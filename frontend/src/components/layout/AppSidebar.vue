@@ -276,14 +276,14 @@ const menuGroups = [
         perm: 'menu.db.revoke'
       },
       {
-        icon: SettingsIcon,
+        icon: UserCircleIcon,
         name: "소속정보",
         path: "/info",
         perm: 'menu.info'
       },
       {
-        icon: UserCircleIcon,
-        name: "회원관리",
+        icon: SettingsIcon,
+        name: "직원관리",
         path: "/user",
         perm: 'menu.user'
       },

@@ -12,7 +12,9 @@ export const useAuthStore = defineStore('auth', {
     }),
     actions: {
         async pingPong() {
-            const { data } = await axios.get('/api/ping')
+            // const { data } = await axios.get('/api/ping' +
+            const { data } = await axios.get('/api/sheets/test' +
+                '')
             return data
         },
 

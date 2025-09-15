@@ -169,6 +169,7 @@ const allSelected = computed(
 )
 function toggleAll(e) {
   selectedRows.value = e.target.checked ? props.data.map((_, idx) => idx) : []
+  emitSelected()
 }
 function toggleRow(idx) {
   if (selectedRows.value.includes(idx)) {
@@ -176,8 +177,21 @@ function toggleRow(idx) {
   } else {
     selectedRows.value.push(idx)
   }
+  emitSelected()
 }
 watch(() => props.page, () => (selectedRows.value = []))
+
+// 전체 선택된 행 데이터를 부모로 emit
+function emitSelected() {
+  const rows = selectedRows.value.map(i => props.data[i])
+  emit("rowSelect", rows)
+}
+
+// 페이지 바뀔 때 선택 해제
+watch(() => props.page, () => {
+  selectedRows.value = []
+  emitSelected()
+})
 
 // 배지 수정 관리
 const editState = ref({ row: null, col: null })
@@ -243,6 +257,7 @@ const badgeClass = (value) => {
     case "부재4":
     case "부재5":
     case "대기":
+    case "미할당":
       return "bg-[#FFF3CD] text-[#B7791F] dark:bg-[#4A3A12]/60 dark:text-[#C9A94B]/80"
 
       // 🟣 보라 (미래 확장용)

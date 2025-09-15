@@ -216,6 +216,9 @@ import { Korean } from 'flatpickr/dist/l10n/ko.js'
 import 'flatpickr/dist/flatpickr.css'
 import {onBeforeRouteLeave} from "vue-router";
 
+// 전역 필터 관련
+import { globalFilters } from '@/composables/globalFilters.js'
+
 const startPicker = ref<HTMLInputElement | null>(null)
 const endPicker = ref<HTMLInputElement | null>(null)
 const startDate = ref<Date | null>(null)
@@ -388,6 +391,20 @@ const extendSession = async () => {
   await auth.extendSession()
   await updateTime()
 }
+
+// --- 전역 필터랑 동기화 ---
+watch(selectedCategory, (val) => {
+  globalFilters.category = val === 'all' ? null : val
+})
+
+watch(startDate, (val) => {
+  globalFilters.dateFrom = val ? val.toISOString().slice(0, 10) : null
+})
+
+watch(endDate, (val) => {
+  globalFilters.dateTo = val ? val.toISOString().slice(0, 10) : null
+})
+
 </script>
 
 <style>

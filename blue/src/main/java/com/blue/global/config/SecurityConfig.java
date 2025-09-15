@@ -9,11 +9,20 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import com.blue.global.security.JwtAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 // 스프링 시큐리티 설정
 public class SecurityConfig {
+  
+  private final JwtAuthenticationFilter jwtFilter;
+  
+  public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
+    this.jwtFilter = jwtFilter;
+  }
+  
   @Bean
   // 시큐리티 필터
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -23,21 +32,31 @@ public class SecurityConfig {
         .authorizeHttpRequests(auth -> auth
             // 모든 권한
             .requestMatchers(
-                "/api/ping",
                 "/actuator/health",
                 "/api/auth/**",
                 "/api/mail/**").permitAll()
             
+            // 로그인한 사람만
+            .requestMatchers(
+                "/api/ping",
+                "/api/common/**",
+                "/api/sheets/**").authenticated()
+            
             // 본사 (최고 관리자)
-            .requestMatchers("/api/super/**").hasRole("SUPERADMIN")
+            .requestMatchers(
+                "/api/super/**").hasRole("SUPERADMIN")
             
             // 관리자 (센터장)
-            .requestMatchers("/api/admin/**").hasRole("MANAGER")
+            .requestMatchers(
+                "/api/admin/**").hasRole("MANAGER")
             
             // 직원 (일반 사용자)
-            .requestMatchers("/api/staff/**").hasRole("STAFF")
+            .requestMatchers(
+                "/api/staff/**").hasRole("STAFF")
             .anyRequest().authenticated()
-        );
+        )
+        // 필터 입히기
+        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
   
