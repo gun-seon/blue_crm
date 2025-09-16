@@ -100,8 +100,10 @@
               v-model="memo"
               rows="4"
               class="w-full border rounded-lg p-3 bg-white
-                focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-                dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100"
+                  focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                  dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100
+                  resize-none overflow-y-auto h-32"
+              placeholder="메모를 입력하세요"
           />
         </div>
 
