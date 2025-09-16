@@ -1,5 +1,6 @@
 package com.blue.global.security;
 
+import com.blue.auth.mapper.AuthMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -31,6 +32,7 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
   
   private final JwtUtil jwtUtil;
+  private final AuthMapper authMapper;
   
   @Override
   protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -60,6 +62,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       String role = claims.get("role", String.class);
       
       if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        
+        // DB에서 차단 상태 확인
+        var user = authMapper.findByEmail(email);
+        if (user == null || !"Y".equals(user.getUserApproved())) {
+          log.info("차단된 계정 접근: {}", email);
+          response.setHeader("X-Blocked", "true"); // 프론트에서 탈퇴여부를 판단할 사용자 정의 헤더
+          response.sendError(HttpServletResponse.SC_GONE, "탈퇴되었거나 승인되지 않은 계정입니다.");
+          response.flushBuffer();
+          return;
+        }
+        
         // JWT 안의 role 값을 Security 권한 객체로 변환
         var authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role));
         

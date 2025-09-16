@@ -1,11 +1,16 @@
 package com.blue.user.controller;
 
+import com.blue.user.dto.BulkApproveResponse;
 import com.blue.user.dto.PageResponse;
 import com.blue.user.dto.UpdateUserRequest;
 import com.blue.user.dto.UserSelectDto;
 import com.blue.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/super/users")
@@ -31,9 +36,21 @@ public class UserController {
   @PatchMapping("/update/{userId}")
   public void updateUserField(
       @PathVariable Long userId,
-      @RequestBody UpdateUserRequest req   // 예: {'권한' : '관리자'}
+      @RequestBody UpdateUserRequest req,   // 예: {'권한' : '관리자'}
+      Authentication auth
+      
   ) {
 //    System.out.println(userId);
-    userService.updateUserField(userId, req.getField(), req.getValue());
+    String requesterEmail = auth.getName(); // 현재 로그인 사용자
+    userService.updateUserField(userId, req.getField(), req.getValue(), requesterEmail);
+  }
+  
+  // 직원관리 페이지에서 직원에 대한 일괄수정이 발생한 경우
+  @PatchMapping("/bulk-approve")
+  public ResponseEntity<?> bulkApprove(@RequestBody List<Long> userIds, Authentication auth) {
+//    System.out.println(userIds);
+    String requesterEmail = auth.getName(); // 현재 로그인 사용자
+    BulkApproveResponse result = userService.bulkApprove(userIds, requesterEmail);
+    return ResponseEntity.ok(result);
   }
 }

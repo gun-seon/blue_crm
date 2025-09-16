@@ -50,7 +50,11 @@
                     v-show="!(editState.row === rowIndex && editState.col === col.key)"
                     class="absolute inset-0 flex items-center justify-center rounded-full px-2 py-0.5 text-theme-xs font-medium cursor-pointer transition"
                     :class="[badgeClass(row[col.key]), col.editable ? 'hover:opacity-80' : '']"
-                    @click.stop="col.editable ? startEdit(rowIndex, col.key, row[col.key]) : null"
+                    @click.stop="
+                      typeof col.editable === 'function'
+                        ? (col.editable(row) && startEdit(rowIndex, col.key, row[col.key]))
+                        : (col.editable ? startEdit(rowIndex, col.key, row[col.key]) : null)
+                    "
                 >
                   {{ row[col.key] }}
                 </span>

@@ -20,4 +20,13 @@ public interface UserMapper {
   int updateUserField(@Param("userId") Long userId,
                       @Param("field") String field,
                       @Param("value") String value);
+  
+  // 직원관리 페이지에서 일괄 승인하는 경우
+  int approveUsers(@Param("ids") List<Long> ids);
+  
+  // 아이디로 다수 유저 검색
+  List<UserSelectDto> findUsersByIds(@Param("ids") List<Long> ids);
+  // 아이디로 단일 유저 검색
+  UserSelectDto findUserById(@Param("userId") Long userId);
+  
 }

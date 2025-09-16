@@ -5,6 +5,7 @@ import com.blue.auth.dto.LoginRequest;
 import com.blue.auth.dto.SignupRequest;
 import com.blue.auth.dto.SignupResponse;
 import com.blue.auth.service.AuthService;
+import com.blue.global.exception.AuthException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,9 +25,12 @@ public class AuthController {
     try {
       AuthResponse authResponse = authService.login(request, response);
       return ResponseEntity.ok(authResponse);
+    }  catch (AuthException e) {
+      // 사용자 예외
+      return ResponseEntity.status(e.getStatus()).body(e.getMessage());
     } catch (RuntimeException e) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body("아이디 또는 비밀번호가 올바르지 않습니다.");
+          .body("로그인 중 예기치 못한 에러가 발생했습니다.");
     }
   }
   

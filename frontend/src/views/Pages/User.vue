@@ -30,6 +30,10 @@ import AdminLayout from "@/components/layout/AdminLayout.vue";
 import ComponentCard from "@/components/common/ComponentCard.vue";
 import PsnsTable from "@/components/tables/basic-tables/PsnsTable.vue";
 import axios from "@/plugins/axios.js";
+import {useAuthStore} from "@/stores/auth.js";
+
+// 로그인 관리
+const auth = useAuthStore()
 
 // 공용 쿼리 컴포저블
 import { useTableQuery } from "@/composables/useTableQuery.js";
@@ -47,7 +51,8 @@ onMounted(async () => {
     centerOptions.value = res.data.map(c => c.centerName);
     // console.log(centerOptions.value)
   } catch (err) {
-    console.error("센터 목록 불러오기 실패:", err);
+    console.error("센터 목록 불러오기 실패:", err.response?.data || err.message);
+    centerOptions.value = [] // 실패 시 안전하게 초기화
   }
 });
 
@@ -80,7 +85,10 @@ const {
         phone: u.userPhone,
         email: u.userEmail,
         center: u.centerName || '미할당',
-        requestStatus: u.userApproved === 'Y' ? '승인' : '대기'
+        requestStatus:
+            u.userApproved === 'Y' ? '승인' :
+            u.userApproved === 'N' ? '대기' :
+            u.userApproved === 'X' ? '탈퇴' : u.userApproved
       })),
       totalPages: res.data.totalPages,
       totalCount: res.data.totalCount
@@ -90,13 +98,22 @@ const {
 
 // 부모에서 컬럼 정의
 const columns = computed(() => [
-  { key: "type", label: "구분", type: "badge", editable: true, options: ["관리자", "센터장", "담당자"] },
+  { key: "type", label: "구분", type: "badge", editable: canEdit, options: ["관리자", "센터장", "담당자"] },
   { key: "name", label: "이름", type: "text", ellipsis: { width: 50 } },
   { key: "phone", label: "전화번호", type: "text", ellipsis: { width: 100 } },
   { key: "email", label: "ID(Email)", type: "text", ellipsis: { width: 150 } },
-  { key: "center", label: "소속", type: "badge", editable: true, options: centerOptions.value },
-  { key: "requestStatus", label: "요청상태", type: "badge", editable: true, options: ["승인", "대기", "탈퇴"] }
+  { key: "center", label: "소속", type: "badge", editable: (row) => row.center !== "본사", options: centerOptions.value },
+  { key: "requestStatus", label: "요청상태", type: "badge", editable: canEdit, options: ["승인", "대기", "탈퇴"] }
 ])
+
+// 배지 수정 가능 여부 검토
+function canEdit(row) {
+  const requesterEmail = auth.email
+  // 1. 본인 계정이면 불가
+  if (row.email === requesterEmail) return false
+  // 2. super 계정 제외, 관리자 계정 수정 불가
+  return !((row.type === "관리자" || row.center === "본사") && requesterEmail !== "super@naver.com");
+}
 
 // 이벤트 핸들러들
 // 1. 테이블에서 체크박스 선택 시
@@ -129,14 +146,23 @@ async function onBulkApprove() {
 
   try {
     const ids = selectedRows.value.map(r => r.userId)
-    await axios.patch("/api/super/users/bulk-approve", ids)
+    const res = await axios.patch("/api/super/users/bulk-approve", ids)
+    const { approvedIds, skippedIds } = res.data
 
-    // UI 반영
-    selectedRows.value.forEach(r => {
-      r.requestStatus = "승인"
-    })
-    selectedRows.value = [] // 선택 해제
-    console.log(selectedRows.value.length, "일괄 승인 완료")
+    // 결과 메시지 구성
+    if (approvedIds.length > 0 && skippedIds.length === 0) {
+      alert(`일괄 승인 성공`)
+    } else if (approvedIds.length > 0 && skippedIds.length > 0) {
+      alert(`관리자 권한인 ${skippedIds.length}명 제외, ${approvedIds.length}명 승인 성공`)
+    } else if (approvedIds.length === 0 && skippedIds.length > 0) {
+      alert(`관리자 권한인 ${skippedIds.length}명 제외, 승인된 사용자가 없습니다`)
+    }
+
+    // 테이블 새로고침 (DB 최신 상태 반영)
+    await fetchData()
+
+    // 선택 해제
+    selectedRows.value = []
   } catch (err) {
     console.error("일괄 승인 실패", err)
     alert("일괄 승인 중 오류가 발생했습니다.")
@@ -171,8 +197,9 @@ async function onBadgeUpdate(row, key, newValue) {
     // row 에 userId 가 있어야 함 (없으면 매퍼쪽에서 내려줘야 함)
     await axios.patch(`/api/super/users/update/${row.userId}`, payload)
 
-    // 성공 시 UI 반영 (row는 reactive라 자동 반영됨)
+    // 성공 시 UI 반영
     row[key] = newValue
+    await fetchData()
 
     console.log(newValue, "업데이트 성공")
   } catch (err) {

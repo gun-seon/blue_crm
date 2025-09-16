@@ -46,18 +46,51 @@
         UPDATE users
         <set>
             <choose>
+                <!-- 소속 수정 -->
                 <when test="field == 'center'">
                     center_id = (SELECT center_id FROM centers WHERE center_name = #{value})
                 </when>
+                <!-- 요청상태 수정 -->
                 <when test="field == 'requestStatus'">
                     user_approved =
                     CASE
                     WHEN #{value} = '승인' THEN 'Y'
                     WHEN #{value} = '대기' THEN 'N'
+                    WHEN #{value} = '탈퇴' THEN 'X'
                     ELSE 'N'
                     END
                 </when>
+                <!-- 권한 수정 -->
                 <when test="field == 'type'">
+                    <!-- 센터 수정 규칙 -->
+                    center_id =
+                    CASE
+                    <!-- 관리자 → 본사 -->
+                    WHEN #{value} = '관리자'
+                    THEN 1
+                    WHEN #{value} IN ('센터장','담당자')
+                    AND user_role = 'SUPERADMIN' <!-- 업데이트 전 권한이 관리자라면 -->
+                    THEN NULL  <!-- 관리자 → 센터/담당자 → 소속 제거 -->
+                    ELSE center_id  <!-- 센터↔담당자 이동 → 소속 유지 -->
+                    END,
+
+                    <!-- 가시권한 규칙 -->
+                    manager_phone_access =
+                    CASE
+                    -- 관리자 → 센터장/담당자 → 가시권한 Y
+                    WHEN #{value} IN ('센터장','담당자')
+                    AND user_role = 'SUPERADMIN'
+                    THEN 'Y'
+
+                    -- 센터장/담당자 → 관리자 → 가시권한 N
+                    WHEN #{value} = '관리자'
+                    AND user_role IN ('MANAGER','STAFF')
+                    THEN 'N'
+
+                    ELSE manager_phone_access
+                    END,
+
+                    <!-- 권한 자체 변경 -->
                     user_role =
                     CASE
                     WHEN #{value} = '관리자' THEN 'SUPERADMIN'
@@ -69,5 +102,47 @@
         </set>
         WHERE user_id = #{userId}
     </update>
+
+    <!-- 직원관리 페이지에서 일괄 승인하는 경우  -->
+    <update id="approveUsers">
+        UPDATE users
+        SET user_approved = 'Y'
+        WHERE user_id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- ID로 다수 유저 검색 -->
+    <select id="findUsersByIds" parameterType="list" resultType="com.blue.user.dto.UserSelectDto">
+        SELECT u.user_id       AS userId,
+        u.user_name     AS userName,
+        u.user_phone    AS userPhone,
+        u.user_email    AS userEmail,
+        u.user_role     AS userRole,
+        u.user_approved AS userApproved,
+        c.center_name   AS centerName
+        FROM users u
+        LEFT JOIN centers c ON u.center_id = c.center_id
+        WHERE u.user_id IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <!-- ID로 단일 유저 검색 -->
+    <select id="findUserById" parameterType="long" resultType="com.blue.user.dto.UserSelectDto">
+        SELECT
+            u.user_id       AS userId,
+            u.user_name     AS userName,
+            u.user_phone    AS userPhone,
+            u.user_email    AS userEmail,
+            u.user_role     AS userRole,
+            u.user_approved AS userApproved,
+            c.center_name   AS centerName
+        FROM users u
+                 LEFT JOIN centers c ON u.center_id = c.center_id
+        WHERE u.user_id = #{userId}
+    </select>
 
 </mapper>

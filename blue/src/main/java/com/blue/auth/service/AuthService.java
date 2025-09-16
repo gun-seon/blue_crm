@@ -41,8 +41,14 @@ public class AuthService {
     // DB 조회
     UserDto user = authMapper.findByEmail(request.getEmail());
     
+    // 이메일/비밀번호 확인
     if (user == null || !passwordEncoder.matches(request.getPassword(), user.getUserPassword())) {
-      throw new RuntimeException("Invalid credentials");
+      throw new AuthException("아이디 또는 비밀번호가 올바르지 않습니다.", HttpStatus.UNAUTHORIZED);
+    }
+    
+    // 승인된 사용자만 로그인 허용
+    if (!"Y".equals(user.getUserApproved())) {
+      throw new AuthException("승인되지 않은 계정입니다.", HttpStatus.UNAUTHORIZED);
     }
     
     String accessToken = jwtUtil.generateAccessToken(user);
@@ -137,7 +143,10 @@ public class AuthService {
   public boolean checkRefreshToken(HttpServletRequest request) {
     if (request.getCookies() != null) {
       for (Cookie cookie : request.getCookies()) {
-        if ("refreshToken".equals(cookie.getName()) && cookie.getValue() != null && !cookie.getValue().isEmpty()) {
+        if ("refreshToken".equals(cookie.getName())
+            && "/api/auth/token".equals(cookie.getPath())
+            && cookie.getValue() != null
+            && !cookie.getValue().isEmpty()) {
           return true; // refreshToken 쿠키 존재
         }
       }
@@ -184,7 +193,15 @@ public class AuthService {
     user.setUserPhone(request.getPhone());
     user.setCenterId(null); // 센터ID는 가입승인시 설정
     user.setUserApproved("N"); // 회원가입 시 무조건 회원상태 미승인
-    user.setManagerPhoneAccess("N"); // 회원가입 시 무조건 열람권한 미승인
+    
+    // 권한에 따라 센터/가시권한 초기값 설정
+    if ("SUPERADMIN".equals(request.getRole())) {
+      user.setManagerPhoneAccess("N");
+      user.setCenterId(1L); // 본사
+    } else {
+      user.setManagerPhoneAccess("Y");
+      user.setCenterId(null); // 미할당
+    }
     
     authMapper.insertUser(user);
     
