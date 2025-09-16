@@ -154,10 +154,11 @@ export const useAuthStore = defineStore('auth', {
             if (!this.accessToken) {
                 try {
                     // 1. 쿠키 체크
-                    const checkRes = await axios.post('/api/auth/token/check', {}, { withCredentials: true })
-                    if (checkRes.status === 204) {
-                        this.clearUser()
-                        return false
+                    try {
+                        const res = await axios.post('/api/auth/token/check', {}, { withCredentials: true });
+                        if (res.status === 204) return false;      // 쿠키 없음
+                    } catch {
+                        return false;
                     }
 
                     // 2. 쿠키가 있으니 refresh 시도

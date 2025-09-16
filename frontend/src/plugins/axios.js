@@ -30,6 +30,22 @@ api.interceptors.response.use(
             return Promise.reject(err)
         }
 
+        // --- 차단/탈퇴 케이스 감지: X-Blocked 헤더 ---
+        const h = err.response?.headers;
+        const v = typeof h?.get === 'function' ? h.get('x-blocked') : (h?.['x-blocked'] ?? h?.['X-Blocked']);
+        if (String(v).toLowerCase() === 'true') {
+            alert("계정 탈퇴 됨")
+            await authStore.logout();
+            return Promise.reject(err);
+        }
+
+        // 403 → 강제로그아웃으로 권한이 없을 때
+        if (err.response?.status === 403) {
+            console.warn("403 Forbidden 응답:", err.response?.data)
+            // await authStore.logout()
+            return Promise.reject(err)
+        }
+
         if (err.response?.status === 401 && !err.config._retry) {
             if (!refreshPromise) {
                 refreshPromise = authStore.refreshToken().finally(() => {

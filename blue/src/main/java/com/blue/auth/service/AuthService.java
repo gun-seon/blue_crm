@@ -144,7 +144,6 @@ public class AuthService {
     if (request.getCookies() != null) {
       for (Cookie cookie : request.getCookies()) {
         if ("refreshToken".equals(cookie.getName())
-            && "/api/auth/token".equals(cookie.getPath())
             && cookie.getValue() != null
             && !cookie.getValue().isEmpty()) {
           return true; // refreshToken 쿠키 존재
