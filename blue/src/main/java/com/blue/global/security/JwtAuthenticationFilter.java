@@ -57,7 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     String token = header.substring(7);
     
     try {
-      Claims claims = jwtUtil.validateToken(token);
+      Claims claims = jwtUtil.validateAccessToken(token);
       String email = claims.getSubject();
       String role = claims.get("role", String.class);
       

@@ -12,13 +12,17 @@ import java.util.Date;
 @Component
 // 토큰 생성/검증 유틸
 public class JwtUtil {
-  private final String SECRET = "psnsSecretKeymySecretBluemySecretWhale20251005";
-  private final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+  private final JwtKeys jwtKeys;
+  
+  // 생성자 주입
+  public JwtUtil(JwtKeys jwtKeys) {
+    this.jwtKeys = jwtKeys;
+  }
   
   // 엑세스 토큰 발급
   public String generateAccessToken(UserDto user) {
     // 엑세스 토큰 활성화 시간
-    long ACCESS_TOKEN_EXPIRATION = 1000L * 5; // 15분
+    long ACCESS_TOKEN_EXPIRATION = 1000L * 60 * 15; // 15분
     
     return Jwts.builder()
         // 토큰에 추가하고 싶은 정보
@@ -28,14 +32,14 @@ public class JwtUtil {
         // 토큰 기본 정보
         .setIssuedAt(new Date())
         .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION))
-        .signWith(SECRET_KEY, SignatureAlgorithm.HS256)
+        .signWith(jwtKeys.accessKey(), SignatureAlgorithm.HS256)
         .compact();
   }
   
   // 리프레시 토큰 발급
   public String generateRefreshToken(UserDto user) {
     // 리프레시 토큰 활성화 시간
-    long REFRESH_TOKEN_EXPIRATION = 1000L * 30; // 12시간
+    long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 60 * 12; // 12시간
     
     return Jwts.builder()
         // 토큰에 추가하고 싶은 정보
@@ -45,14 +49,25 @@ public class JwtUtil {
         // 토큰 기본 정보
         .setIssuedAt(new Date())
         .setExpiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))
-        .signWith(SECRET_KEY, SignatureAlgorithm.HS256)
+        .signWith(jwtKeys.refreshKey(), SignatureAlgorithm.HS256)
         .compact();
   }
   
-  // 토큰 검증
-  public Claims validateToken(String token) {
+  // 엑세스 토큰 검증
+  public Claims validateAccessToken(String token) {
     return Jwts.parserBuilder()
-        .setSigningKey(SECRET_KEY)
+        .setSigningKey(jwtKeys.accessKey())
+        // 시간 오차 허용 (30초)
+        .setAllowedClockSkewSeconds(30)
+        .build()
+        .parseClaimsJws(token)
+        .getBody();
+  }
+  
+  // 리프레시 토큰 검증
+  public Claims validateRefreshToken(String token) {
+    return Jwts.parserBuilder()
+        .setSigningKey(jwtKeys.refreshKey())
         // 시간 오차 허용 (30초)
         .setAllowedClockSkewSeconds(30)
         .build()

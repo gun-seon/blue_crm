@@ -58,7 +58,7 @@ public class AuthService {
     addRefreshTokenCookie(response, refreshToken);
     
     // Refresh Token exp 추출
-    var claims = jwtUtil.validateToken(refreshToken);
+    var claims = jwtUtil.validateRefreshToken(refreshToken);
     long refreshExp = claims.getExpiration().getTime();
     
     return new AuthResponse(accessToken, null,
@@ -71,7 +71,7 @@ public class AuthService {
   // 엑세스 토큰의 재발급
   public AuthResponse refresh(String refreshToken) {
     try {
-      var claims = jwtUtil.validateToken(refreshToken);
+      var claims = jwtUtil.validateRefreshToken(refreshToken);
       
       // 과거 데이터 백업
       UserDto user = new UserDto();
@@ -103,7 +103,7 @@ public class AuthService {
   // 로그인 수동 연장 (리프레시 토큰의 재발급)
   public AuthResponse extend(String refreshToken, HttpServletResponse response) {
     try {
-      var claims = jwtUtil.validateToken(refreshToken);
+      var claims = jwtUtil.validateRefreshToken(refreshToken);
       
       // 과거 데이터 백업
       UserDto user = new UserDto();
@@ -119,7 +119,7 @@ public class AuthService {
       addRefreshTokenCookie(response, newRefreshToken);
       
       // 새 Refresh Token의 만료시간
-      var newClaims = jwtUtil.validateToken(newRefreshToken);
+      var newClaims = jwtUtil.validateRefreshToken(newRefreshToken);
       long refreshExp = newClaims.getExpiration().getTime();
       
       return new AuthResponse(newAccessToken, null,
