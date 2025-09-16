@@ -22,7 +22,7 @@
           </td>
 
           <!-- 동적 컬럼 -->
-          <td v-for="(col, colIndex) in columns" :key="colIndex" class="px-2 py-4s">
+          <td v-for="(col, colIndex) in columns" :key="colIndex" class="px-2 py-4">
             <!-- 생성일 컬럼 -->
             <span
                 v-if="col.key === 'createdAt'"
@@ -247,7 +247,7 @@ watch(
     async (state) => {
       if (!state) return
       const { row, col } = state
-      if (col !== "reservation" || row == null) return
+      if ((props.columns.find(c => c.key === col)?.type) !== "date" || row == null) return;
 
       await nextTick()
       const el = dateInputs.value && dateInputs.value[row]
@@ -293,20 +293,23 @@ watch(
             btn.className =
                 "absolute left-[75%] top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
 
-            btn.addEventListener("click", () => {
-              props.data[row][col] = ""
-              ins.clear() // flatpickr input 값 지움
-              emit("DateUpdate", props.data[row], col, "")
+            btn.addEventListener("mousedown", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
 
-              // 버튼도 제거
-              if (ins._clearButton) {
-                ins._clearButton.remove()
-                ins._clearButton = null
-              }
+              // 1) flatpickr 비우기
+              ins.clear();
 
-              // 수정 모드 종료
-              cancelEdit()
-            })
+              // 2) 셀 값 비우고 부모에 알림
+              props.data[row][col] = "";
+              emit("DateUpdate", props.data[row], col, "");
+
+              // 3) onClose에서 중복 반영 방지 플래그
+              ins._wasCleared = true;
+
+              // 4) 곧바로 닫기
+              ins.close();
+            });
 
             // input wrapper에 버튼 넣기
             el.parentNode.style.position = "relative"
@@ -315,11 +318,14 @@ watch(
           }
         },
         onClose: (dates, _str, ins) => {
-          const selected = dates[0]
-              ? ins.formatDate(dates[0], "n월 j일 H:i")
-              : ""
-          props.data[row][col] = selected
-          emit("DateUpdate", props.data[row], col, selected)
+          // X버튼으로 지웠다면 빈 문자열, 아니면 input의 현재 값을 그대로 반영
+          const value = ins._wasCleared ? "" : ((ins.input?.value || "").trim());
+          ins._wasCleared = false;
+
+          props.data[row][col] = value;
+          emit("DateUpdate", props.data[row], col, value);
+
+          // 편집 모드 종료
           cancelEdit()
 
           // X 버튼 정리
@@ -345,7 +351,8 @@ function onDocMouseDown(e) {
       t?.closest?.(".flatpickr-calendar") ||
       t?.closest?.("input.flatpickr-input") ||
       t?.closest?.("select") ||
-      t?.closest?.(".editable-badge")
+      t?.closest?.(".editable-badge") ||
+      t?.closest?.(".fp-clear-btn")
   ) return
   cancelEdit()
 }
