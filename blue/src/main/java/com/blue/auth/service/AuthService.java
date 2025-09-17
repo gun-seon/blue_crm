@@ -206,4 +206,21 @@ public class AuthService {
     
     return new SignupResponse("회원가입이 완료되었습니다. 관리자의 승인을 기다려주세요.");
   }
+  
+  // 비밀번호 재설정
+  public void resetPassword(PasswordResetRequest req) {
+    UserDto user = authMapper.findByEmail(req.getEmail());
+    if (user == null) {
+      throw new AuthException("가입된 이메일이 아닙니다.", HttpStatus.NOT_FOUND);
+    }
+    
+    // 승인 Y / 대기 N / 탈퇴 X
+    if ("X".equals(user.getUserApproved())) {
+      throw new AuthException("계정이 비활성화되어 변경할 수 없습니다.", HttpStatus.GONE);
+    }
+    
+    // 비밀번호 암호화 후 저장
+    String encoded = passwordEncoder.encode(req.getNewPassword());
+    authMapper.updatePassword(user.getUserId(), encoded);
+  }
 }

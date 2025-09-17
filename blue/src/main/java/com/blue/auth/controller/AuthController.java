@@ -1,9 +1,6 @@
 package com.blue.auth.controller;
 
-import com.blue.auth.dto.AuthResponse;
-import com.blue.auth.dto.LoginRequest;
-import com.blue.auth.dto.SignupRequest;
-import com.blue.auth.dto.SignupResponse;
+import com.blue.auth.dto.*;
 import com.blue.auth.service.AuthService;
 import com.blue.global.exception.AuthException;
 import jakarta.servlet.http.Cookie;
@@ -95,5 +92,16 @@ public class AuthController {
   @PostMapping("/signup")
   public ResponseEntity<SignupResponse> signup(@RequestBody SignupRequest request) {
     return ResponseEntity.ok(authService.signup(request));
+  }
+  
+  // 비밀번호 재설정
+  @PostMapping("/password/reset")
+  public ResponseEntity<?> resetPassword(@RequestBody PasswordResetRequest req) {
+    try {
+      authService.resetPassword(req);
+      return ResponseEntity.ok().build();
+    } catch (AuthException e) {
+      return ResponseEntity.status(e.getStatus()).body(e.getMessage());
+    }
   }
 }

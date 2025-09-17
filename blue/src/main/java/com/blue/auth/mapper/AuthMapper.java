@@ -13,4 +13,8 @@ public interface AuthMapper {
   
   // 회원가입 (미승인 회원 추가)
   void insertUser(UserDto user);
+  
+  // 비밀번호 업데이트
+  void updatePassword(@Param("id") Long id,
+                      @Param("password") String encodedPassword);
 }

@@ -51,4 +51,11 @@
         )
     </insert>
 
+    <!-- 비밀번호 업데이트 -->
+    <update id="updatePassword">
+        UPDATE users
+        SET user_password = #{password}
+        WHERE user_id = #{id}
+    </update>
+
 </mapper>
