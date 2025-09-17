@@ -9,6 +9,12 @@ export default [
         component: () => import('@/views/Dashboard.vue'),
         meta: { requiresAuth: true, role: ['SUPERADMIN','MANAGER','STAFF'] }
     },
+    // 내정보 수정
+    {
+        path: '/profile',
+        component: () => import('@/views/Pages/MyInfo.vue'),
+        meta: { requiresAuth: true, role: ['SUPERADMIN','MANAGER','STAFF'] }
+    },
     // DB분배
     {
         path: '/db/allocate',
