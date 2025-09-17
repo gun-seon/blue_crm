@@ -3,56 +3,51 @@
     <PageBreadcrumb :pageTitle="currentPageTitle" />
     <div class="grid grid-cols-12 gap-4 min-w-0">
       <div class="col-span-12 space-y-6 min-w-0">
-        <!-- MANAGER / STAFF 전용 테이블 -->
-        <ComponentCard
-            :buttons="['상태별 보기']"
-            v-if="role === 'MANAGER' || role === 'STAFF'"
-        >
-          <PsnsTable
-              :columns="commonColumns"
-              :data="commonCustomers"
-              :showCheckbox="true"
-              :page="commonPage"
-              :totalPages="commonTotalPages"
-              @rowSelect="onCommonRowSelect"
-              @badgeUpdate="onCommonBadgeUpdate"
-              @DateUpdate="onCommonDateUpdate"
-              @buttonClick="onCommonButtonClick"
-              @changePage="onCommonPageChange"
-          />
-        </ComponentCard>
 
-        <!-- SUPERADMIN 전용 테이블 -->
+        <!-- SUPERADMIN (본사) -->
         <ComponentCard
+            v-if="role === 'SUPERADMIN'"
             :selects="[ ['최초', '중복', '유효'] ]"
             :buttons="['상태별 보기', '구분별 보기']"
-            v-if="role === 'SUPERADMIN'"
+            @changeSize="setSize"
+            @selectChange="onDivisionSelect"
+            @buttonClick="onAdminButtonClick"
         >
           <PsnsTable
               :columns="adminColumns"
-              :data="adminCustomers"
+              :data="items"
               :showCheckbox="true"
-              :page="adminPage"
-              :totalPages="adminTotalPages"
-              @rowSelect="onAdminRowSelect"
-              @badgeUpdate="onAdminBadgeUpdate"
-              @DateUpdate="onAdminDateUpdate"
-              @buttonClick="onAdminButtonClick"
-              @changePage="onAdminPageChange"
+              :page="page"
+              :totalPages="totalPages"
+              @rowSelect="onRowSelect"
+              @badgeUpdate="onBadgeUpdate"
+              @DateUpdate="onDateUpdate"
+              @changePage="changePage"
           />
         </ComponentCard>
+
+        <!-- MANAGER / STAFF -->
+        <ComponentCard
+            v-else
+            :buttons="['상태별 보기']"
+            @changeSize="setSize"
+            @buttonClick="onCommonButtonClick"
+        >
+          <PsnsTable
+              :columns="commonColumns"
+              :data="items"
+              :showCheckbox="true"
+              :page="page"
+              :totalPages="totalPages"
+              @rowSelect="onRowSelect"
+              @badgeUpdate="onBadgeUpdate"
+              @DateUpdate="onDateUpdate"
+              @changePage="changePage"
+          />
+        </ComponentCard>
+
       </div>
     </div>
-
-    <!-- 메모 모달 -->
-    <Memo
-        v-if="isMemoOpen"
-        :row="selectedRow"
-        fullScreenBackdrop
-        @close="isMemoOpen = false"
-    >
-    </Memo>
-
   </AdminLayout>
 </template>
 
@@ -62,24 +57,62 @@ import PageBreadcrumb from "@/components/common/PageBreadcrumb.vue";
 import AdminLayout from "@/components/layout/AdminLayout.vue";
 import ComponentCard from "@/components/common/ComponentCard.vue";
 import PsnsTable from "@/components/tables/basic-tables/PsnsTable.vue";
-import Memo from "@/components/ui/MEMO.vue";
-import { EyeIcon } from '@heroicons/vue/24/outline'
-import {useAuthStore} from "@/stores/auth.js";
+import { EyeIcon } from "@heroicons/vue/24/outline";
+import { useAuthStore } from "@/stores/auth.js";
+import { useTableQuery } from "@/composables/useTableQuery.js";
+import { globalFilters } from "@/composables/globalFilters.js";
+import axios from "@/plugins/axios.js"
 
-const auth = useAuthStore()
+const auth = useAuthStore();
+const role = auth.role;
 
-// 예시: 로그인된 사용자 권한
-const role = auth.role
-
-const currentPageTitle = ref("전체 고객DB관리")
+const currentPageTitle = ref("전체 고객DB관리");
 
 /* =============================
-   MANAGER / STAFF 전용 변수
+   공통 useTableQuery
 ============================= */
-const commonPage = ref(1)
-const commonTotalPages = ref(50)
+const {
+  items,
+  page,
+  size,
+  totalPages,
+  fetchData,
+  changePage,
+  setSize,
+  setFilter
+} = useTableQuery({
+  url: "/api/super/db", // 공통 API
+  pageSize: 10,
+  externalFilters: globalFilters,
+  useExternalKeys: { from: "dateFrom", to: "dateTo", category: "category", keyword: "keyword" },
+  mapper: (res) => ({
+    items: res.data.items,
+    totalPages: res.data.totalPages,
+    totalCount: res.data.totalCount
+  })
+});
 
-const commonColumns = ref([
+/* =============================
+   SUPERADMIN 전용 컬럼
+============================= */
+const adminColumns = [
+  { key: "createdAt", label: "DB생성일", type: "text" },
+  { key: "staff", label: "담당자", type: "text" },
+  { key: "division", label: "구분", type: "badge", options: ["최초", "중복", "유효"] },
+  { key: "category", label: "카테고리", type: "badge", options: ["주식", "코인"] },
+  { key: "name", label: "이름", type: "text" },
+  { key: "phone", label: "전화번호", type: "text" },
+  { key: "source", label: "출처", type: "text" },
+  { key: "content", label: "내용", type: "text", ellipsis: { width: 150 } },
+  { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon },
+  { key: "status", label: "상태", type: "badge", editable: true, options: ["부재1","부재2","부재3","부재4","부재5","재콜","가망","완료","거절"] },
+  { key: "reservation", label: "예약", type: "date" }
+];
+
+/* =============================
+   MANAGER / STAFF 전용 컬럼
+============================= */
+const commonColumns = [
   { key: "createdAt", label: "DB생성일", type: "text" },
   { key: "staff", label: "담당자", type: "text" },
   { key: "category", label: "카테고리", type: "badge", options: ["주식", "코인"] },
@@ -88,81 +121,54 @@ const commonColumns = ref([
   { key: "source", label: "고객접속경로", type: "text" },
   { key: "content", label: "내용", type: "text", ellipsis: { width: 100 } },
   { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon },
-  { key: "status", label: "상태", type: "badge", editable: true, options: ["부재1", "부재2", "부재3", "부재4", "부재5", "재콜", "가망", "완료", "거절"] },
+  { key: "status", label: "상태", type: "badge", editable: true, options: ["부재1","부재2","부재3","부재4","부재5","재콜","가망","완료","거절"] },
   { key: "reservation", label: "예약", type: "date" }
-])
-
-const commonCustomers = ref([
-  { createdAt: "2025-09-12", staff: "김민수 / 010-1234-5678", category: "주식", name: "박지영", phone: "010-1111-2222", source: "XXX", status: "부재1", reservation: "", content: "첫 상담 예약 완료" },
-  { createdAt: "2025-09-10", staff: "이은지 / 010-9876-5432", category: "코인", name: "최현우", phone: "010-3333-4444", source: "OOO", status: "신규", reservation: "2025-09-12", content: "2개월간 미접속" }
-])
-
-function onCommonRowSelect(row, e) { console.log("Row selected:", row, e.target.checked) }
-function onCommonBadgeUpdate(row, key, newValue) { console.log("Badge updated:", row, key, newValue) }
-function onCommonDateUpdate(row, key, newValue) { console.log("Date updated:", row, key, newValue) }
-function onCommonPageChange(newPage) { commonPage.value = newPage }
+];
 
 /* =============================
-   SUPERADMIN 전용 변수
+   이벤트 핸들러
 ============================= */
-const adminPage = ref(1)
-const adminTotalPages = ref(50)
+function onRowSelect(rows) {
+  console.log("선택 행:", rows);
+}
 
-const adminColumns = ref([
-  { key: "createdAt", label: "DB생성일", type: "text" },
-  { key: "staff", label: "담당자", type: "text" },
-  { key: "division", label: "구분", type: "badge", options: ["최초", "중복", "유효"] }, // 추가된 컬럼
-  { key: "category", label: "카테고리", type: "badge", options: ["주식", "코인"] },
-  { key: "name", label: "이름", type: "text" },
-  { key: "phone", label: "전화번호", type: "text" },
-  { key: "source", label: "출처", type: "text" },
-  { key: "content", label: "내용", type: "text", ellipsis: { width: 150 } },
-  { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon },
-  { key: "status", label: "상태", type: "badge", editable: true, options: ["부재1", "부재2", "부재3", "부재4", "부재5", "재콜", "가망", "완료", "거절"] },
-  { key: "reservation", label: "예약", type: "date" }
-])
+function onBadgeUpdate(row, key, newValue) {
+  console.log("배지 수정:", row, key, newValue);
+}
 
-const adminCustomers = ref([
-  { createdAt: "2025-09-12 09:30", staff: "홍길동 / 010-1234-5678", category: "주식", division: "최초", name: "김영희", phone: "010-2222-3333", status: "부재1", reservation: "" , source: "APP", content: "계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료" },
-  { createdAt: "2025-09-11 14:20", staff: "이철수 / 010-9876-5432", category: "코인", division: "중복", name: "이민호", phone: "010-4444-5555", status: "부재2", reservation: "" , source: "WEB", content: "상담 거절" },
-  { createdAt: "2025-09-12 10:15", staff: "홍길동 / 010-1234-5678", category: "주식", division: "유효", name: "김영희", phone: "010-2222-3333", status: "재콜", reservation: "9월 12일 3:30" , source: "APP", content: "계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료" },
-  { createdAt: "2025-09-11 16:50", staff: "이철수 / 010-9876-5432", category: "코인", division: "중복", name: "이민호", phone: "010-4444-5555", status: "신규", reservation: "" , source: "WEB", content: "상담 거절" },
-  { createdAt: "2025-09-12 11:40", staff: "홍길동 / 010-1234-5678", category: "주식", division: "유효", name: "김영희", phone: "010-2222-3333", status: "가망", reservation: "" , source: "APP", content: "계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료" },
-  { createdAt: "2025-09-11 13:10", staff: "이철수 / 010-9876-5432", category: "코인", division: "중복", name: "이민호", phone: "010-4444-5555", status: "완료", reservation: "" , source: "WEB", content: "상담 거절" },
-  { createdAt: "2025-09-12 15:00", staff: "홍길동 / 010-1234-5678", category: "주식", division: "유효", name: "김영희", phone: "010-2222-3333", status: "거절", reservation: "" , source: "APP", content: "계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료" },
-  { createdAt: "2025-09-11 17:25", staff: "이철수 / 010-9876-5432", category: "코인", division: "중복", name: "이민호", phone: "010-4444-5555", status: "완료", reservation: "" , source: "WEB", content: "상담 거절" },
-  { createdAt: "2025-09-12 18:45", staff: "홍길동 / 010-1234-5678", category: "주식", division: "유효", name: "김영희", phone: "010-2222-3333", status: "완료", reservation: "" , source: "APP", content: "계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료" },
-  { createdAt: "2025-09-11 20:05", staff: "이철수 / 010-9876-5432", category: "코인", division: "중복", name: "이민호", phone: "010-4444-5555", status: "완료", reservation: "" , source: "WEB", content: "상담 거절" }
-])
-
-function onAdminRowSelect(row, e) { console.log("Row selected:", row, e.target.checked) }
-function onAdminBadgeUpdate(row, key, newValue) { console.log("Badge updated:", row, key, newValue) }
-function onAdminDateUpdate(row, key, newValue) { console.log("Date updated:", row, key, newValue) }
-function onAdminPageChange(newPage) { adminPage.value = newPage }
-
-/* =============================
-   메모 모달 전용 변수
-============================= */
-
-const isMemoOpen = ref(false)
-const selectedRow = ref(null)
-const memoText = ref("")
-
-function onCommonButtonClick(row, key) {
-  if (key === "memo") {
-    selectedRow.value = row
-    isMemoOpen.value = true
-  } else {
-    console.log("공용 버튼:", key, row)
+async function onDateUpdate(row, key, newValue) {
+  try {
+    await axios.patch(`/api/super/db/all/update/${row.id}`, {
+      field: key,       // "reservation"
+      value: newValue   // 날짜 값
+    })
+    console.log("예약일 저장 성공:", row.name, newValue)
+  } catch (err) {
+    console.error("예약일 저장 실패", err)
+    alert("예약일 저장 중 오류가 발생했습니다.")
   }
 }
 
-function onAdminButtonClick(row, key) {
-  if (key === "memo") {
-    selectedRow.value = row
-    isMemoOpen.value = true
-  } else {
-    console.log("관리자 버튼:", key, row)
+function onDivisionSelect({ idx, value }) {
+  console.log("구분 필터 선택:", value);
+  setFilter("division", value);
+  fetchData();
+}
+
+function onAdminButtonClick(btn) {
+  if (btn === "상태별 보기") {
+    setFilter("sort", "status");
+  }
+  if (btn === "구분별 보기") {
+    setFilter("sort", "division");
+  }
+  fetchData();
+}
+
+function onCommonButtonClick(btn) {
+  if (btn === "상태별 보기") {
+    setFilter("sort", "status");
+    fetchData();
   }
 }
 </script>

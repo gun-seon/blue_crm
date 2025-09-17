@@ -47,6 +47,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       return;
     }
     
+    // 프런트에서 읽을 커스텀 헤더 노출 (CORS)
+    response.addHeader("Access-Control-Expose-Headers", "WWW-Authenticate, X-Token-Expired, X-Blocked");
+    
     // Authorization 헤더 추출
     String header = request.getHeader("Authorization");
     if (header == null || !header.startsWith("Bearer ")) {
@@ -60,6 +63,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       Claims claims = jwtUtil.validateAccessToken(token);
       String email = claims.getSubject();
       String role = claims.get("role", String.class);
+      
+      // 검증 성공: 어떤 요청(URI) 때문에 검증됐는지 + 쓰레드명 로깅
+      log.info("엑세스 토큰 검증 -> {} ({})",
+          request.getRequestURI(), Thread.currentThread().getName());
       
       if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
         
@@ -86,14 +93,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       }
       
     } catch (ExpiredJwtException e) {
-      // 엑세스 토큰 만료는 정상 동작
-      log.info("Access token expired at {}", e.getClaims().getExpiration());
-      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Access token expired");
+      // 만료 위치/쓰레드까지 함께
+      log.info("엑세스 토큰 만료 -> {} ({}) exp={}",
+          request.getRequestURI(), Thread.currentThread().getName(), e.getClaims().getExpiration());
+      
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
+      response.setHeader("WWW-Authenticate", "Bearer error=\"invalid_token\", error_description=\"The access token expired\"");
+      response.setHeader("X-Token-Expired", "1"); // 프런트에서 만료 케이스 식별용 (옵션)
+      response.flushBuffer();
       return;
     } catch (JwtException e) {
       // JWT 관련 나머지 예외
-      log.warn("Invalid JWT: {}", e.getMessage());
-      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
+      response.setHeader("WWW-Authenticate",
+          "Bearer error=\"invalid_token\", error_description=\"Invalid access token\"");
+      response.setHeader("X-Token-Expired", "0");
+      response.flushBuffer();
       return;
     }
     

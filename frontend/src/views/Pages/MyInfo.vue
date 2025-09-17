@@ -3,8 +3,8 @@
     <PageBreadcrumb pageTitle="내 정보 수정" />
 
     <div
-        class="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5
-             dark:border-gray-800 dark:bg-white/[0.03] lg:p-6"
+        class="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-0
+             dark:border-gray-800 dark:bg-white/[0.03] "
     >
       <!-- 가운데 정렬 컨테이너 -->
       <div class="relative z-10 mx-auto w-full max-w-2xl">
@@ -25,7 +25,7 @@
         </div>
 
         <!-- 헤더 -->
-        <div class="min-w-0 pt-2">
+        <div class="min-w-0 pt-5 lg:pt-6">
           <h2 class="truncate text-xl font-semibold text-gray-800 dark:text-white/90">
             {{ name || '사용자' }}
           </h2>
@@ -91,7 +91,9 @@
                   v-model="currentPassword"
                   :type="showCurrentPw ? 'text' : 'password'"
                   placeholder="현재 비밀번호"
-                  class="h-11 w-full rounded-lg border px-3 ..."
+                  class="h-11 w-full rounded-lg border px-3
+                         bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                         dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
               />
               <span
                   @click="toggleCurrentPwVisibility"
@@ -108,7 +110,9 @@
                   v-model="newPassword"
                   :type="showNewPw ? 'text' : 'password'"
                   placeholder="새 비밀번호 (6자 이상)"
-                  class="h-11 w-full rounded-lg border px-3 ..."
+                  class="h-11 w-full rounded-lg border px-3
+                         bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                         dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
               />
               <span
                   @click="togglePasswordVisibility"
@@ -125,7 +129,9 @@
                   v-model="newPassword2"
                   :type="showNewPw2 ? 'text' : 'password'"
                   placeholder="새 비밀번호 확인"
-                  class="h-11 w-full rounded-lg border px-3 ..."
+                  class="h-11 w-full rounded-lg border px-3
+                         bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                         dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
               />
               <span
                   @click="togglePassword2Visibility"
@@ -266,7 +272,7 @@ const isSuperEmail = ref(false)
 async function loadMe() {
   try {
     const { data } = await axios.get('/api/me', { withCredentials: true })
-    console.debug('[MyInfo] /api/me raw:', data)
+    // console.debug('[MyInfo] /api/me raw:', data)
 
     name.value  = data.userName
     email.value = data.userEmail
@@ -283,7 +289,7 @@ async function loadMe() {
 
     phoneInput.value = phone.value || ''
   } catch (e) {
-    console.error('[MyInfo] /api/me error:', e?.response?.status, e?.response?.data || e)
+    // console.error('[MyInfo] /api/me error:', e?.response?.status, e?.response?.data || e)
     // alert('프로필을 불러오지 못했습니다.')
   }
 }

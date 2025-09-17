@@ -2,11 +2,8 @@ package com.blue.global.security;
 
 import com.blue.auth.dto.UserDto;
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
@@ -21,6 +18,7 @@ public class JwtUtil {
   
   // 엑세스 토큰 발급
   public String generateAccessToken(UserDto user) {
+//    System.out.println("엑세스 토큰 발급");
     // 엑세스 토큰 활성화 시간
     long ACCESS_TOKEN_EXPIRATION = 1000L * 60 * 15; // 15분
     
@@ -38,6 +36,7 @@ public class JwtUtil {
   
   // 리프레시 토큰 발급
   public String generateRefreshToken(UserDto user) {
+//    System.out.println("리프레시 토큰 발급");
     // 리프레시 토큰 활성화 시간
     long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 60 * 12; // 12시간
     
@@ -55,6 +54,7 @@ public class JwtUtil {
   
   // 엑세스 토큰 검증
   public Claims validateAccessToken(String token) {
+//    System.out.println("엑세스 토큰 검증");
     return Jwts.parserBuilder()
         .setSigningKey(jwtKeys.accessKey())
         // 시간 오차 허용 (30초)
@@ -66,6 +66,7 @@ public class JwtUtil {
   
   // 리프레시 토큰 검증
   public Claims validateRefreshToken(String token) {
+//    System.out.println("리프레시 토큰 검증");
     return Jwts.parserBuilder()
         .setSigningKey(jwtKeys.refreshKey())
         // 시간 오차 허용 (30초)

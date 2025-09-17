@@ -15,7 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.beans.factory.annotation.Value;
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -24,12 +24,16 @@ public class AuthService {
   private final PasswordEncoder passwordEncoder;
   private final JwtUtil jwtUtil;
   
+  // 운영과 개발 구분
+  @Value("${jwt.cookie.secure:false}")
+  private boolean cookieSecure;
+  
   // 공통 메소드 : login, extend
   // 리프레시 쿠키 설정 메서드
   private void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
     Cookie cookie = new Cookie("refreshToken", refreshToken);
     cookie.setHttpOnly(true);
-    cookie.setSecure(true);
+    cookie.setSecure(cookieSecure);
     cookie.setPath("/api/auth/token");
     // 브라우저 창 닫아도 쿠키 유지 : 20분(리프레시 토큰 유지시간)
     // cookie.setMaxAge(60 * 20);
@@ -160,7 +164,7 @@ public class AuthService {
     cookie.setMaxAge(0); // 즉시 만료
     cookie.setPath("/api/auth/token");
     cookie.setHttpOnly(true);
-    cookie.setSecure(true);
+    cookie.setSecure(cookieSecure);
     response.addCookie(cookie);
   }
   
