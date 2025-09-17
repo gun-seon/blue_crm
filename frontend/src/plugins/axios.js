@@ -39,26 +39,47 @@ api.interceptors.response.use(
             return Promise.reject(err);
         }
 
-        // 403 → 강제로그아웃으로 권한이 없을 때
-        if (err.response?.status === 403) {
-            console.warn("403 Forbidden 응답:", err.response?.data)
-            // await authStore.logout()
-            return Promise.reject(err)
-        }
+        // 과거 코드 (엑세스 토큰 갱신이 안되는 문제가 잇었음)
+        // // 403 → 강제로그아웃으로 권한이 없을 때
+        // if (err.response?.status === 403) {
+        //     console.warn("403 Forbidden 응답:", err.response?.data)
+        //     // await authStore.logout()
+        //     return Promise.reject(err)
+        // }
 
-        if (err.response?.status === 401 && !err.config._retry) {
+        // 🔑 401 또는 403 → refresh 시도
+        if ((err.response?.status === 401 || err.response?.status === 403) && authStore.accessToken) {
             if (!refreshPromise) {
                 refreshPromise = authStore.refreshToken().finally(() => {
-                    refreshPromise = null
-                })
+                    refreshPromise = null;
+                });
             }
-            const ok = await refreshPromise
-            if (ok) {
-                err.config._retry = true
-                err.config.headers['Authorization'] = `Bearer ${authStore.accessToken}`
-                return api.request(err.config)
+
+            try {
+                await refreshPromise;
+                // 원래 요청 다시 시도
+                err.config.headers["Authorization"] = `Bearer ${authStore.accessToken}`;
+                return api(err.config);
+            } catch (refreshErr) {
+                await authStore.logout();
+                return Promise.reject(refreshErr);
             }
         }
+
+        // 과거 코드 (엑세스 토큰 갱신이 안되는 문제가 잇었음)
+        // if (err.response?.status === 401 && !err.config._retry) {
+        //     if (!refreshPromise) {
+        //         refreshPromise = authStore.refreshToken().finally(() => {
+        //             refreshPromise = null
+        //         })
+        //     }
+        //     const ok = await refreshPromise
+        //     if (ok) {
+        //         err.config._retry = true
+        //         err.config.headers['Authorization'] = `Bearer ${authStore.accessToken}`
+        //         return api.request(err.config)
+        //     }
+        // }
 
         return Promise.reject(err)
     }
