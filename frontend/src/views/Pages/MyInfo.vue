@@ -85,46 +85,55 @@
           <h3 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">비밀번호 변경</h3>
 
           <div class="space-y-3">
-            <div>
+            <!-- 현재 비밀번호 -->
+            <div class="relative">
               <input
                   v-model="currentPassword"
-                  :disabled="changingPw"
-                  type="password"
+                  :type="showCurrentPw ? 'text' : 'password'"
                   placeholder="현재 비밀번호"
-                  @blur="validateCurrentPassword"
-                  class="h-11 w-full rounded-lg border px-3
-                         bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-                         dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                  class="h-11 w-full rounded-lg border px-3 ..."
               />
-              <p v-if="currentPwError" class="mt-1 text-sm text-error-500">{{ currentPwError }}</p>
+              <span
+                  @click="toggleCurrentPwVisibility"
+                  class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
+              >
+                <EyeIcon v-if="showCurrentPw" class="w-5 h-5 text-gray-500 dark:text-gray-400"/>
+                <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400"/>
+              </span>
             </div>
 
-            <div>
+            <!-- 새 비밀번호 -->
+            <div class="relative">
               <input
                   v-model="newPassword"
-                  :disabled="changingPw"
-                  type="password"
+                  :type="showNewPw ? 'text' : 'password'"
                   placeholder="새 비밀번호 (6자 이상)"
-                  @blur="validateNewPassword"
-                  class="h-11 w-full rounded-lg border px-3
-                         bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-                         dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                  class="h-11 w-full rounded-lg border px-3 ..."
               />
-              <p v-if="newPwError" class="mt-1 text-sm text-error-500">{{ newPwError }}</p>
+              <span
+                  @click="togglePasswordVisibility"
+                  class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
+              >
+                <EyeIcon v-if="showNewPw" class="w-5 h-5 text-gray-500 dark:text-gray-400"/>
+                <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400"/>
+              </span>
             </div>
 
-            <div>
+            <!-- 새 비밀번호 확인 -->
+            <div class="relative">
               <input
                   v-model="newPassword2"
-                  :disabled="changingPw"
-                  type="password"
+                  :type="showNewPw2 ? 'text' : 'password'"
                   placeholder="새 비밀번호 확인"
-                  @blur="validateNewPasswordConfirm"
-                  class="h-11 w-full rounded-lg border px-3
-                         bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-                         dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                  class="h-11 w-full rounded-lg border px-3 ..."
               />
-              <p v-if="newPw2Error" class="mt-1 text-sm text-error-500">{{ newPw2Error }}</p>
+              <span
+                  @click="togglePassword2Visibility"
+                  class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
+              >
+                <EyeIcon v-if="showNewPw2" class="w-5 h-5 text-gray-500 dark:text-gray-400"/>
+                <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400"/>
+              </span>
             </div>
 
             <div class="flex justify-end gap-2 pt-1">
@@ -226,6 +235,7 @@ import { ref, onMounted, watch } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import CommonGridShape from '@/components/common/CommonGridShape.vue'
+import { EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline'
 import axios from '@/plugins/axios.js'
 
 const email = ref('')
@@ -282,11 +292,6 @@ onMounted(loadMe)
 /** 전화번호 입력: 항상 010-xxxx-xxxx 형식으로 자동 포맷 */
 const formatPhoneInput = () => {
   let digits = (phoneInput.value || '').replace(/\D/g, '')
-  // 010 강제 시작
-  if (!digits.startsWith('010')) digits = '010' + digits.slice(3)
-  // 최대 11자리로 자르기
-  digits = digits.slice(0, 11)
-
   if (digits.length <= 3) phoneInput.value = digits
   else if (digits.length <= 7) phoneInput.value = `${digits.slice(0,3)}-${digits.slice(3)}`
   else phoneInput.value = `${digits.slice(0,3)}-${digits.slice(3,7)}-${digits.slice(7,11)}`
@@ -321,6 +326,15 @@ async function savePhone() {
     savingPhone.value = false
   }
 }
+
+/** 비밀번호 보기 아이콘 토글 */
+const showCurrentPw = ref(false)
+const showNewPw = ref(false)
+const showNewPw2 = ref(false)
+
+const toggleCurrentPwVisibility = () => { showCurrentPw.value = !showCurrentPw.value }
+const togglePasswordVisibility   = () => { showNewPw.value = !showNewPw.value }
+const togglePassword2Visibility  = () => { showNewPw2.value = !showNewPw2.value }
 
 /** 비밀번호 폼 리셋 */
 function resetPwForm() {
