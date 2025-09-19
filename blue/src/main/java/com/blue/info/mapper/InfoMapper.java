@@ -12,10 +12,6 @@ public interface InfoMapper {
   UserRow findByEmail(@Param("email") String email);
   UserRow findById(@Param("userId") Long userId);
   
-  int updateUserRole(@Param("userId") Long userId, @Param("role") String role);
-  int updateUserCenter(@Param("userId") Long userId, @Param("centerId") Long centerId);
-  int updateUserApproved(@Param("userId") Long userId, @Param("approved") String approved);
-  
   // 추가: 이름/전화
   int updateUserName(@Param("userId") Long userId, @Param("name") String name);
   int updateUserPhone(@Param("userId") Long userId, @Param("phone") String phone);
