@@ -18,7 +18,9 @@
         <tr v-for="(row, rowIndex) in data" :key="rowIndex" class="border-t border-gray-100 dark:border-gray-800">
           <!-- 체크박스 -->
           <td v-if="showCheckbox" class="px-5 py-4 sm:px-6">
-            <input type="checkbox" :checked="selectedRows.includes(rowIndex)" @change="toggleRow(rowIndex)" />
+            <input type="checkbox"
+                   :checked="selectedRows.includes(rowIndex)" @change="toggleRow(rowIndex)"
+                   :disabled="rowSelectable ? !rowSelectable(row) : false"/>
           </td>
 
           <!-- 동적 컬럼 -->
@@ -73,7 +75,12 @@
             <!-- 아이콘 버튼 -->
             <button
                 v-else-if="col.type === 'iconButton'"
-                class="p-2 text-gray-500 hover:text-blue-600 transition"
+                class="p-2 transition rounded-md
+                     text-gray-500 hover:text-blue-600
+                     disabled:text-gray-400 disabled:hover:text-gray-300
+                     disabled:opacity-50 disabled:cursor-not-allowed
+                     disabled:pointer-events-none"
+                :disabled="col.disabled && col.disabled(row)"
                 @click="$emit('buttonClick', row, col.key)"
             >
               <component :is="col.icon" class="w-5 h-5" />
@@ -164,7 +171,8 @@ const props = defineProps({
   data: { type: Array, required: true },
   showCheckbox: { type: Boolean, default: false },
   page: { type: Number, default: 1 },
-  totalPages: { type: Number, default: 1 }
+  totalPages: { type: Number, default: 1 },
+  rowSelectable: { type: Function, default: null }
 })
 const emit = defineEmits(["rowSelect", "badgeUpdate", "buttonClick", "changePage", "DateUpdate"])
 
@@ -266,16 +274,26 @@ watch(
         locale: Korean,
         allowInput: true,
         defaultDate: props.data[row][col] || null,
+
         // 실시간 반영
         onReady: (_d, _str, ins) => {
           ins.open()
 
-          // 커밋 로직
+          // ====== 1) 시간 인풋 실시간 커밋 유지 ======
           if (!ins._commitAttached) {
             const commit = () => {
               const hh = String(parseInt(ins.hourElement?.value || 0, 10)).padStart(2, "0")
               const mm = String(parseInt(ins.minuteElement?.value || 0, 10)).padStart(2, "0")
-              const base = ins.selectedDates[0] || new Date()
+
+              let base = ins.selectedDates[0]
+              // 만약 clear 후라서 날짜가 없다면 → 오늘 날짜 기준으로
+              if (!base) {
+                base = new Date()
+                // 날짜만 오늘로 잡고, 선택 배열에도 넣어줌
+                ins.selectedDates = [base]
+              }
+
+              // const base = ins.selectedDates[0] || new Date()
               const ymd  = ins.formatDate(base, "n월 j일")
               const val  = `${ymd} ${hh}:${mm}`
               ins.setDate(val, false, "n월 j일 H:i")   // 값만 업데이트 → emit은 onValueUpdate가 담당
@@ -285,11 +303,46 @@ watch(
             ins._commitAttached = true
           }
 
-          // X 버튼 추가
+          // ====== 2) 달력 팝업 내부 X ======
+          if (!ins._popupClearBtn) {
+            const btn = document.createElement("button")
+            btn.type = "button"
+            btn.textContent = "✕"
+            btn.title = "입력값 지우기"
+            btn.className =
+                "fp-clear-btn absolute top-1 right-1 w-6 h-6 flex items-center justify-center " +
+                "text-xs text-gray-500 hover:text-gray-700 rounded z-50";
+
+            btn.addEventListener("mousedown", (e) => {
+              // 팝업 닫히는 버블링 방지
+              e.preventDefault()
+              e.stopPropagation()
+
+              // flatpickr 비우기
+              ins.clear()
+
+              // // 셀 값 비우고 부모에 알림
+              // props.data[row][col] = ""
+              // emit("DateUpdate", props.data[row], col, "")
+
+              // 중복 방지
+              ins._wasCleared = true
+
+              // 곧바로 닫기
+              ins.close()
+            })
+
+            // 팝업 컨테이너는 position이 이미 잡혀있으므로 별도 변경 불필요
+            ins.calendarContainer.appendChild(btn)
+            ins._popupClearBtn = btn
+          }
+
+          // ====== 3) 입력창 안의 X ======
           if (!ins._clearButton) {
             const btn = document.createElement("button")
             btn.type = "button"
             btn.textContent = "✕"
+            btn.title = "입력값 지우기"
             btn.className =
                 "absolute left-[75%] top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
 
@@ -300,9 +353,9 @@ watch(
               // 1) flatpickr 비우기
               ins.clear();
 
-              // 2) 셀 값 비우고 부모에 알림
-              props.data[row][col] = "";
-              emit("DateUpdate", props.data[row], col, "");
+              // // 2) 셀 값 비우고 부모에 알림
+              // props.data[row][col] = "";
+              // emit("DateUpdate", props.data[row], col, "");
 
               // 3) onClose에서 중복 반영 방지 플래그
               ins._wasCleared = true;
@@ -318,21 +371,72 @@ watch(
           }
         },
         onClose: (dates, _str, ins) => {
+          // 과거 코드 (close 후 재클릭시 오늘 날짜로 초기화 되지 않는 문제 있었음)
           // X버튼으로 지웠다면 빈 문자열, 아니면 input의 현재 값을 그대로 반영
-          const value = ins._wasCleared ? "" : ((ins.input?.value || "").trim());
+          // const value = ins._wasCleared ? "" : ((ins.input?.value || "").trim());
+          // ins._wasCleared = false;
+          //
+          // props.data[row][col] = value;
+          // emit("DateUpdate", props.data[row], col, value);
+
+          let displayStr = ""
+          let apiStr = ""
+
+          if (ins._wasCleared) {
+            // X 눌러서 지운 경우
+            displayStr = ""
+            apiStr = ""
+          } else if (dates?.length) {
+            // 정상적으로 날짜가 선택된 경우
+            displayStr = (ins.input.value || "").trim()
+            apiStr = ins.formatDate(dates[0], "Y-m-d H:i")
+          } else {
+            // clear 이후, 날짜는 없지만 시/분 필드에 값이 있는 경우
+            const hh = parseInt(ins.hourElement?.value || "0", 10)
+            const mm = parseInt(ins.minuteElement?.value || "0", 10)
+            if (!isNaN(hh) || !isNaN(mm)) {
+              const base = new Date()
+              base.setHours(hh)
+              base.setMinutes(mm)
+              displayStr = ins.formatDate(base, "n월 j일 H:i")
+              apiStr = ins.formatDate(base, "Y-m-d H:i")
+            }
+          }
           ins._wasCleared = false;
 
-          props.data[row][col] = value;
-          emit("DateUpdate", props.data[row], col, value);
+          // 셀 반영 + 부모에 emit
+          props.data[row][col] = displayStr;
+          emit("DateUpdate", props.data[row], col, apiStr);
 
-          // 편집 모드 종료
           cancelEdit()
 
-          // X 버튼 정리
           if (ins._clearButton) {
             ins._clearButton.remove()
             ins._clearButton = null
           }
+
+          // 과거 코드 (close 후 재클릭시 오늘 날짜로 초기화 되지 않는 문제 있었음)
+          // const isCleared = ins._wasCleared || !dates?.length || !ins.input?.value?.trim();
+          // ins._wasCleared = false;
+          //
+          // // 1) 화면 표시용 (연도 없이)
+          // const displayStr = isCleared ? "" : (ins.input.value || "").trim(); // "9월 19일 15:00"
+          // // 2) 백엔드 전송용 (연도 포함, 표준형)
+          // const apiStr     = isCleared ? "" : ins.formatDate(dates[0], "Y-m-d H:i"); // "2025-09-19 15:00"
+          //
+          // // 셀에는 표시용 반영
+          // props.data[row][col] = displayStr;
+          // // 부모에는 저장용 문자열로 emit
+          // emit("DateUpdate", props.data[row], col, apiStr);
+          //
+          // // 편집 모드 종료
+          // cancelEdit()
+          //
+          // // X 버튼 정리
+          // if (ins._clearButton) {
+          //   ins._clearButton.remove()
+          //   ins._clearButton = null
+          // }
         }
       })
     },
@@ -366,6 +470,7 @@ const badgeClass = (value) => {
     case "관리자":
     case "탈퇴":
     case "거절":
+    case "회수":
       return "bg-[#F8D7DA] text-[#B23A48] dark:bg-[#4A1C1C]/80 dark:text-[#F28B82]/85"
     case "담당자":
     case "신규":
@@ -373,6 +478,7 @@ const badgeClass = (value) => {
     case "최초":
       return "bg-[#D6E4FF] text-[#1E40AF] dark:bg-[#1A2B4C] dark:text-[#8AB4F8]"
     case "센터장":
+    case "유효":
     case "재콜":
       return "bg-[#D1F2D6] text-[#2F855A] dark:bg-[#1B3A2E] dark:text-[#5FA97A]"
     case "부재1":
@@ -404,6 +510,13 @@ const visiblePages = computed(() => {
   else { pages.push(1,'...',current-delta,current-1,current,current+1,current+delta,'...',total) }
   return pages
 })
+
+// 선택 해제 메서드
+const selectedRowIds = ref(new Set());
+function clearSelection() {
+  selectedRowIds.value = new Set();
+}
+defineExpose({ clearSelection });
 
 // 스크롤/휠 시 달력 모두 닫기
 const tableScrollHost = ref(null)

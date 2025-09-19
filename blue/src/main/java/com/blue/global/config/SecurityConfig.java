@@ -42,7 +42,12 @@ public class SecurityConfig {
             .requestMatchers(
                 "/api/ping",
                 "/api/common/**",
+                "/api/work/**",
                 "/api/sheets/**").authenticated()
+            
+            // 리드(슈퍼+매니저) 전용 DB API
+            .requestMatchers(
+                "/api/lead/**").hasAnyRole("SUPERADMIN","MANAGER")
             
             // 본사 (최고 관리자)
             .requestMatchers(

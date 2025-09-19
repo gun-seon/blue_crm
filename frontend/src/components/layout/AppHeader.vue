@@ -253,7 +253,30 @@ function mountStartIfNeeded() {
     allowInput: true,
     disableMobile: true,
     //appendTo: el.closest('header') as HTMLElement | undefined,
-    onReady: (_d, _s, fp) => { fp.calendarContainer.style.zIndex = '999999' },
+    onReady: (_d, _s, fp) => {
+      fp.calendarContainer.style.zIndex = '999999'
+
+      const anyFp = fp as any
+      if (!anyFp._clearBtn) {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.title = '입력값 지우기'
+        btn.textContent = '✕'
+        btn.className =
+            'fp-clear-btn absolute top-1 right-1 w-6 h-6 flex items-center justify-center ' +
+            'text-xs text-gray-500 hover:text-gray-700 rounded'
+
+        btn.addEventListener('mousedown', (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          fp.clear()   // onChange가 startDate.value = null 로 갱신
+          fp.close()
+        })
+
+        fp.calendarContainer.appendChild(btn)
+        anyFp._clearBtn = btn
+      }
+    },
     onChange: (dates) => { startDate.value = dates[0] ?? null },
   })
   boundStartEl = el
@@ -270,7 +293,30 @@ function mountEndIfNeeded() {
     allowInput: true,
     disableMobile: true,
     //appendTo: el.closest('header') as HTMLElement | undefined,
-    onReady: (_d, _s, fp) => { fp.calendarContainer.style.zIndex = '999999' },
+    onReady: (_d, _s, fp) => {
+      fp.calendarContainer.style.zIndex = '999999'
+
+      const anyFp = fp as any
+      if (!anyFp._clearBtn) {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.title = '입력값 지우기'
+        btn.textContent = '✕'
+        btn.className =
+            'fp-clear-btn absolute top-1 right-1 w-6 h-6 flex items-center justify-center ' +
+            'text-xs text-gray-500 hover:text-gray-700 rounded'
+
+        btn.addEventListener('mousedown', (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          fp.clear()   // onChange가 endDate.value = null 로 갱신
+          fp.close()
+        })
+
+        fp.calendarContainer.appendChild(btn)
+        anyFp._clearBtn = btn
+      }
+    },
     onChange: (dates) => { endDate.value = dates[0] ?? null },
   })
   boundEndEl = el

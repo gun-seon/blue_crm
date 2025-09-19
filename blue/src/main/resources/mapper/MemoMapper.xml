@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.blue.customer.common.memo.mapper.MemoMapper">
+
+    <select id="findUserContextByEmail" resultType="com.blue.customer.all.dto.UserContextDto">
+        SELECT u.user_id AS userId, u.user_role AS role, u.center_id AS centerId, u.user_email AS email
+        FROM users u
+        WHERE u.user_email = #{email}
+        LIMIT 1
+    </select>
+
+    <select id="existsCustomerById" resultType="int">
+        SELECT COUNT(*) FROM customers WHERE customer_id = #{customerId}
+    </select>
+
+    <select id="customerOwnedByCenter" resultType="int">
+        SELECT COUNT(*)
+        FROM customers c
+                 JOIN users u ON u.user_id = c.user_id
+        WHERE c.customer_id = #{customerId}
+          AND u.center_id = #{centerId}
+    </select>
+
+    <select id="customerOwnedByUser" resultType="int">
+        SELECT COUNT(*)
+        FROM customers
+        WHERE customer_id = #{customerId}
+          AND user_id = #{userId}
+    </select>
+
+    <update id="updateCustomerMemoBlock">
+        UPDATE customers
+        <set>
+            <if test="memo != null">customer_memo = #{memo},</if>
+            <if test="status != null">customer_status = #{status},</if>
+            <if test="promiseTime != null and promiseTime != ''">customer_promise_time = #{promiseTime},</if>
+            <if test="tradingviewId != null">customer_tradingview_id = #{tradingviewId},</if>
+            <if test="telegramNickname != null">customer_telegram_nickname = #{telegramNickname},</if>
+            <if test="freeRoom != null">customer_free_room = #{freeRoom},</if>
+            <if test="signalRoom != null">customer_signal_room = #{signalRoom},</if>
+            <if test="exchangeJoined != null">customer_exchange_joined = #{exchangeJoined},</if>
+            <if test="tradingviewJoined != null">customer_tradingview_joined = #{tradingviewJoined},</if>
+            <if test="indicatorFlag != null">customer_indicator_flag = #{indicatorFlag},</if>
+        </set>
+        WHERE customer_id = #{customerId}
+    </update>
+
+</mapper>
