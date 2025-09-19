@@ -1,0 +1,73 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blue.info.mapper.InfoMapper">
+
+    <!-- 조회 -->
+    <select id="findAllUsers" resultType="com.blue.info.dto.UserRow">
+        SELECT
+            u.user_id                AS userId,
+            u.user_email             AS userEmail,
+            u.user_role              AS userRole,
+            u.user_approved          AS userApproved,
+            u.user_name              AS userName,
+            u.user_phone             AS userPhone,
+            u.manager_phone_access   AS managerPhoneAccess,
+            u.center_id              AS centerId,
+            c.center_name            AS centerName,
+            u.user_created_at        AS userCreatedAt
+        FROM users u
+                 LEFT JOIN centers c ON c.center_id = u.center_id
+        ORDER BY u.user_created_at DESC
+    </select>
+
+    <select id="findByEmail" resultType="com.blue.info.dto.UserRow">
+        SELECT
+            u.user_id                AS userId,
+            u.user_email             AS userEmail,
+            u.user_role              AS userRole,
+            u.user_approved          AS userApproved,
+            u.user_name              AS userName,
+            u.user_phone             AS userPhone,
+            u.manager_phone_access   AS managerPhoneAccess,
+            u.center_id              AS centerId,
+            c.center_name            AS centerName,
+            u.user_created_at        AS userCreatedAt
+        FROM users u
+                 LEFT JOIN centers c ON c.center_id = u.center_id
+        WHERE u.user_email = #{email}
+        LIMIT 1
+    </select>
+
+    <select id="findById" resultType="com.blue.info.dto.UserRow">
+        SELECT
+            u.user_id                AS userId,
+            u.user_email             AS userEmail,
+            u.user_role              AS userRole,
+            u.user_approved          AS userApproved,
+            u.user_name              AS userName,
+            u.user_phone             AS userPhone,
+            u.manager_phone_access   AS managerPhoneAccess,
+            u.center_id              AS centerId,
+            c.center_name            AS centerName,
+            u.user_created_at        AS userCreatedAt
+        FROM users u
+                 LEFT JOIN centers c ON c.center_id = u.center_id
+        WHERE u.user_id = #{userId}
+        LIMIT 1
+    </select>
+
+    <!-- 수정 -->
+    <update id="updateUserName">
+        UPDATE users
+        SET user_name = #{name}
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="updateUserPhone">
+        UPDATE users
+        SET user_phone = #{phone}
+        WHERE user_id = #{userId}
+    </update>
+
+</mapper>

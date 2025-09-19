@@ -43,6 +43,7 @@ public class SecurityConfig {
                 "/api/ping",
                 "/api/common/**",
                 "/api/work/**",
+                "/api/info/**",
                 "/api/sheets/**").authenticated()
             
             // 리드(슈퍼+매니저) 전용 DB API
