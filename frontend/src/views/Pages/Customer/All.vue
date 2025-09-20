@@ -58,6 +58,7 @@
             v-if="memoOpen"
             :row="memoRow"
             @close="closeMemo"
+            @saved="onMemoSaved"
         />
 
       </div>
@@ -276,6 +277,24 @@ function onCommonButtonClick(btn) {
   if (btn === "상태별 보기") {
     setFilter("sort", "status");
     fetchData();
+  }
+}
+
+// 모달 갱신
+function onMemoSaved(patch) {
+  const arr = items.value ?? [];
+  const idx = arr.findIndex(r => r.id === patch.id);
+  if (idx !== -1) {
+    const cur = arr[idx];
+    arr.splice(idx, 1, {
+      ...cur,
+      status: patch.status,
+      reservation: patch.reservation, // 바로 리스트에 반영
+    });
+  } else {
+    // 현재 페이지에 행이 없을 때만 안전 재조회 (페이지 유지)
+    const curPage = page.value;
+    fetchData().then(() => { if (page.value !== curPage) changePage(curPage); });
   }
 }
 </script>

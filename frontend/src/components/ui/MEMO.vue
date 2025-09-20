@@ -47,16 +47,13 @@
         <template v-if="isSuperAdmin">
           <div class="flex">
             <span class="w-24 font-semibold">현재 담당자</span>
-            <span>{{ row.staff || '' }}</span>
+            <span>{{ effectiveStaff }}</span>
           </div>
           <div class="flex">
             <span class="w-24 font-semibold mb-1">담당자 이력</span>
-            <ul class="list-disc ml-5" v-if="row.staffHistory">
-              <li v-for="(s, idx) in row.staffHistory || []" :key="idx">
-                {{ s }}
-              </li>
-            </ul>
-            <span v-else>없음</span>
+            <span class="flex-1">
+              {{ effectiveHistory.length ? effectiveHistory.join(', ') : '없음' }}
+            </span>
           </div>
         </template>
         <hr class="border-gray-200 dark:border-gray-700" />
@@ -176,16 +173,17 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onBeforeUnmount } from "vue"
+import { ref, watch, nextTick, onBeforeUnmount, computed } from "vue"
 import { useAuthStore } from "@/stores/auth.js"
 import { onBeforeRouteLeave } from "vue-router"
+import axios from "@/plugins/axios.js"
 
 import flatpickr from "flatpickr"
 import { Korean } from "flatpickr/dist/l10n/ko.js"
 import "flatpickr/dist/flatpickr.css"
 
 const props = defineProps({ row: Object })
-const emit  = defineEmits(["close"])
+const emit  = defineEmits(["close", "saved"])
 
 const auth = useAuthStore()
 const isSuperAdmin = auth.role === "SUPERADMIN"
@@ -198,11 +196,13 @@ const status     = ref("없음")
 const options    = ref([])
 const promiseTime = ref("")
 
+const detailStaff   = ref(null)   // 현재 담당자
+const staffHistory  = ref([])     // 담당자 이력
+
 // input ref (timepicker)
 const timepicker = ref(null)
 
 /** flatpickr instance */
-/** @type {import('flatpickr').Instance | null} */
 let fpInstance = null;
 
 function pad(n){ return String(n ?? '').padStart(2,'0'); }
@@ -286,7 +286,13 @@ function initTimepicker(){
         ins._clearButton = btn;
       }
 
-      if (!promiseTime.value) ins.setDate(new Date(), false);
+      // if (!promiseTime.value) ins.setDate(new Date(), false);
+      // DB 값이 있으면 그걸로 세팅, 없으면 캘린더만 오늘로 포커스(인풋은 그대로 비움)
+      if (promiseTime.value) {
+        ins.setDate(promiseTime.value, false, 'Y-m-d H:i');
+      } else {
+        ins.jumpToDate(new Date());
+      }
     },
 
     // 매번 열릴 때 리스너 재부착 + 오늘로 점프(입력칸 비어 있을 때만)
@@ -329,20 +335,104 @@ const modalRoot = ref(null)
 onBeforeUnmount(() => { cleanupPicker() })
 onBeforeRouteLeave(() => cleanupPicker())
 
+/* ---------- api 연결 ---------- */
+
+// 상세 로드(모달 오픈 시)
+async function fetchDetail(id) {
+  if (!id) return
+  try {
+    const { data } = await axios.get(`/api/work/db/memo/${id}`)
+    // console.log(data)
+    nickname1.value   = data.tradingviewId || ""
+    nickname2.value   = data.telegramNickname || ""
+    memo.value        = data.memo || ""
+    status.value      = data.status || "없음"
+    promiseTime.value = data.promiseTime ? String(data.promiseTime).replace("T"," ").slice(0,16) : "" // 'YYYY-MM-DD HH:mm'
+    detailStaff.value  = data.staff ?? null
+    staffHistory.value = Array.isArray(data.staffHistory) ? data.staffHistory : []
+    const opts = []
+    if ((data.freeRoom|0) === 1)           opts.push("무료방")
+    if ((data.signalRoom|0) === 1)         opts.push("시그널방")
+    if ((data.exchangeJoined|0) === 1)     opts.push("거래소 가입유무")
+    if ((data.tradingviewJoined|0) === 1)  opts.push("트레이딩뷰 가입유무")
+    if ((data.indicatorFlag|0) === 1)      opts.push("지표 유무")
+    options.value = opts
+  } catch (e) {
+    console.error(e)
+    alert("메모 상세 조회 중 오류가 발생했습니다.")
+  }
+}
+
+// 화면에 표시할 값(상세값 우선, 없으면 부모 row 폴백)
+const effectiveStaff = computed(() => {
+  return (detailStaff.value ?? props.row?.staff ?? "").trim() || "없음"
+})
+const effectiveHistory = computed(() => {
+  const arr = (staffHistory.value && staffHistory.value.length
+          ? staffHistory.value
+          : (props.row?.staffHistory || []))
+  return Array.isArray(arr) ? arr.filter(Boolean) : []
+})
+function toKRReservationString(s) {
+  if (!s) return null;
+  const [datePart, timePart] = String(s).split(' ');
+  if (!datePart || !timePart) return null;
+  const [Y, M, D] = datePart.split('-').map(Number);
+  const [h, m]    = timePart.split(':').map(Number);
+  const hh = String(h).padStart(2, '0');
+  const mm = String(m).padStart(2, '0');
+  return `${M}월 ${D}일 ${hh}:${mm}`;
+}
+
+// 저장
+async function save() {
+  if (!props.row?.id) return
+  try {
+    const has = (label) => options.value.includes(label)
+    const normalizedPromise =
+        status.value === '재콜'
+            ? ((promiseTime.value || "").trim() || null)
+            : null
+
+    const body = {
+      memo:              memo.value || null,
+      status:            status.value || "없음",
+      promiseTime:       normalizedPromise,
+      tradingviewId:     nickname1.value || null,
+      telegramNickname:  nickname2.value || null,
+      freeRoom:          has("무료방") ? 1 : 0,
+      signalRoom:        has("시그널방") ? 1 : 0,
+      exchangeJoined:    has("거래소 가입유무") ? 1 : 0,
+      tradingviewJoined: has("트레이딩뷰 가입유무") ? 1 : 0,
+      indicatorFlag:     has("지표 유무") ? 1 : 0
+    }
+
+    await axios.patch(`/api/work/db/memo/${props.row.id}`, body)
+
+    const reservationText =
+        body.status === '재콜' && body.promiseTime
+            ? toKRReservationString(body.promiseTime) // 예: '9월 8일 20:30'
+            : null;
+
+    // 부모 테이블이 국지 갱신할 수 있도록 변경분을 함께 보냄
+    emit("saved", {
+      id: props.row.id,
+      status: body.status,
+      reservation: reservationText
+    })
+    handleClose()
+  } catch (e) {
+    console.error(e)
+    alert("메모 저장 중 오류가 발생했습니다.")
+  }
+}
+
 /* ---------- 데이터 바인딩 ---------- */
 
-// row 들어오면 값 세팅 (입력칸은 DB값이 있을 때만 세팅)
+// row.id 생기면 백엔드에서 상세 조회
 watch(
-    () => props.row,
-    async (v) => {
-      if (!v) return
-      nickname1.value    = v.nickname1 || ""   // 새 필드
-      nickname2.value    = v.nickname2 || ""   // 새 필드
-      memo.value       = v.memo || ""
-      status.value     = v.status || "없음"
-      promiseTime.value = v.promiseTime || ""
-      options.value    = v.options || []
-    },
+    () => props.row?.id,
+    (id) => { if (id) fetchDetail(id) },
     { immediate: true }
 )
 
@@ -364,9 +454,6 @@ watch(
   width: 350px !important;
 }
 
-</style>
-
-<style>
 /* 다크모드: flatpickr 시간 선택 */
 .dark .flatpickr-time {
   background: #1f2937 !important;   /* gray-800 */

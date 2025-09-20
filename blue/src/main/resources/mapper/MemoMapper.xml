@@ -1,49 +1,97 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-
 <mapper namespace="com.blue.customer.common.memo.mapper.MemoMapper">
 
+    <!-- 로그인 사용자 컨텍스트 -->
     <select id="findUserContextByEmail" resultType="com.blue.customer.all.dto.UserContextDto">
-        SELECT u.user_id AS userId, u.user_role AS role, u.center_id AS centerId, u.user_email AS email
+        SELECT u.user_id      AS userId,
+               u.user_email   AS email,
+               u.user_role    AS role,
+               u.center_id    AS centerId
         FROM users u
         WHERE u.user_email = #{email}
         LIMIT 1
     </select>
 
-    <select id="existsCustomerById" resultType="int">
-        SELECT COUNT(*) FROM customers WHERE customer_id = #{customerId}
+    <!-- 과거 이력 확인 -->
+    <select id="selectPastStaffByPhone" parameterType="string" resultType="string">
+        SELECT CONCAT(
+                       u.user_name, ' (',
+                       RIGHT(REPLACE(u.user_phone, '-', ''), 4),
+                       ')'
+               ) AS label
+        FROM customer_past_users cpu
+                 JOIN users u ON u.user_id = cpu.user_id
+        WHERE cpu.customer_phone = #{phone}
+        ORDER BY cpu.past_user_id DESC
     </select>
 
+    <!-- customers 테이블 존재 여부 (중복DB 제외 보장) -->
+    <select id="existsCustomerById" resultType="int">
+        SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+        FROM customers c
+        WHERE c.customer_id = #{customerId}
+        LIMIT 1
+    </select>
+
+    <!-- 센터 소유 확인: 고객→담당자→센터 -->
     <select id="customerOwnedByCenter" resultType="int">
-        SELECT COUNT(*)
+        SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
         FROM customers c
                  JOIN users u ON u.user_id = c.user_id
         WHERE c.customer_id = #{customerId}
-          AND u.center_id = #{centerId}
+          AND u.center_id   = #{centerId}
+        LIMIT 1
     </select>
 
+    <!-- 개인 소유 확인 -->
     <select id="customerOwnedByUser" resultType="int">
-        SELECT COUNT(*)
-        FROM customers
-        WHERE customer_id = #{customerId}
-          AND user_id = #{userId}
+        SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+        FROM customers c
+        WHERE c.customer_id = #{customerId}
+          AND c.user_id     = #{userId}
+        LIMIT 1
     </select>
 
+    <!-- 모달 상세 조회용 (필요한 필드만) -->
+    <select id="selectCustomerMemoBlock" resultType="com.blue.customer.common.memo.dto.MemoDetailDto">
+        SELECT
+            c.customer_id           AS customerId,
+            c.customer_created_at   AS createdAt,
+            c.customer_name         AS name,
+            c.customer_phone        AS phone,
+            c.customer_category     AS category,
+            u.user_name             AS staff,
+            c.customer_memo         AS memo,
+            c.customer_status       AS status,
+            c.customer_promise_time AS promiseTime,
+            c.customer_tradingview_id     AS tradingviewId,
+            c.customer_telegram_nickname  AS telegramNickname,
+            c.customer_free_room          AS freeRoom,
+            c.customer_signal_room        AS signalRoom,
+            c.customer_exchange_joined    AS exchangeJoined,
+            c.customer_tradingview_joined AS tradingviewJoined,
+            c.customer_indicator_flag     AS indicatorFlag
+        FROM customers c
+                 LEFT JOIN users u ON u.user_id = c.user_id
+        WHERE c.customer_id = #{customerId}
+        LIMIT 1
+    </select>
+
+    <!-- 업데이트: null이면 null로, 빈문자열은 null로 처리하고 싶으면 서비스에서 null로 정규화 -->
     <update id="updateCustomerMemoBlock">
         UPDATE customers
-        <set>
-            <if test="memo != null">customer_memo = #{memo},</if>
-            <if test="status != null">customer_status = #{status},</if>
-            <if test="promiseTime != null and promiseTime != ''">customer_promise_time = #{promiseTime},</if>
-            <if test="tradingviewId != null">customer_tradingview_id = #{tradingviewId},</if>
-            <if test="telegramNickname != null">customer_telegram_nickname = #{telegramNickname},</if>
-            <if test="freeRoom != null">customer_free_room = #{freeRoom},</if>
-            <if test="signalRoom != null">customer_signal_room = #{signalRoom},</if>
-            <if test="exchangeJoined != null">customer_exchange_joined = #{exchangeJoined},</if>
-            <if test="tradingviewJoined != null">customer_tradingview_joined = #{tradingviewJoined},</if>
-            <if test="indicatorFlag != null">customer_indicator_flag = #{indicatorFlag},</if>
-        </set>
+        SET customer_memo               = #{memo},
+            customer_status             = #{status},
+            customer_promise_time       = #{promiseTime,jdbcType=TIMESTAMP},
+            customer_tradingview_id     = #{tradingviewId},
+            customer_telegram_nickname  = #{telegramNickname},
+            customer_free_room          = #{freeRoom},
+            customer_signal_room        = #{signalRoom},
+            customer_exchange_joined    = #{exchangeJoined},
+            customer_tradingview_joined = #{tradingviewJoined},
+            customer_indicator_flag     = #{indicatorFlag}
         WHERE customer_id = #{customerId}
     </update>
 
