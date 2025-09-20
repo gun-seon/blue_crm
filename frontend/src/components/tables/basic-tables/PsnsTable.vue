@@ -38,15 +38,20 @@
             <span
                 v-else-if="col.type === 'text'"
                 @click="toggleExpand(row, rowIndex, col.key)"
-                :class="[ 'text-gray-500 text-theme-sm dark:text-gray-400 block cursor-pointer',
-                            isExpanded(row, rowIndex, col.key)
-                              ? 'whitespace-normal break-words overflow-auto'   // 클릭하면 줄바꿈 허용
-                              : 'truncate whitespace-nowrap overflow-hidden cursor-pointer']"
-                :style=" isExpanded(row, rowIndex, col.key)
-                      ? { maxHeight: '6.75rem', lineHeight: '1.25rem' } // text-sm의 기본 line-height=1.25rem → 3줄
-                      : (col.ellipsis ? { maxWidth: (typeof col.ellipsis === 'object' ? col.ellipsis.width : col.ellipsis) + 'px' } : {})" >
-              {{ row[col.key] }}
-            </span>
+                :class="[
+                    'text-gray-500 text-theme-sm dark:text-gray-400 block cursor-pointer',
+                    isExpanded(row, rowIndex, col.key)
+                      ? 'whitespace-normal break-words overflow-auto'
+                      : 'truncate whitespace-nowrap overflow-hidden'
+                  ]"
+                :style="{
+    maxWidth: (((typeof col.ellipsis === 'object' ? col.ellipsis.width : col.ellipsis) ?? 150) + 'px'),
+    width: '100%',
+    ...(isExpanded(row, rowIndex, col.key) ? { maxHeight: '6.75rem', lineHeight: '1.25rem' } : {})
+  }"
+            >
+  {{ col.key === 'staff' ? (row[col.key]?.toString().trim() || '담당자 없음') : (row[col.key] ?? '') }}
+</span>
 
             <!-- 배지 -->
             <div v-else-if="col.type === 'badge'" class="relative inline-block w-[60px] h-[28px]">
