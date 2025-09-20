@@ -1,4 +1,4 @@
-package com.blue.integration.sheets.client;
+package com.blue.customer.common.sheets.client;
 
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.ValueRange;

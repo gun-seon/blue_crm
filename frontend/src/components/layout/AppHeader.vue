@@ -110,8 +110,8 @@
              dark:bg-gray-800 dark:text-gray-400 text-gray-500"
           >
             <option value="all">전체</option>
-            <option value="stock">주식</option>
-            <option value="coin">코인</option>
+            <option value="주식">주식</option>
+            <option value="코인">코인</option>
           </select>
 
           <!-- 검색창 -->
@@ -188,8 +188,8 @@
              dark:bg-gray-800 dark:text-gray-400 text-gray-500"
           >
             <option value="all">전체</option>
-            <option value="stock">주식</option>
-            <option value="coin">코인</option>
+            <option value="주식">주식</option>
+            <option value="코인">코인</option>
           </select>
         </div>
 

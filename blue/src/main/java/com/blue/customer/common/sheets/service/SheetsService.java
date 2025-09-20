@@ -1,6 +1,6 @@
-package com.blue.integration.sheets.service;
+package com.blue.customer.common.sheets.service;
 
-import com.blue.integration.sheets.client.GoogleSheetsClient;
+import com.blue.customer.common.sheets.client.GoogleSheetsClient;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

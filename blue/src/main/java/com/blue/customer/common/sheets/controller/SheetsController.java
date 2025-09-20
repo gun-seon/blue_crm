@@ -1,6 +1,6 @@
-package com.blue.integration.sheets.controller;
+package com.blue.customer.common.sheets.controller;
 
-import com.blue.integration.sheets.service.SheetsService;
+import com.blue.customer.common.sheets.service.SheetsService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 

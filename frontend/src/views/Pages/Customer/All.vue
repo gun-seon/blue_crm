@@ -132,11 +132,14 @@ const adminColumns = [
   { key: "category", label: "카테고리", type: "badge", options: ["주식", "코인"] },
   { key: "name", label: "이름", type: "text" },
   { key: "phone", label: "전화번호", type: "text" },
-  { key: "source", label: "출처", type: "text" },
+  { key: "source", label: "DB출처", type: "text", ellipsis: { width: 100 } },
   { key: "content", label: "내용", type: "text", ellipsis: { width: 150 } },
   { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon, disabled: (row)=> row.origin==='DUPLICATE' },
   { key: "status", label: "상태", type: "badge",
       editable: notDuplicate,
+      // 회수와 신규 상태는 수동으로 줄 수 없음
+      // 회수 : DB회수하기 메뉴에서
+      // 신규 : 한번도 분배가 되지 않은 항목만
       options: ["부재1","부재2","부재3","부재4","부재5","재콜","가망","완료","거절"] },
   { key: "reservation", label: "예약", type: "date", editable: notDuplicate }
 ];
@@ -150,8 +153,8 @@ const commonColumns = [
   { key: "category", label: "카테고리", type: "badge", options: ["주식", "코인"] },
   { key: "name", label: "이름", type: "text"},
   { key: "phone", label: "전화번호", type: "text" },
-  { key: "source", label: "고객접속경로", type: "text" },
-  { key: "content", label: "내용", type: "text", ellipsis: { width: 100 } },
+  { key: "source", label: "DB출처", type: "text", ellipsis: { width: 100 } },
+  { key: "content", label: "내용", type: "text", ellipsis: { width: 150 } },
   { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon, disabled: (row)=> row.origin==='DUPLICATE' },
   { key: "status", label: "상태", type: "badge",
       editable: notDuplicate,

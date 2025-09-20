@@ -1,4 +1,4 @@
-package com.blue.integration.sheets.config;
+package com.blue.customer.common.sheets.config;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
-// com.blue.integration.sheets.config.GoogleSheetsConfig
+// com.blue.customer.common.config.sheets.GoogleSheetsConfig
 @Configuration
 public class GoogleSheetsConfig {
   

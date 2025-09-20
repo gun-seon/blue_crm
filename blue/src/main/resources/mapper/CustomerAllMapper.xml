@@ -40,10 +40,13 @@
     <sql id="ADMIN_ORDER">
         <choose>
             <when test="sort == 'division'">
-                ORDER BY FIELD(t.division, '중복','유효','최초'), t.createdAt DESC
+                ORDER BY FIELD(t.division, '최초','유효','중복'), t.createdAt DESC
             </when>
             <when test="sort == 'status'">
-                ORDER BY t.status ASC, t.createdAt DESC
+                ORDER BY FIELD(t.status,
+                        '부재1','부재2','부재3','부재4','부재5',
+                        '재콜','신규', '회수', '가망','완료','거절', '없음'),
+                t.createdAt DESC
             </when>
             <otherwise>
                 ORDER BY t.createdAt DESC
@@ -152,7 +155,10 @@
     <sql id="CUSTOMER_ONLY_ORDER">
         <choose>
             <when test="sort == 'status'">
-                ORDER BY c.customer_status ASC, c.customer_created_at DESC
+                ORDER BY FIELD(c.customer_status,
+                        '부재1','부재2','부재3','부재4','부재5',
+                        '재콜','신규', '회수', '가망','완료','거절', '없음'),
+                c.customer_created_at DESC
             </when>
             <otherwise>
                 ORDER BY c.customer_created_at DESC
