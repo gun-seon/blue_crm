@@ -64,6 +64,5 @@ public class AllDbRowDto {
   private String status;
   
   /** 약속시간(예약). 고객: customer_promise_time / 중복: 항상 null */
-  @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
-  private LocalDateTime reservation;
+  private String reservation;
 }

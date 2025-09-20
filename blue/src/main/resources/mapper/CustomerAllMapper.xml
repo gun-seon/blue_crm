@@ -73,7 +73,7 @@
         c.customer_content      AS content,
         c.customer_memo         AS memo,
         c.customer_status       AS status,
-        c.customer_promise_time AS reservation
+        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
         FROM customers c
         LEFT JOIN users u ON u.user_id = c.user_id
 
@@ -105,24 +105,40 @@
     </select>
 
     <select id="countAllForAdmin" resultType="int">
-        SELECT COUNT(*)
-        FROM (
-        SELECT c.customer_id AS id, 'CUSTOMER' AS origin, c.customer_created_at AS createdAt,
-        u.user_name AS staff, c.customer_division AS division, c.customer_category AS category,
-        c.customer_name AS name, c.customer_phone AS phone, c.customer_source AS source,
-        c.customer_content AS content, c.customer_memo AS memo, c.customer_status AS status,
-        c.customer_promise_time AS reservation
+        SELECT COUNT(*) FROM (
+        SELECT
+        c.customer_id AS id,
+        'CUSTOMER'    AS origin,
+        c.customer_created_at AS createdAt,
+        u.user_name   AS staff,
+        c.customer_division  AS division,
+        c.customer_category  AS category,
+        c.customer_name      AS name,
+        c.customer_phone     AS phone,
+        c.customer_source    AS source,
+        c.customer_content   AS content,
+        c.customer_memo      AS memo,
+        c.customer_status    AS status,
+        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
         FROM customers c
         LEFT JOIN users u ON u.user_id = c.user_id
 
         UNION ALL
 
-        SELECT d.duplicate_id AS id, 'DUPLICATE' AS origin, d.duplicate_created_at AS createdAt,
-        u2.user_name AS staff, '중복' AS division, d.duplicate_category AS category,
-        d.duplicate_name AS name,
-        c2.customer_phone AS phone, d.duplicate_source AS source,
-        d.duplicate_content AS content, d.duplicate_memo AS memo,
-        '없음' AS status, NULL AS reservation
+        SELECT
+        d.duplicate_id AS id,
+        'DUPLICATE'    AS origin,
+        d.duplicate_created_at AS createdAt,
+        u2.user_name   AS staff,
+        '중복'         AS division,
+        d.duplicate_category AS category,
+        d.duplicate_name     AS name,
+        c2.customer_phone    AS phone,
+        d.duplicate_source   AS source,
+        d.duplicate_content  AS content,
+        d.duplicate_memo     AS memo,
+        '없음'         AS status,
+        CAST(NULL AS CHAR(20)) AS reservation
         FROM customers_duplicate d
         JOIN customers c2 ON c2.customer_id = d.customer_id
         LEFT JOIN users u2 ON u2.user_id = c2.user_id
@@ -181,7 +197,7 @@
         c.customer_content      AS content,
         c.customer_memo         AS memo,
         c.customer_status       AS status,
-        c.customer_promise_time AS reservation
+        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
         FROM customers c
         JOIN users u ON u.user_id = c.user_id
         WHERE c.user_id IN (SELECT user_id FROM users WHERE center_id = #{centerId})
@@ -213,7 +229,7 @@
         c.customer_content      AS content,
         c.customer_memo         AS memo,
         c.customer_status       AS status,
-        c.customer_promise_time AS reservation
+        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
         FROM customers c
         LEFT JOIN users u ON u.user_id = c.user_id
         WHERE c.user_id = #{userId}

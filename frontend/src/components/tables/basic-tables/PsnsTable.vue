@@ -15,7 +15,7 @@
         </thead>
 
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-        <tr v-for="(row, rowIndex) in data" :key="rowIndex" class="border-t border-gray-100 dark:border-gray-800">
+        <tr v-for="(row, rowIndex) in data" key="getRowKey(row, rowIndex)" class="border-t border-gray-100 dark:border-gray-800">
           <!-- 체크박스 -->
           <td v-if="showCheckbox" class="px-5 py-4 sm:px-6">
             <input type="checkbox"
@@ -37,12 +37,14 @@
             <!-- 텍스트 -->
             <span
                 v-else-if="col.type === 'text'"
-                @click="expandedCell = expandedCell === rowIndex + '-' + col.key ? null : rowIndex + '-' + col.key"
+                @click="toggleExpand(row, rowIndex, col.key)"
                 :class="[ 'text-gray-500 text-theme-sm dark:text-gray-400 block cursor-pointer',
-                            expandedCell === rowIndex + '-' + col.key
-                              ? 'whitespace-normal break-words'   // 클릭하면 줄바꿈 허용
-                              : 'truncate whitespace-nowrap overflow-hidden']"
-                :style="{ maxWidth: (typeof col.ellipsis === 'object' ? col.ellipsis.width : col.ellipsis) + 'px' }" >
+                            isExpanded(row, rowIndex, col.key)
+                              ? 'whitespace-normal break-words overflow-auto'   // 클릭하면 줄바꿈 허용
+                              : 'truncate whitespace-nowrap overflow-hidden cursor-pointer']"
+                :style=" isExpanded(row, rowIndex, col.key)
+                      ? { maxHeight: '6.75rem', lineHeight: '1.25rem' } // text-sm의 기본 line-height=1.25rem → 3줄
+                      : (col.ellipsis ? { maxWidth: (typeof col.ellipsis === 'object' ? col.ellipsis.width : col.ellipsis) + 'px' } : {})" >
               {{ row[col.key] }}
             </span>
 
@@ -90,6 +92,7 @@
             <div v-else-if="col.type === 'date'" class="relative h-9 min-w-[5.5rem] w-auto">
               <!-- 표시 모드 -->
               <span
+                  v-if="props.data[rowIndex]?.status === '재콜'"
                   v-show="!(editState.row === rowIndex && editState.col === col.key)"
                   class="absolute inset-0 flex items-center px-2 text-xs leading-5
                        text-gray-500 dark:text-gray-400
@@ -172,9 +175,36 @@ const props = defineProps({
   showCheckbox: { type: Boolean, default: false },
   page: { type: Number, default: 1 },
   totalPages: { type: Number, default: 1 },
-  rowSelectable: { type: Function, default: null }
+  rowSelectable: { type: Function, default: null },
+  rowKey: { type: [String, Function], default: 'id' }
 })
 const emit = defineEmits(["rowSelect", "badgeUpdate", "buttonClick", "changePage", "DateUpdate"])
+
+// 툴팁 확장 관련 함수
+function getRowKey(row, idx) {
+  if (typeof props.rowKey === 'function') return props.rowKey(row, idx)
+  if (row && row[props.rowKey] != null) return row[props.rowKey]
+  // id가 없으면 페이지-인덱스로라도 충돌 방지
+  return `${props.page}-${idx}`
+}
+function cellKey(row, idx, colKey) {
+  return `${getRowKey(row, idx)}::${colKey}`
+}
+function toggleExpand(row, idx, colKey) {
+  const k = cellKey(row, idx, colKey)
+  expandedCell.value = (expandedCell.value === k) ? null : k
+}
+function isExpanded(row, idx, colKey) {
+  return expandedCell.value === cellKey(row, idx, colKey)
+}
+
+// 페이지 변경시 선택 초기화
+watch(() => props.page, () => {
+  selectedRows.value = []
+  emitSelected()
+  expandedCell.value = null
+  cancelEdit()
+})
 
 /* 체크박스 */
 const selectedRows = ref([])

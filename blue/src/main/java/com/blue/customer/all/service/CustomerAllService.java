@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -97,13 +98,7 @@ public class CustomerAllService {
     switch (field) {
       case "reservation" -> {
         LocalDateTime when;
-//        try {
-//          when = (dto.getValue() == null || dto.getValue().isBlank())
-//              ? null
-//              : LocalDateTime.parse(dto.getValue().replace(' ', 'T'));
-//        } catch (DateTimeParseException e) {
-//          throw new IllegalArgumentException("날짜 형식이 올바르지 않습니다. 예) 2025-09-21 14:00");
-//        }
+        
         try {
           if (dto.getValue() == null || dto.getValue().isBlank()) {
             when = null;
