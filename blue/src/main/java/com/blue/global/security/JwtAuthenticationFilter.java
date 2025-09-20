@@ -65,7 +65,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       String role = claims.get("role", String.class);
       
       // 검증 성공: 어떤 요청(URI) 때문에 검증됐는지 + 쓰레드명 로깅
-      log.info("엑세스 토큰 검증 -> {} ({})",
+      log.debug("엑세스 토큰 검증 -> {} ({})",
           request.getRequestURI(), Thread.currentThread().getName());
       
       if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -73,7 +73,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // DB에서 차단 상태 확인
         var user = authMapper.findByEmail(email);
         if (user == null || !"Y".equals(user.getUserApproved())) {
-          log.info("차단된 계정 접근: {}", email);
+          log.warn("차단된 계정 접근: {}", email);
           response.setHeader("X-Blocked", "true"); // 프론트에서 탈퇴여부를 판단할 사용자 정의 헤더
           response.sendError(HttpServletResponse.SC_GONE, "탈퇴되었거나 승인되지 않은 계정입니다.");
           response.flushBuffer();
@@ -94,7 +94,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       
     } catch (ExpiredJwtException e) {
       // 만료 위치/쓰레드까지 함께
-      log.info("엑세스 토큰 만료 -> {} ({}) exp={}",
+      log.warn("엑세스 토큰 만료 -> {} ({}) exp={}",
           request.getRequestURI(), Thread.currentThread().getName(), e.getClaims().getExpiration());
       
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
