@@ -6,6 +6,7 @@ import commonRoutes from './common'
 
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { resetGlobalFilters } from '@/composables/globalFilters.js'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -80,7 +81,12 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // 모든 조건 통과 후 로딩 종료
+  // 모든 조건 통과 후 로딩 종료 전에 전역 필터 초기화
+  if (!to.meta?.keepFilters) {
+    resetGlobalFilters()
+  }
+
+  // 로딩 종료
   ui.setLoading(false)
   next()
 })
