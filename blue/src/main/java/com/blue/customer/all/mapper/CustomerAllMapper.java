@@ -22,12 +22,14 @@ public interface CustomerAllMapper {
                                     @Param("dateTo") String dateTo,
                                     @Param("category") String category,
                                     @Param("division") String division,
-                                    @Param("sort") String sort);
+                                    @Param("sort") String sort,
+                                    @Param("visible") String visible);
   int countAllForAdmin(@Param("keyword") String keyword,
                        @Param("dateFrom") String dateFrom,
                        @Param("dateTo") String dateTo,
                        @Param("category") String category,
-                       @Param("division") String division);
+                       @Param("division") String division,
+                       @Param("visible") String visible);
   
   // MANAGER — 자기 센터 소속 직원 담당 고객
   List<AllDbRowDto> findAllForManager(@Param("offset") int offset,

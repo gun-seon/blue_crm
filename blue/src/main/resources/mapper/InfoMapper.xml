@@ -18,6 +18,7 @@
             u.user_created_at        AS userCreatedAt
         FROM users u
                  LEFT JOIN centers c ON c.center_id = u.center_id
+                 WHERE u.user_approved = 'Y'
         ORDER BY u.user_created_at DESC
     </select>
 

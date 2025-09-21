@@ -9,6 +9,9 @@
             v-if="role === 'SUPERADMIN'"
             :selects="[ ['전체', '최초', '중복', '유효'] ]"
             :buttons="['상태별 보기', '구분별 보기', '중복DB로 이동']"
+            :showRefresh="true"
+            :refreshing="isRefreshing"
+            @refresh="onRefresh"
             @changeSize="setSize"
             @selectChange="onDivisionSelect"
             @buttonClick="onAdminButtonClick"
@@ -34,6 +37,9 @@
         <ComponentCard
             v-else
             :buttons="['상태별 보기']"
+            :showRefresh="true"
+            :refreshing="isRefreshing"
+            @refresh="onRefresh"
             @changeSize="setSize"
             @buttonClick="onCommonButtonClick"
         >
@@ -88,6 +94,30 @@ const tableRef = ref(null); // PsnsTable 메서드 접근
 const selectedRows = ref([]); // 선택된 행 캐시
 const memoOpen = ref(false); // 메모 모달 상태
 const memoRow = ref(null); // 메모 모달에 넘길 행
+const isRefreshing = ref(false); // 새로고침 스피너/비활성
+
+async function onRefresh() {
+  if (isRefreshing.value) return;
+  isRefreshing.value = true;
+  try {
+    // 수동 새로고침 (sid 기본값 1)
+    const { data } = await axios.post('/api/sheets/refresh?sid=1');
+    // 선택 초기화는 유지하고 싶으면 주석 해제
+    // selectedRows.value = [];
+    // tableRef.value?.clearSelection?.();
+
+    // 테이블 데이터 재조회
+    await fetchData();
+
+    // (선택) 서버 reason에 따라 토스트/알림
+    // if (data?.reason === 'debounced') alert('조금 뒤에 다시 시도해주세요.');
+  } catch (err) {
+    console.error('수동 새로고침 실패', err);
+    alert('새로고침 중 오류가 발생했습니다.');
+  } finally {
+    isRefreshing.value = false;
+  }
+}
 
 /* =============================
    공통 useTableQuery

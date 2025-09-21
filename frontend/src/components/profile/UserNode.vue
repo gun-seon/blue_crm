@@ -74,9 +74,16 @@
 
       <!-- 비어있을 때 -->
       <div v-else class="ml-6">
-        <div class="rounded-xl border border-dashed border-gray-200 p-4 text-sm
-                    text-gray-500 dark:border-gray-700 dark:text-gray-400">
-          구성원이 없습니다.
+        <div
+            class="rounded-xl border border-dashed border-gray-200 p-4 text-sm
+           text-gray-500 dark:border-gray-700 dark:text-gray-400"
+        >
+          <template v-if="isUnassignedStaff">
+            아직 센터에 배정되지 않았습니다.
+          </template>
+          <template v-else>
+            구성원이 없습니다.
+          </template>
         </div>
       </div>
     </template>
@@ -111,6 +118,9 @@ const emit = defineEmits(['toggle','edit'])
 const isTitle = (n) => ['HQ','GROUP','CENTER'].includes(n.userRole)
 const keyOf   = (n) => (n.userId ? `U:${n.userId}` : `${n.userRole}:${n.userName}`)
 
+const isUnassignedStaff = computed(() =>
+    props.currentUser?.userRole === "STAFF" && !props.currentUser?.centerId
+)
 // const hasChildren = props.node.children && props.node.children.length > 0
 // const hasTitleChild = computed(() => hasChildren && props.node.children.some(c => isTitle(c)))
 

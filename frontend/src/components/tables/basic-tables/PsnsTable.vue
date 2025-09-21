@@ -15,6 +15,7 @@
         </thead>
 
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        <!-- 데이터 있을 때 -->
         <tr v-for="(row, rowIndex) in data" key="getRowKey(row, rowIndex)" class="border-t border-gray-100 dark:border-gray-800">
           <!-- 체크박스 -->
           <td v-if="showCheckbox" class="px-5 py-4 sm:px-6">
@@ -45,13 +46,13 @@
                       : 'truncate whitespace-nowrap overflow-hidden'
                   ]"
                 :style="{
-    maxWidth: (((typeof col.ellipsis === 'object' ? col.ellipsis.width : col.ellipsis) ?? 150) + 'px'),
-    width: '100%',
-    ...(isExpanded(row, rowIndex, col.key) ? { maxHeight: '6.75rem', lineHeight: '1.25rem' } : {})
-  }"
-            >
-  {{ col.key === 'staff' ? (row[col.key]?.toString().trim() || '담당자 없음') : (row[col.key] ?? '') }}
-</span>
+                maxWidth: (((typeof col.ellipsis === 'object' ? col.ellipsis.width : col.ellipsis) ?? 150) + 'px'),
+                width: '100%',
+                ...(isExpanded(row, rowIndex, col.key) ? { maxHeight: '6.75rem', lineHeight: '1.25rem' } : {})
+              }"
+                        >
+              {{ col.key === 'staff' ? (row[col.key]?.toString().trim() || '담당자 없음') : (row[col.key] ?? '') }}
+            </span>
 
             <!-- 배지 -->
             <div v-else-if="col.type === 'badge'" class="relative inline-block w-[60px] h-[28px]">
@@ -119,6 +120,14 @@
                        focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
+          </td>
+        </tr>
+
+        <!-- 데이터 없을 때 -->
+        <tr v-if="!data || data.length === 0">
+          <td :colspan="(columns.length + (showCheckbox ? 1 : 0))"
+              class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+            조회된 데이터가 없습니다.
           </td>
         </tr>
         </tbody>
