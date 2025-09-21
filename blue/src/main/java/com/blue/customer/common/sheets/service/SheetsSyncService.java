@@ -115,82 +115,81 @@ public class SheetsSyncService {
     if (!job) return new SyncResult(false, 0, "busy");
     
     try {
-      if (cursor <= 1) {
-        int total = drainFromCursor(sourceId);
-        return new SyncResult(true, total, "drain_ok");
-      } else {
-        int processed = recheckLookback(sourceId, lookback);
-        return new SyncResult(true, processed, "rechecked");
-      }
+      int total = drainFromCursor(sourceId);   // 커서가 1이든 아니든 새벽 1시에는 항상 드레인
+      return new SyncResult(true, total, "nightly_drain_ok");
     } finally {
       redis.delete(jobKey);
     }
   }
-  
-  // 1) 룩백 경로만 lookback 전용 persist 호출
-  protected int recheckLookback(long sourceId, int lookback) {
-    GsheetSourceDto src = mapper.findSourceById(sourceId);
-    if (src == null) return 0;
-    
-    int cursor = Optional.ofNullable(src.getCursorRow()).orElse(1);
-    int start = Math.max(2, cursor - lookback + 1);
-    if (start > cursor) return 0;
-    
-    String range = src.getSheetName() + "!A" + start + ":" + END_COL + cursor;
-    List<List<Object>> raw = fetchWithRetry(src.getSpreadsheetId(), range);
-    if (raw == null || raw.isEmpty()) return 0;
-    
-    List<CustomerUpsertDto> parsed = mapCompleteRows(raw);
-    
-    int n = persistRows30dLookback(parsed);
-    log.info("[NightlyRecheck] sid={} start={} end={} parsed={} persisted={}",
-        sourceId, start, cursor, parsed.size(), n);
-    return n;
-  }
-  
-  // 2) 룩백 전용 persist: 존재하면 건너뛴다
-  protected int persistRows30dLookback(List<CustomerUpsertDto> rows) {
-    int n = 0;
-    for (CustomerUpsertDto row : rows) {
-      LocalDateTime createdAt = Optional.ofNullable(row.getCustomerCreatedAt()).orElse(LocalDateTime.now());
-      LocalDateTime threshold = createdAt.minusDays(30);
-      
-      String phoneDigits = digitsOnly(row.getCustomerPhone());
-      Long recentBaseId = mapper.findBaseCustomerIdWithinDays(phoneDigits, threshold);
-      
-      if (recentBaseId != null) {
-        // duplicates: 같은 이벤트(고객, 시각, 출처) 이미 있으면 스킵
-        boolean already = mapper.existsDuplicateEvent(recentBaseId, createdAt, row.getCustomerSource());
-        if (already) {
-          log.debug("[LookbackSkip] duplicate exists cid={} at={} src={}", recentBaseId, createdAt, row.getCustomerSource());
-          continue;
-        }
-        DuplicateUpsertDto dup = new DuplicateUpsertDto();
-        dup.setCustomerId(recentBaseId);
-        dup.setDuplicateCreatedAt(createdAt);
-        dup.setDuplicateName(row.getCustomerName());
-        dup.setDuplicateMemo(row.getCustomerMemo());
-        dup.setDuplicateContent(row.getCustomerContent());
-        dup.setDuplicateSource(row.getCustomerSource());
-        mapper.insertDuplicateMinimal(dup);
-        n++;
-      } else {
-        // customers: 같은 이벤트(번호, 시각, 출처) 이미 있으면 스킵
-        boolean existsBaseEvent = mapper.existsCustomerEvent(phoneDigits, createdAt, row.getCustomerSource());
-        if (existsBaseEvent) {
-          log.debug("[LookbackSkip] base exists phone={} at={} src={}", phoneDigits, createdAt, row.getCustomerSource());
-          continue;
-        }
-        boolean existed = mapper.existsAnyBaseCustomer(phoneDigits);
-        row.setCustomerDivision(existed ? "유효" : "최초");
-        row.setCustomerStatus("없음");
-        row.setCustomerCategory("주식");
-        mapper.insertCustomerMinimal(row);
-        n++;
-      }
-    }
-    return n;
-  }
+
+// 룩백 비활성화
+//  // 1) 룩백 경로만 lookback 전용 persist 호출
+//  protected int recheckLookback(long sourceId, int lookback) {
+//    GsheetSourceDto src = mapper.findSourceById(sourceId);
+//    if (src == null) return 0;
+//
+//    int cursor = Optional.ofNullable(src.getCursorRow()).orElse(1);
+//    int start = Math.max(2, cursor - lookback + 1);
+//    if (start > cursor) return 0;
+//
+//    String range = src.getSheetName() + "!A" + start + ":" + END_COL + cursor;
+//    List<List<Object>> raw = fetchWithRetry(src.getSpreadsheetId(), range);
+//    if (raw == null || raw.isEmpty()) return 0;
+//
+//    List<CustomerUpsertDto> parsed = mapCompleteRows(raw);
+//
+//    int n = persistRows30dLookback(parsed);
+//    log.info("[NightlyRecheck] sid={} start={} end={} parsed={} persisted={}",
+//        sourceId, start, cursor, parsed.size(), n);
+//    return n;
+//  }
+//
+//  // 2) 룩백 전용 persist: 존재하면 건너뛴다
+//  protected int persistRows30dLookback(List<CustomerUpsertDto> rows) {
+//    int n = 0;
+//    for (CustomerUpsertDto row : rows) {
+//      LocalDateTime createdAt = Optional.ofNullable(row.getCustomerCreatedAt()).orElse(LocalDateTime.now());
+//      LocalDateTime threshold = createdAt.minusDays(30);
+//
+//      String phoneDigits = digitsOnly(row.getCustomerPhone());
+//
+//      // 1) 본체 이벤트(같은 번호/시각/출처)가 이미 있으면 무조건 스킵 (동일 이벤트 재처리 방지)
+//      if (mapper.existsCustomerEvent(phoneDigits, createdAt, row.getCustomerSource())) {
+//        log.debug("[LookbackSkip] base event already exists phone={} at={} src={}", phoneDigits, createdAt, row.getCustomerSource());
+//        continue;
+//      }
+//
+//      // 2) 30일 이내 본체 존재 여부 확인
+//      Long recentBaseId = mapper.findBaseCustomerIdWithinDays(phoneDigits, threshold, createdAt);
+//
+//      if (recentBaseId != null) {
+//        // 2-1) 이미 동일 duplicate 이벤트가 있으면 스킵 (중복 중복 방지)
+//        if (mapper.existsDuplicateEvent(recentBaseId, createdAt, row.getCustomerSource())) {
+//          log.debug("[LookbackSkip] duplicate exists cid={} at={} src={}", recentBaseId, createdAt, row.getCustomerSource());
+//          continue;
+//        }
+//        // 2-2) 새로운 duplicate 삽입
+//        DuplicateUpsertDto dup = new DuplicateUpsertDto();
+//        dup.setCustomerId(recentBaseId);
+//        dup.setDuplicateCreatedAt(createdAt);
+//        dup.setDuplicateName(row.getCustomerName());
+//        dup.setDuplicateMemo(row.getCustomerMemo());
+//        dup.setDuplicateContent(row.getCustomerContent());
+//        dup.setDuplicateSource(row.getCustomerSource());
+//        mapper.insertDuplicateMinimal(dup);
+//        n++;
+//      } else {
+//        // 3) 본체 신규 삽입
+//        boolean existed = mapper.existsAnyBaseCustomer(phoneDigits);
+//        row.setCustomerDivision(existed ? "유효" : "최초");
+//        row.setCustomerStatus("없음");
+//        row.setCustomerCategory("주식");
+//        mapper.insertCustomerMinimal(row);
+//        n++;
+//      }
+//    }
+//    return n;
+//  }
   
   protected int drainFromCursor(long sourceId) {
     int total = 0, calls = 0;
@@ -379,8 +378,24 @@ public class SheetsSyncService {
       // 숫자만 키로 중복판정
       String phoneDigits = digitsOnly(row.getCustomerPhone());
       
-      Long recentBaseId = mapper.findBaseCustomerIdWithinDays(phoneDigits, threshold);
+      // 1) 완전 동일 "본체" 이벤트 스킵
+      if (mapper.existsCustomerEvent(
+          phoneDigits, createdAt, row.getCustomerSource(),
+          row.getCustomerName(), row.getCustomerMemo(), row.getCustomerContent())) {
+        log.debug("[Skip] base same-all-fields phone={} at={} src={}", phoneDigits, createdAt, row.getCustomerSource());
+        continue;
+      }
+      
+      Long recentBaseId = mapper.findBaseCustomerIdWithinDays(phoneDigits, threshold, createdAt);
       if (recentBaseId != null) {
+        // 2) 같은 본체에 동일 duplicate 이벤트가 이미 있으면 스킵
+        if (mapper.existsDuplicateEvent(
+            recentBaseId, createdAt, row.getCustomerSource(),
+            row.getCustomerName(), row.getCustomerMemo(), row.getCustomerContent())) {
+          log.debug("[Skip] dup same-all-fields cid={} at={} src={}", recentBaseId, createdAt, row.getCustomerSource());
+          continue;
+        }
+        
         DuplicateUpsertDto dup = new DuplicateUpsertDto();
         dup.setCustomerId(recentBaseId);
         dup.setDuplicateCreatedAt(createdAt);

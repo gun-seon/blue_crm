@@ -18,19 +18,26 @@ public interface SyncMapper {
   
   // customers 조회(숫자만 비교)
   Long findBaseCustomerIdWithinDays(@Param("phoneDigits") String phoneDigits,
-                                    @Param("threshold") LocalDateTime threshold);
+                                    @Param("threshold") java.time.LocalDateTime threshold,
+                                    @Param("createdAt") java.time.LocalDateTime createdAt);
   boolean existsAnyBaseCustomer(@Param("phoneDigits") String phoneDigits);
   
   // insert
   int insertCustomerMinimal(CustomerUpsertDto dto);
   int insertDuplicateMinimal(DuplicateUpsertDto dto);
   
-  // lookback
-  boolean existsDuplicateEvent(@Param("customerId") Long customerId,
-                               @Param("createdAt") LocalDateTime createdAt,
-                               @Param("source") String source);
-  
+  // 멱등 방지
   boolean existsCustomerEvent(@Param("phoneDigits") String phoneDigits,
                               @Param("createdAt") LocalDateTime createdAt,
-                              @Param("source") String source);
+                              @Param("source") String source,
+                              @Param("name") String name,
+                              @Param("memo") String memo,
+                              @Param("content") String content);
+  
+  boolean existsDuplicateEvent(@Param("customerId") Long customerId,
+                               @Param("createdAt") LocalDateTime createdAt,
+                               @Param("source") String source,
+                               @Param("name") String name,
+                               @Param("memo") String memo,
+                               @Param("content") String content);
 }

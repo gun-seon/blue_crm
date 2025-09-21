@@ -30,8 +30,9 @@
     <select id="findBaseCustomerIdWithinDays" resultType="long">
         SELECT customer_id
         FROM customers
-        WHERE REPLACE(customer_phone,'-','') = #{phoneDigits}
-          AND customer_created_at >= #{threshold}
+        WHERE REGEXP_REPLACE(customer_phone, '[^0-9]', '') = #{phoneDigits}
+          AND customer_created_at &gt;= #{threshold}
+          AND customer_created_at &lt;= #{createdAt}
         ORDER BY customer_created_at DESC
         LIMIT 1
     </select>
@@ -39,7 +40,7 @@
     <select id="existsAnyBaseCustomer" resultType="boolean">
         SELECT CASE WHEN EXISTS (
             SELECT 1 FROM customers
-            WHERE REPLACE(customer_phone,'-','') = #{phoneDigits}
+            WHERE REGEXP_REPLACE(customer_phone, '[^0-9]', '') = #{phoneDigits}
         ) THEN TRUE ELSE FALSE END
     </select>
 
@@ -82,6 +83,19 @@
                  )
     </insert>
 
+    <select id="existsCustomerEvent" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM customers
+            WHERE REGEXP_REPLACE(customer_phone, '[^0-9]', '') = #{phoneDigits}
+              AND customer_created_at = #{createdAt}
+              AND customer_source = #{source}
+              AND customer_name = #{name}
+              AND COALESCE(customer_memo,'') = COALESCE(#{memo},'')
+              AND COALESCE(customer_content,'') = COALESCE(#{content},'')
+        )
+    </select>
+
     <select id="existsDuplicateEvent" resultType="boolean">
         SELECT EXISTS(
             SELECT 1
@@ -89,16 +103,9 @@
             WHERE customer_id = #{customerId}
               AND duplicate_created_at = #{createdAt}
               AND duplicate_source = #{source}
-        )
-    </select>
-
-    <select id="existsCustomerEvent" resultType="boolean">
-        SELECT EXISTS(
-            SELECT 1
-            FROM customers
-            WHERE phone_digits = #{phoneDigits}
-              AND customer_created_at = #{createdAt}
-              AND customer_source = #{source}
+              AND duplicate_name = #{name}
+              AND COALESCE(duplicate_memo,'') = COALESCE(#{memo},'')
+              AND COALESCE(duplicate_content,'') = COALESCE(#{content},'')
         )
     </select>
 
