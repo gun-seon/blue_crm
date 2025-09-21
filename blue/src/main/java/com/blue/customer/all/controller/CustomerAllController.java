@@ -47,17 +47,6 @@ public class CustomerAllController {
     return ResponseEntity.ok().build();
   }
   
-//  // 메모 모달 저장 — customers만 (중복 차단)
-//  @PatchMapping("/work/db/memo/{customerId}")
-//  public ResponseEntity<Void> updateMemo(
-//      Authentication auth,
-//      @PathVariable Long customerId,
-//      @RequestBody MemoUpdateDto dto
-//  ) {
-//    memoService.updateMemo(auth.getName(), customerId, dto);
-//    return ResponseEntity.ok().build();
-//  }
-  
   // (본사 전용) 중복 DB 숨김 duplicate_display=0
   @PostMapping("/lead/db/duplicate/hide")
   public ResponseEntity<Void> hideDuplicates(
