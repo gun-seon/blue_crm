@@ -4,20 +4,18 @@
 
     <div class="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-0
                 dark:border-gray-800 dark:bg-white/[0.03]">
-      <!-- 장식 그리드 -->
-      <div class="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-[250%] max-w-none select-none" aria-hidden="true">
-        <CommonGridShape
-            src="/images/shape/grid-01.svg"
-            mode="mask"
-            size="w-56 h-56"
-            position="-top-1 -right-4"
-            opacity="opacity-[0.06] dark:opacity-[0.10]"
-            lightColor="bg-gray-900"
-            darkColor="dark:bg-gray-900"
-        />
-      </div>
-
       <div class="relative z-10 p-6">
+
+<!--        <CommonGridShape-->
+<!--            src="/images/shape/grid-01.svg"-->
+<!--            mode="mask"-->
+<!--            size="w-56 h-56"-->
+<!--            position="-top-1 -right-4"-->
+<!--            opacity="opacity-[0.06] dark:opacity-[0.10]"-->
+<!--            lightColor="bg-gray-900"-->
+<!--            darkColor="dark:bg-gray-900"-->
+<!--        />-->
+
         <ul class="space-y-3">
           <UserNode
               v-for="node in treeData"
@@ -32,44 +30,116 @@
       </div>
     </div>
 
+
     <!-- 간단 수정 모달 -->
-    <div v-if="edit.open" class="fixed inset-0 z-[1000] flex items-center justify-center">
-      <div class="absolute inset-0 bg-black/40" @click="closeEdit"></div>
-      <div class="relative w-[440px] rounded-xl bg-white p-5 shadow-xl ring-1 ring-black/5 dark:bg-gray-900 dark:text-gray-100">
-        <h3 class="mb-3 text-base font-semibold">정보 수정</h3>
-        <div class="space-y-3">
-          <div>
-            <label class="mb-1 block text-sm text-gray-600 dark:text-gray-300">이름</label>
-            <input
-                v-model.trim="edit.name"
-                @blur="validateName"
-                class="h-11 w-full rounded-lg border px-3
-                         bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-                         dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-            />
-            <p v-if="editErr.name" class="mt-1 text-xs text-error-500">{{ editErr.name }}</p>
+    <Teleport to="body">
+      <div
+          v-if="edit.open"
+          class="fixed inset-0 z-[100000] flex items-center justify-center"
+          role="dialog" aria-modal="true"
+      >
+        <!-- 배경 오버레이 (오타 제거, z 보장) -->
+        <div
+            class="fixed inset-0 bg-black/40 dark:bg-black/60 z-[99999]"
+            @click="closeEdit"
+        ></div>
+
+        <!-- 모달 박스 -->
+        <div
+            class="relative z-[100000] w-[440px] rounded-xl bg-white p-5 shadow-xl ring-1 ring-black/5
+             dark:bg-gray-900 dark:text-gray-100"
+        >
+          <h3 class="mb-3 text-base font-semibold">정보 수정</h3>
+
+          <div class="space-y-3">
+            <div>
+              <label class="mb-1 block text-sm text-gray-600 dark:text-gray-300">이름</label>
+              <input
+                  v-model.trim="edit.name"
+                  @blur="validateName"
+                  class="h-11 w-full rounded-lg border px-3
+                   bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                   dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              />
+              <p v-if="editErr.name" class="mt-1 text-xs text-error-500">{{ editErr.name }}</p>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-sm text-gray-600 dark:text-gray-300">전화번호</label>
+              <input
+                  v-model="edit.phone"
+                  @input="onPhoneInput"
+                  @blur="validatePhone"
+                  placeholder="010-1234-5678"
+                  class="h-11 w-full rounded-lg border px-3
+                   bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                   dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              />
+              <p v-if="editErr.phone" class="mt-1 text-xs text-error-500">{{ editErr.phone }}</p>
+            </div>
           </div>
-          <div>
-            <label class="mb-1 block text-sm text-gray-600 dark:text-gray-300">전화번호</label>
-            <input
-                v-model="edit.phone"
-                @input="onPhoneInput"
-                @blur="validatePhone"
-                placeholder="010-1234-5678"
-                class="h-11 w-full rounded-lg border px-3
-                         bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-                         dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-            />
-            <p v-if="editErr.phone" class="mt-1 text-xs text-error-500">{{ editErr.phone }}</p>
+
+          <div class="mt-4 flex justify-end gap-2">
+            <button
+                class="h-10 rounded-lg bg-gray-200 px-4 text-gray-800 hover:bg-gray-100
+                 dark:bg-gray-700 dark:text-gray-100"
+                @click="closeEdit"
+            >
+              취소
+            </button>
+            <button
+                class="h-10 rounded-lg bg-brand-500 px-4 text-white hover:bg-brand-600"
+                @click="saveEdit"
+            >
+              저장
+            </button>
           </div>
-        </div>
-        <div class="mt-4 flex justify-end gap-2">
-          <button class="h-10 rounded-lg bg-gray-200 px-4 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100" @click="closeEdit">취소</button>
-          <button class="h-10 rounded-lg bg-brand-500 px-4 text-white hover:bg-brand-600" @click="saveEdit">저장</button>
         </div>
       </div>
-    </div>
+    </Teleport>
+
+<!--    &lt;!&ndash; 간단 수정 모달 &ndash;&gt;-->
+<!--    <div v-if="edit.open" class="fixed inset-0 z-[1000] flex items-center justify-center">-->
+<!--      <div class="fixed inset-0 bg-black/40 dark:bg-black/60" @click="closeEdit">></div>-->
+<!--      <div class="relative w-[440px] rounded-xl bg-white p-5 shadow-xl ring-1 ring-black/5 dark:bg-gray-900 dark:text-gray-100 z-10">-->
+<!--        <h3 class="mb-3 text-base font-semibold">정보 수정</h3>-->
+<!--        <div class="space-y-3">-->
+<!--          <div>-->
+<!--            <label class="mb-1 block text-sm text-gray-600 dark:text-gray-300">이름</label>-->
+<!--            <input-->
+<!--                v-model.trim="edit.name"-->
+<!--                @blur="validateName"-->
+<!--                class="h-11 w-full rounded-lg border px-3-->
+<!--                         bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10-->
+<!--                         dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"-->
+<!--            />-->
+<!--            <p v-if="editErr.name" class="mt-1 text-xs text-error-500">{{ editErr.name }}</p>-->
+<!--          </div>-->
+<!--          <div>-->
+<!--            <label class="mb-1 block text-sm text-gray-600 dark:text-gray-300">전화번호</label>-->
+<!--            <input-->
+<!--                v-model="edit.phone"-->
+<!--                @input="onPhoneInput"-->
+<!--                @blur="validatePhone"-->
+<!--                placeholder="010-1234-5678"-->
+<!--                class="h-11 w-full rounded-lg border px-3-->
+<!--                         bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10-->
+<!--                         dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"-->
+<!--            />-->
+<!--            <p v-if="editErr.phone" class="mt-1 text-xs text-error-500">{{ editErr.phone }}</p>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--        <div class="mt-4 flex justify-end gap-2">-->
+<!--          <button class="h-10 rounded-lg bg-gray-200 px-4 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100" @click="closeEdit">취소</button>-->
+<!--          <button class="h-10 rounded-lg bg-brand-500 px-4 text-white hover:bg-brand-600" @click="saveEdit">저장</button>-->
+<!--        </div>-->
+<!--      </div>-->
+<!--    </div>-->
+
+
   </AdminLayout>
+
+
 </template>
 
 <script setup>

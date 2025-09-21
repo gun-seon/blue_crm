@@ -15,9 +15,11 @@ public class SheetsSyncController {
   private final SheetsSyncService service;
   private final SyncMapper mapper;
   
+  // 수동 새로고침 (full=true 이면 드레인)
   @PostMapping("/refresh")
-  public ResponseEntity<?> refresh(@RequestParam(name = "sid", defaultValue = "1") long sourceId) {
-    var r = service.manualRefresh(sourceId);
+  public ResponseEntity<?> refresh(@RequestParam(name = "sid", defaultValue = "1") long sourceId,
+                                   @RequestParam(name = "full", defaultValue = "false") boolean full) {
+    var r = full ? service.nightlyResume(sourceId, 0) : service.manualRefresh(sourceId);
     return ResponseEntity.ok(new Resp(r.executed(), r.rows(), r.reason()));
   }
   

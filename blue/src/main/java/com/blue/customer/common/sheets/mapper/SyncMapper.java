@@ -11,17 +11,26 @@ import java.util.List;
 
 @Mapper
 public interface SyncMapper {
-  // gsheet_sources (커서/설정)
+  // gsheet_sources
   GsheetSourceDto findSourceById(@Param("sourceId") Long sourceId);
   List<Long> findAllSourceIds();
   int advanceSourceCursor(@Param("sourceId") Long sourceId, @Param("newCursor") int newCursor);
   
-  // customers (중복 판정용 조회)
-  Long findBaseCustomerIdWithinDays(@Param("phone") String phone,
+  // customers 조회(숫자만 비교)
+  Long findBaseCustomerIdWithinDays(@Param("phoneDigits") String phoneDigits,
                                     @Param("threshold") LocalDateTime threshold);
-  boolean existsAnyBaseCustomer(@Param("phone") String phone);
+  boolean existsAnyBaseCustomer(@Param("phoneDigits") String phoneDigits);
   
-  // 쓰기
+  // insert
   int insertCustomerMinimal(CustomerUpsertDto dto);
   int insertDuplicateMinimal(DuplicateUpsertDto dto);
+  
+  // lookback
+  boolean existsDuplicateEvent(@Param("customerId") Long customerId,
+                               @Param("createdAt") LocalDateTime createdAt,
+                               @Param("source") String source);
+  
+  boolean existsCustomerEvent(@Param("phoneDigits") String phoneDigits,
+                              @Param("createdAt") LocalDateTime createdAt,
+                              @Param("source") String source);
 }

@@ -15,15 +15,15 @@ import java.util.List;
 
 @Configuration
 public class GoogleSheetsConfig {
-
+  
   @Value("${google.creds.location}")
   private Resource keyFile;
-
+  
   @Bean
   public Sheets sheets() throws Exception {
     GoogleCredentials creds = GoogleCredentials.fromStream(keyFile.getInputStream())
-        .createScoped(List.of(SheetsScopes.SPREADSHEETS_READONLY)); // 읽기 전용
-
+        .createScoped(List.of(SheetsScopes.SPREADSHEETS_READONLY)); // 읽기전용
+    
     return new Sheets.Builder(
         GoogleNetHttpTransport.newTrustedTransport(),
         GsonFactory.getDefaultInstance(),

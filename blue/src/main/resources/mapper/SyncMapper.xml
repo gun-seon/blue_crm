@@ -1,10 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.blue.customer.common.sheets.mapper.SyncMapper">
 
     <!-- gsheet_sources -->
-    <select id="findSourceById"
-            resultType="com.blue.customer.common.sheets.dto.GsheetSourceDto">
+    <select id="findSourceById" resultType="com.blue.customer.common.sheets.dto.GsheetSourceDto">
         SELECT
             source_id      AS sourceId,
             spreadsheet_id AS spreadsheetId,
@@ -21,18 +21,16 @@
 
     <update id="advanceSourceCursor">
         UPDATE gsheet_sources
-        SET cursor_row = CASE
-                             WHEN cursor_row &lt; #{newCursor} THEN #{newCursor}
-                             ELSE cursor_row
-            END
+        SET cursor_row = CASE WHEN cursor_row &lt; #{newCursor} THEN #{newCursor}
+                              ELSE cursor_row END
         WHERE source_id = #{sourceId}
     </update>
 
-    <!-- 중복 판정용 조회 (customers만) -->
+    <!-- customers / customers_duplicate (중복 판정은 숫자만 비교) -->
     <select id="findBaseCustomerIdWithinDays" resultType="long">
         SELECT customer_id
         FROM customers
-        WHERE customer_phone = #{phone}
+        WHERE REPLACE(customer_phone,'-','') = #{phoneDigits}
           AND customer_created_at >= #{threshold}
         ORDER BY customer_created_at DESC
         LIMIT 1
@@ -40,13 +38,14 @@
 
     <select id="existsAnyBaseCustomer" resultType="boolean">
         SELECT CASE WHEN EXISTS (
-            SELECT 1 FROM customers WHERE customer_phone = #{phone}
+            SELECT 1 FROM customers
+            WHERE REPLACE(customer_phone,'-','') = #{phoneDigits}
         ) THEN TRUE ELSE FALSE END
     </select>
 
-    <!-- 쓰기 -->
     <insert id="insertCustomerMinimal"
-            parameterType="com.blue.customer.common.sheets.dto.CustomerUpsertDto">
+            parameterType="com.blue.customer.common.sheets.dto.CustomerUpsertDto"
+            useGeneratedKeys="true">
         INSERT INTO customers (
             customer_created_at, customer_name, customer_phone,
             customer_memo, customer_content, customer_source,
@@ -64,10 +63,9 @@
                  )
     </insert>
 
-    <!-- customers_duplicate: TV/텔레그램 없음 스키마 기준 -->
     <insert id="insertDuplicateMinimal"
             parameterType="com.blue.customer.common.sheets.dto.DuplicateUpsertDto"
-            useGeneratedKeys="true" keyProperty="duplicateId" keyColumn="duplicate_id">
+            useGeneratedKeys="true" keyProperty="duplicateId">
         INSERT INTO customers_duplicate (
             customer_id, duplicate_created_at, duplicate_name,
             duplicate_memo, duplicate_content, duplicate_source,
@@ -83,5 +81,25 @@
                      #{duplicateDisplay,jdbcType=TINYINT}
                  )
     </insert>
+
+    <select id="existsDuplicateEvent" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM customers_duplicate
+            WHERE customer_id = #{customerId}
+              AND duplicate_created_at = #{createdAt}
+              AND duplicate_source = #{source}
+        )
+    </select>
+
+    <select id="existsCustomerEvent" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM customers
+            WHERE phone_digits = #{phoneDigits}
+              AND customer_created_at = #{createdAt}
+              AND customer_source = #{source}
+        )
+    </select>
 
 </mapper>
