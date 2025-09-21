@@ -13,18 +13,17 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
-// com.blue.customer.common.config.sheets.GoogleSheetsConfig
 @Configuration
 public class GoogleSheetsConfig {
-  
+
   @Value("${google.creds.location}")
   private Resource keyFile;
-  
+
   @Bean
   public Sheets sheets() throws Exception {
     GoogleCredentials creds = GoogleCredentials.fromStream(keyFile.getInputStream())
         .createScoped(List.of(SheetsScopes.SPREADSHEETS_READONLY)); // 읽기 전용
-    
+
     return new Sheets.Builder(
         GoogleNetHttpTransport.newTrustedTransport(),
         GsonFactory.getDefaultInstance(),

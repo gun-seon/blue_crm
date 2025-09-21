@@ -326,7 +326,7 @@ async function savePhone() {
     phone.value = phoneInput.value
     alert('전화번호가 저장되었습니다.')
   } catch (e) {
-    console.error('[MyInfo] savePhone error:', e?.response?.status, e?.response?.data || e)
+    console.error('전화번호 저장 실패:', e?.response?.status, e?.response?.data || e)
     alert('전화번호 저장 실패')
   } finally {
     savingPhone.value = false
@@ -401,7 +401,7 @@ async function changePassword() {
     alert('비밀번호가 변경되었습니다. 다음 로그인부터 적용됩니다.')
     resetPwForm()
   } catch (e) {
-    console.error('[MyInfo] changePassword error:', e?.response?.status, e?.response?.data || e)
+    console.error('비밀번호 변경 실패 :', e?.response?.status, e?.response?.data || e)
     console.error(e)
     if (e.response?.status === 400) {
       alert(e?.response?.data || '')
@@ -427,7 +427,7 @@ async function saveSheetSettings() {
     }, { withCredentials: true })
     alert('시트 설정이 저장되었습니다.')
   } catch (e) {
-    console.error('[MyInfo] saveSheetSettings error:', e)
+    console.error('시트 정보 저장 실패 :', e)
     alert('저장 실패')
   }
 }

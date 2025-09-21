@@ -27,7 +27,7 @@
             AND t.createdAt &gt;= #{dateFrom}
         </if>
         <if test="dateTo != null and dateTo != ''">
-            AND t.createdAt &lt;= #{dateTo}
+            AND t.createdAt &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
         </if>
         <if test="category != null and category != ''">
             AND t.category = #{category}
@@ -158,7 +158,7 @@
             AND c.customer_created_at &gt;= #{dateFrom}
         </if>
         <if test="dateTo != null and dateTo != ''">
-            AND c.customer_created_at &lt;= #{dateTo}
+            AAND t.createdAt &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
         </if>
         <if test="category != null and category != ''">
             AND c.customer_category = #{category}

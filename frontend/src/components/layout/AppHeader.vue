@@ -349,10 +349,10 @@ const test = async () => {
   try {
     const res = await auth.pingPong()
     console.log("Ping 성공:", res)
-    alert("서버 응답: " + JSON.stringify(res))
+    // alert("서버 응답: " + JSON.stringify(res))
   } catch (e) {
     console.error("Ping 실패:", e)
-    alert("Ping 실패: " + e)
+    // alert("Ping 실패: " + e)
   }
 }
 

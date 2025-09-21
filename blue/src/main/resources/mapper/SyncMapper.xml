@@ -1,0 +1,87 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blue.customer.common.sheets.mapper.SyncMapper">
+
+    <!-- gsheet_sources -->
+    <select id="findSourceById"
+            resultType="com.blue.customer.common.sheets.dto.GsheetSourceDto">
+        SELECT
+            source_id      AS sourceId,
+            spreadsheet_id AS spreadsheetId,
+            sheet_name     AS sheetName,
+            cursor_row     AS cursorRow,
+            updated_at     AS updatedAt
+        FROM gsheet_sources
+        WHERE source_id = #{sourceId}
+    </select>
+
+    <select id="findAllSourceIds" resultType="long">
+        SELECT source_id FROM gsheet_sources
+    </select>
+
+    <update id="advanceSourceCursor">
+        UPDATE gsheet_sources
+        SET cursor_row = CASE
+                             WHEN cursor_row &lt; #{newCursor} THEN #{newCursor}
+                             ELSE cursor_row
+            END
+        WHERE source_id = #{sourceId}
+    </update>
+
+    <!-- 중복 판정용 조회 (customers만) -->
+    <select id="findBaseCustomerIdWithinDays" resultType="long">
+        SELECT customer_id
+        FROM customers
+        WHERE customer_phone = #{phone}
+          AND customer_created_at >= #{threshold}
+        ORDER BY customer_created_at DESC
+        LIMIT 1
+    </select>
+
+    <select id="existsAnyBaseCustomer" resultType="boolean">
+        SELECT CASE WHEN EXISTS (
+            SELECT 1 FROM customers WHERE customer_phone = #{phone}
+        ) THEN TRUE ELSE FALSE END
+    </select>
+
+    <!-- 쓰기 -->
+    <insert id="insertCustomerMinimal"
+            parameterType="com.blue.customer.common.sheets.dto.CustomerUpsertDto">
+        INSERT INTO customers (
+            customer_created_at, customer_name, customer_phone,
+            customer_memo, customer_content, customer_source,
+            customer_division, customer_status, customer_category
+        ) VALUES (
+                     #{customerCreatedAt,jdbcType=TIMESTAMP},
+                     #{customerName},
+                     #{customerPhone},
+                     #{customerMemo,jdbcType=LONGVARCHAR},
+                     #{customerContent,jdbcType=LONGVARCHAR},
+                     #{customerSource},
+                     #{customerDivision},
+                     #{customerStatus},
+                     #{customerCategory}
+                 )
+    </insert>
+
+    <!-- customers_duplicate: TV/텔레그램 없음 스키마 기준 -->
+    <insert id="insertDuplicateMinimal"
+            parameterType="com.blue.customer.common.sheets.dto.DuplicateUpsertDto"
+            useGeneratedKeys="true" keyProperty="duplicateId" keyColumn="duplicate_id">
+        INSERT INTO customers_duplicate (
+            customer_id, duplicate_created_at, duplicate_name,
+            duplicate_memo, duplicate_content, duplicate_source,
+            duplicate_category, duplicate_display
+        ) VALUES (
+                     #{customerId},
+                     #{duplicateCreatedAt,jdbcType=TIMESTAMP},
+                     #{duplicateName},
+                     #{duplicateMemo,jdbcType=LONGVARCHAR},
+                     #{duplicateContent,jdbcType=LONGVARCHAR},
+                     #{duplicateSource},
+                     #{duplicateCategory},
+                     #{duplicateDisplay,jdbcType=TINYINT}
+                 )
+    </insert>
+
+</mapper>

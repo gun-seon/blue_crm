@@ -168,7 +168,7 @@ const commonColumns = [
 ============================= */
 function onRowSelect(rows) {
   selectedRows.value = rows;
-  console.log("선택 행:", rows);
+  // console.log("선택 행:", rows);
 }
 
 function onBadgeUpdate(row, key, newValue) {
@@ -188,7 +188,7 @@ function onBadgeUpdate(row, key, newValue) {
     });
   }
 
-  console.log("배지 수정:", row, key, newValue);
+  // console.log("배지 수정:", row, key, newValue);
 }
 
 async function onDateUpdate(row, key, newValue) {
@@ -202,7 +202,7 @@ async function onDateUpdate(row, key, newValue) {
       field: key,       // "reservation"
       value: newValue   // 날짜 값
     })
-    console.log("예약일 저장 성공:", row.name, newValue)
+    // console.log("예약일 저장 성공:", row.name, newValue)
   } catch (err) {
     console.error("예약일 저장 실패", err)
     alert("예약일 저장 중 오류가 발생했습니다.")
@@ -227,7 +227,7 @@ function closeMemo() {
 }
 
 function onDivisionSelect({ idx, value }) {
-  console.log("구분 필터 선택:", value);
+  // console.log("구분 필터 선택:", value);
   if (value === "전체") {
     setFilter("division", null)
   } else {

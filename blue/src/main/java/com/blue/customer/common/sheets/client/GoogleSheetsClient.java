@@ -10,11 +10,11 @@ import java.util.List;
 @Component
 public class GoogleSheetsClient {
   private final Sheets sheets;
-  
+
   public GoogleSheetsClient(Sheets sheets) {
     this.sheets = sheets;
   }
-  
+
   public List<List<Object>> readRange(String spreadsheetId, String range) throws IOException {
     ValueRange response = sheets.spreadsheets().values()
         .get(spreadsheetId, range)
