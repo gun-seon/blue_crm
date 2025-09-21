@@ -349,10 +349,10 @@ const test = async () => {
   try {
     const res = await auth.pingPong()
     console.log("Ping 성공:", res)
-    alert("서버 응답: " + JSON.stringify(res))
+    // alert("서버 응답: " + JSON.stringify(res))
   } catch (e) {
     console.error("Ping 실패:", e)
-    alert("Ping 실패: " + e)
+    // alert("Ping 실패: " + e)
   }
 }
 
@@ -444,12 +444,19 @@ watch(selectedCategory, (val) => {
   globalFilters.category = val === 'all' ? null : val
 })
 
+const fmtYMD = (d: Date) => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`            // 로컬(브라우저) 기준 YYYY-MM-DD
+}
+
 watch(startDate, (val) => {
-  globalFilters.dateFrom = val ? val.toISOString().slice(0, 10) : null
+  globalFilters.dateFrom = val ? fmtYMD(val) : null
 })
 
 watch(endDate, (val) => {
-  globalFilters.dateTo = val ? val.toISOString().slice(0, 10) : null
+  globalFilters.dateTo = val ? fmtYMD(val) : null
 })
 
 // --- 스크롤/휠 시 달력 강제 닫기 ---

@@ -3,8 +3,12 @@
     <!-- 제목 바: 본사 / 본사 직원 / 센터명 -->
     <div
         v-if="isTitle(node)"
-        class="flex items-center gap-2 rounded-2xl bg-gray-200/80 px-4 py-2
-             text-gray-900 dark:bg-gray-800/70 dark:text-gray-100"
+        :class="[
+            'flex items-center gap-2 rounded-2xl px-4 py-2',
+            node.userRole === 'HQ'
+              ? 'bg-gray-300/70 text-gray-900 dark:bg-gray-700/40 dark:text-gray-200 dark:ring-gray-600'
+              : 'bg-gray-200/70 text-gray-900 dark:bg-gray-800/80 dark:text-gray-300 dark:ring-gray-700'
+          ]"
     >
       <button
           @click="toggle()"
@@ -35,7 +39,7 @@
 
       <!-- 리프(직원) 리스트 -->
       <div v-else-if="hasLeaf" class="ml-6">
-        <div class="rounded-2xl bg-white/60 p-2 ring-1 ring-gray-100 dark:bg-white/[0.03] dark:ring-gray-800">
+        <div class="rounded-2xl bg-white/60 p-2 ring-1 ring-gray-100 dark:bg-white/[0.01] dark:ring-gray-800">
           <div
               v-for="child in node.children"
               :key="child.userId"
@@ -70,9 +74,16 @@
 
       <!-- 비어있을 때 -->
       <div v-else class="ml-6">
-        <div class="rounded-xl border border-dashed border-gray-200 p-4 text-sm
-                    text-gray-500 dark:border-gray-700 dark:text-gray-400">
-          구성원이 없습니다.
+        <div
+            class="rounded-xl border border-dashed border-gray-200 p-4 text-sm
+           text-gray-500 dark:border-gray-700 dark:text-gray-400"
+        >
+          <template v-if="isUnassignedStaff">
+            아직 센터에 배정되지 않았습니다.
+          </template>
+          <template v-else>
+            구성원이 없습니다.
+          </template>
         </div>
       </div>
     </template>
@@ -107,6 +118,9 @@ const emit = defineEmits(['toggle','edit'])
 const isTitle = (n) => ['HQ','GROUP','CENTER'].includes(n.userRole)
 const keyOf   = (n) => (n.userId ? `U:${n.userId}` : `${n.userRole}:${n.userName}`)
 
+const isUnassignedStaff = computed(() =>
+    props.currentUser?.userRole === "STAFF" && !props.currentUser?.centerId
+)
 // const hasChildren = props.node.children && props.node.children.length > 0
 // const hasTitleChild = computed(() => hasChildren && props.node.children.some(c => isTitle(c)))
 

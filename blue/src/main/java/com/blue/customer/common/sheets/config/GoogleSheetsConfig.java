@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
-// com.blue.customer.common.config.sheets.GoogleSheetsConfig
 @Configuration
 public class GoogleSheetsConfig {
   
@@ -23,7 +22,7 @@ public class GoogleSheetsConfig {
   @Bean
   public Sheets sheets() throws Exception {
     GoogleCredentials creds = GoogleCredentials.fromStream(keyFile.getInputStream())
-        .createScoped(List.of(SheetsScopes.SPREADSHEETS_READONLY)); // 읽기 전용
+        .createScoped(List.of(SheetsScopes.SPREADSHEETS_READONLY)); // 읽기전용
     
     return new Sheets.Builder(
         GoogleNetHttpTransport.newTrustedTransport(),

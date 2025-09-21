@@ -16,9 +16,7 @@ public class GoogleSheetsClient {
   }
   
   public List<List<Object>> readRange(String spreadsheetId, String range) throws IOException {
-    ValueRange response = sheets.spreadsheets().values()
-        .get(spreadsheetId, range)
-        .execute();
+    ValueRange response = sheets.spreadsheets().values().get(spreadsheetId, range).execute();
     return response.getValues();
   }
 }

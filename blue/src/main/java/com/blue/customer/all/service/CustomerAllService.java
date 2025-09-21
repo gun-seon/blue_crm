@@ -35,8 +35,10 @@ public class CustomerAllService {
     
     switch (me.getRole()) {
       case "SUPERADMIN" -> {
-        items = mapper.findAllForAdmin(offset, size, keyword, dateFrom, dateTo, category, division, sort);
-        total = mapper.countAllForAdmin(keyword, dateFrom, dateTo, category, division);
+//        System.out.println("datefrom: " + dateFrom);
+//        System.out.println("dateto: " + dateTo);
+        items = mapper.findAllForAdmin(offset, size, keyword, dateFrom, dateTo, category, division, sort, me.getVisible());
+        total = mapper.countAllForAdmin(keyword, dateFrom, dateTo, category, division, me.getVisible());
       }
       case "MANAGER" -> {
         items = mapper.findAllForManager(offset, size, keyword, dateFrom, dateTo, category, division, sort, me.getCenterId());

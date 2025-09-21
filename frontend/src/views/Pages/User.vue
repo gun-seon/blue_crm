@@ -5,6 +5,9 @@
       <div class="col-span-12 space-y-6 min-w-0">
         <ComponentCard
             :buttons="['센터관리', '일괄승인']"
+            :showRefresh="true"
+            :refreshing="isRefreshing"
+            @refresh="onRefresh"
             @changeSize="val => setSize(val)"
             @buttonClick="onButtonClick">
           <PsnsTable
@@ -41,6 +44,21 @@ import { globalFilters } from "@/composables/globalFilters.js";
 
 const currentPageTitle = ref("직원관리")
 const selectedRows = ref([])
+const isRefreshing = ref(false); // 새로고침 스피너/비활성
+
+async function onRefresh() {
+  if (isRefreshing.value) return;
+  isRefreshing.value = true;
+  try {
+    // 단순히 테이블 데이터만 다시 조회
+    await fetchData();
+  } catch (err) {
+    console.error('테이블 새로고침 실패', err);
+    alert('새로고침 중 오류가 발생했습니다.');
+  } finally {
+    isRefreshing.value = false;
+  }
+}
 
 // DB에서 centers 불러오기
 const centerOptions = ref([]);
@@ -119,12 +137,12 @@ function canEdit(row) {
 // 1. 테이블에서 체크박스 선택 시
 function onRowSelect(rows) {
   selectedRows.value = rows
-  console.log("현재 선택된 행들:", rows)
+  // console.log("현재 선택된 행들:", rows)
 }
 
 // 2. 버튼 클릭 시 (ComponentCard → User.vue)
 async function onButtonClick(btn) {
-  console.log("Button clicked:", btn)
+  // console.log("Button clicked:", btn)
   if (btn === "일괄승인") {
     await onBulkApprove()
   }
@@ -201,7 +219,7 @@ async function onBadgeUpdate(row, key, newValue) {
     row[key] = newValue
     await fetchData()
 
-    console.log(newValue, "업데이트 성공")
+    // console.log(newValue, "업데이트 성공")
   } catch (err) {
     console.error("업데이트 실패", err)
     alert("업데이트 중 오류가 발생했습니다.")

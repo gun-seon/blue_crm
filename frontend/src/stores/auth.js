@@ -12,9 +12,8 @@ export const useAuthStore = defineStore('auth', {
     }),
     actions: {
         async pingPong() {
-            // const { data } = await axios.get('/api/ping' +
-            const { data } = await axios.get('/api/sheets/test' +
-                '')
+            // 수동 새로고침 (sid 기본값 1)
+            const { data } = await axios.post('/api/sheets/refresh?sid=1')
             return data
         },
 
