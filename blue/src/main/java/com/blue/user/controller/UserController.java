@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/super/users")
@@ -30,6 +31,14 @@ public class UserController {
 //    System.out.println(keyword);
 //    System.out.println(userService.getUsers(page, size, keyword));
     return userService.getUsers(page, size, keyword);
+  }
+  
+  // 프론트 사전 확인: 해당 센터에 다른 MANAGER 있는지
+  @GetMapping("/has-manager")
+  public ResponseEntity<?> hasManager(@RequestParam String centerName,
+                                      @RequestParam(required = false) Long excludeUserId) {
+    int cnt = userService.countManagersInCenter(centerName, excludeUserId);
+    return ResponseEntity.ok(Map.of("exists", cnt > 0));
   }
   
   // 직원관리 페이지에서 배지 수정이 발생한 경우

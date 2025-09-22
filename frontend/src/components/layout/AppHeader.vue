@@ -117,7 +117,8 @@
           <!-- 검색창 -->
           <SearchBar />
 
-          <button @click="test">ping</button>
+          <!-- 핑 테스트 -->
+<!--          <button @click="test">ping</button>-->
         </div>
       </div>
 

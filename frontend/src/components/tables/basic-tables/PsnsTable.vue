@@ -222,11 +222,23 @@ watch(() => props.page, () => {
 
 /* 체크박스 */
 const selectedRows = ref([])
-const allSelected = computed(() => selectedRows.value.length === props.data.length && props.data.length > 0)
+const allSelected = computed(() => {
+  const selectableCount = props.data
+      .filter(row => (props.rowSelectable ? props.rowSelectable(row) : true)).length
+  return selectableCount > 0 && selectedRows.value.length === selectableCount
+})
 function toggleAll(e) {
-  selectedRows.value = e.target.checked ? props.data.map((_, idx) => idx) : []
+  if (e.target.checked) {
+    selectedRows.value = props.data
+        .map((row, idx) => ({ row, idx }))
+        .filter(({ row }) => (props.rowSelectable ? props.rowSelectable(row) : true))
+        .map(({ idx }) => idx)
+  } else {
+    selectedRows.value = []
+  }
   emitSelected()
 }
+
 function toggleRow(idx) {
   if (selectedRows.value.includes(idx)) {
     selectedRows.value = selectedRows.value.filter(i => i !== idx)
@@ -558,7 +570,9 @@ const visiblePages = computed(() => {
 // 선택 해제 메서드
 const selectedRowIds = ref(new Set());
 function clearSelection() {
+  selectedRows.value = [];
   selectedRowIds.value = new Set();
+  emitSelected();
 }
 defineExpose({ clearSelection });
 

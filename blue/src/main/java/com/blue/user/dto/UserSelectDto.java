@@ -11,4 +11,5 @@ public class UserSelectDto {
   private String userRole;
   private String userApproved;
   private String centerName;
+  private String managerPhoneAccess;
 }

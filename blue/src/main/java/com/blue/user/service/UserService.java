@@ -31,6 +31,12 @@ public class UserService {
     return new PageResponse<>(items, totalPages, totalCount);
   }
   
+  // 프론트 사전 확인용 (본사면 0 반환)
+  public int countManagersInCenter(String centerName, Long excludeUserId) {
+    if ("본사".equals(centerName)) return 0;
+    return userMapper.countManagersInCenter(centerName, excludeUserId);
+  }
+  
   // 직원관리 페이지에서 배지 수정이 발생한 경우
   @Transactional
   public void updateUserField(Long userId, String field, String value, String requesterEmail) {
@@ -48,7 +54,35 @@ public class UserService {
     // 2. 특별 계정이 아닌 경우 → 본사/관리자 계정 수정 불가
     boolean isRestricted = "SUPERADMIN".equals(target.getUserRole()) || "본사".equals(target.getCenterName());
     if (isRestricted && !superAccount.equals(requesterEmail)) {
-      throw new SecurityException("관리자 계정의 정보는 특별 계정만 수정 가능합니다.");
+      throw new SecurityException("권한이 없습니다.");
+    }
+    
+    // 3) 가시권한(visible)은 super만 수정 가능
+    if ("visible".equals(field) && !superAccount.equals(requesterEmail)) {
+      throw new SecurityException("권한이 없습니다.");
+    }
+    
+    // 4) 센터장 1명 제한(서버 가드)
+    // 4-1) 구분을 '센터장'으로 바꾸는 경우 → 현재 소속에 다른 센터장이 있으면 불가 (본사 제외)
+    if ("type".equals(field) && "센터장".equals(value)) {
+      String centerName = target.getCenterName();
+      if (centerName != null && !"본사".equals(centerName)) {
+        int cnt = countManagersInCenter(centerName, userId);
+        if (cnt > 0) {
+          throw new IllegalStateException("'" + centerName + "'에는 이미 센터장이 있습니다.");
+        }
+      }
+    }
+    
+    // 4-2) 소속을 바꾸는 경우 → 대상이 현재 MANAGER라면, 이동할 소속에 다른 센터장이 있으면 불가 (본사 제외)
+    if ("center".equals(field)) {
+      boolean targetIsManager = "MANAGER".equals(target.getUserRole());
+      if (targetIsManager && value != null && !"본사".equals(value)) {
+        int cnt = countManagersInCenter(value, userId);
+        if (cnt > 0) {
+          throw new IllegalStateException("'" + value + "'에는 이미 센터장이 있습니다.");
+        }
+      }
     }
     
     // 조건 통과한 경우만 업데이트 실행

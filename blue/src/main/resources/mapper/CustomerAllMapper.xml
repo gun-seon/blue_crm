@@ -22,9 +22,10 @@
         <if test="keyword != null and keyword != ''">
             <choose>
                 <!-- 가시권한 N: 전화번호 검색은 앞3/뒤4 "정확일치"만 허용 + 이름 검색-->
-                <when test="'N'.equals(visible)">
+                <when test='visible == "N"'>
                     AND (
                     t.name LIKE CONCAT('%', #{keyword}, '%')
+                    OR t.staff LIKE CONCAT('%', #{keyword}, '%')
                     OR RIGHT(
                     /* MySQL 8+: 비숫자 제거 */
                     REGEXP_REPLACE(t.phone, '[^0-9]', ''),
@@ -44,6 +45,7 @@
                 <otherwise>
                     AND (
                     t.name  LIKE CONCAT('%', #{keyword}, '%')
+                    OR t.staff LIKE CONCAT('%', #{keyword}, '%')
                     OR t.phone LIKE CONCAT('%', #{keyword}, '%')
                     )
                 </otherwise>
@@ -178,6 +180,7 @@
     <sql id="CUSTOMER_ONLY_FILTERS">
         <if test="keyword != null and keyword != ''">
             AND (c.customer_name LIKE CONCAT('%', #{keyword}, '%')
+            OR u.user_name LIKE CONCAT('%', #{keyword}, '%')
             OR  c.customer_phone LIKE CONCAT('%', #{keyword}, '%'))
         </if>
         <if test="dateFrom != null and dateFrom != ''">

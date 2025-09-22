@@ -33,4 +33,58 @@
         WHERE user_email = #{userEmail}
     </update>
 
+    <!-- 구글 스프레드 시트 조회 -->
+    <select id="findOneBySourceId" resultType="com.blue.auth.dto.SheetSettingsDto">
+        SELECT
+            spreadsheet_id AS sheetId,
+            cursor_row     AS startRow
+        FROM gsheet_sources
+        WHERE source_id = #{sourceId}
+        LIMIT 1
+    </select>
+
+    <!-- 구글 스프레드 시트 수정 -->
+    <update id="updateOne">
+        UPDATE gsheet_sources
+        SET spreadsheet_id = #{sheetId},
+            cursor_row     = #{startRow},
+            updated_at     = NOW()
+        WHERE source_id     = #{sourceId}
+    </update>
+
+    <!-- 센터 조회: 본사 제외 -->
+    <select id="findAll" resultType="com.blue.auth.dto.CenterDto">
+        SELECT
+        center_id   AS centerId,
+        center_name AS centerName
+        FROM centers
+        WHERE center_id != 1 <!-- 본사 제외 -->
+        ORDER BY center_id DESC
+    </select>
+
+    <!-- 센터 조회 : 이름 중복 확인 -->
+    <select id="existsByName" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 FROM centers WHERE center_name = #{centerName} LIMIT 1
+        )
+    </select>
+
+    <!-- 센터 추가 -->
+    <insert id="insert">
+        INSERT INTO centers (center_name) VALUES (#{centerName})
+    </insert>
+
+    <!-- 직원(사용자) 존재 여부 -->
+    <select id="countUsersInCenter" resultType="int">
+        SELECT COUNT(*)
+        FROM users
+        WHERE center_id = #{centerId}
+    </select>
+
+    <!-- 센터 삭제 -->
+    <delete id="delete">
+        DELETE FROM centers
+        WHERE center_id = #{centerId}
+    </delete>
+
 </mapper>
