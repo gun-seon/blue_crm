@@ -11,6 +11,7 @@
             @changeSize="val => setSize(val)"
             @buttonClick="onButtonClick">
           <PsnsTable
+              ref="tableRef"
               :columns="columns"
               :data="items"
               :showCheckbox="true"
@@ -42,6 +43,7 @@ const auth = useAuthStore()
 import { useTableQuery } from "@/composables/useTableQuery.js";
 import { globalFilters } from "@/composables/globalFilters.js";
 
+const tableRef = ref(null)
 const currentPageTitle = ref("직원관리")
 const selectedRows = ref([])
 const isRefreshing = ref(false); // 새로고침 스피너/비활성
@@ -175,6 +177,8 @@ async function onBulkApprove() {
     } else if (approvedIds.length === 0 && skippedIds.length > 0) {
       alert(`관리자 권한인 ${skippedIds.length}명 제외, 승인된 사용자가 없습니다`)
     }
+
+    tableRef.value?.clearSelection?.();
 
     // 테이블 새로고침 (DB 최신 상태 반영)
     await fetchData()
