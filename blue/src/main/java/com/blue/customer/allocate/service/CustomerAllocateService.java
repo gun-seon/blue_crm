@@ -135,4 +135,13 @@ public class CustomerAllocateService {
     // 같은 센터의 'STAFF'만 후보로 (요구사항에 맞춤)
     return mapper.searchStaffForAllocate(targetCenterId, q);
   }
+  
+  // 센터 조회
+  public List<CenterPickDto> centersForAllocate(String callerEmail) {
+    UserContextDto me = mapper.findUserContextByEmail(callerEmail);
+    if (me == null || !"SUPERADMIN".equals(me.getRole())) {
+      throw new IllegalArgumentException("본사만 조회할 수 있습니다.");
+    }
+    return mapper.findCentersForAllocate();
+  }
 }

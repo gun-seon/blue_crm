@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blue.customer.revoke.mapper.CustomerRevokeMapper">
+
+    <!-- 로그인 사용자 컨텍스트 -->
+    <select id="findUserContextByEmail" resultType="com.blue.customer.revoke.dto.UserContextDto">
+        SELECT
+            u.user_id    AS userId,
+            u.user_role  AS role,
+            u.center_id  AS centerId,
+            u.user_email AS email,
+            u.manager_phone_access AS visible
+        FROM users u
+        WHERE u.user_email = #{email}
+        LIMIT 1
+    </select>
+
+    <!-- 공통 필터 -->
+    <sql id="LIST_FILTERS_COMMON">
+        <if test="keyword != null and keyword != ''">
+            <choose>
+                <when test='visible == "N"'>
+                    AND (
+                    c.customer_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR u.user_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR RIGHT(REPLACE(c.customer_phone, '-', ''), 4) = REPLACE(#{keyword}, '-', '')
+                    OR LEFT(REPLACE(c.customer_phone,  '-', ''), 3) = REPLACE(#{keyword}, '-', '')
+                    OR LEFT(REPLACE(c.customer_phone,  '-', ''), 2) = REPLACE(#{keyword}, '-', '')
+                    )
+                </when>
+                <otherwise>
+                    AND (
+                    c.customer_name   LIKE CONCAT('%', #{keyword}, '%')
+                    OR u.user_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR c.customer_phone LIKE CONCAT('%', #{keyword}, '%')
+                    )
+                </otherwise>
+            </choose>
+        </if>
+        <if test="dateFrom != null and dateFrom != ''">
+            AND c.customer_created_at &gt;= #{dateFrom}
+        </if>
+        <if test="dateTo != null and dateTo != ''">
+            AND c.customer_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
+        </if>
+        <if test="category != null and category != ''">
+            AND c.customer_category = #{category}
+        </if>
+    </sql>
+
+    <sql id="ORDER_DEFAULT">
+        <choose>
+            <when test="sort == 'status'">
+                ORDER BY FIELD(c.customer_status,'회수','없음','신규','가망','재콜','부재1','부재2','부재3','부재4','부재5','거절','완료'),
+                c.customer_created_at DESC
+            </when>
+            <otherwise>
+                ORDER BY c.customer_created_at DESC
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- HQ: 상태가 없음/회수/완료 '아닌' 목록 -->
+    <select id="findListForHq" resultType="com.blue.customer.revoke.dto.RevokeListRowDto">
+        SELECT
+        c.customer_id         AS id,
+        c.customer_name       AS name,
+        CASE WHEN #{visible} = 'Y'
+        THEN c.customer_phone
+        ELSE CONCAT(SUBSTRING_INDEX(c.customer_phone,'-',1), '-****-', SUBSTRING_INDEX(c.customer_phone,'-',-1))
+        END                   AS phone,
+        u.user_name           AS staff,
+        c.customer_division   AS division,
+        c.customer_category   AS category,
+        c.customer_status     AS status,
+        ctr.center_name       AS centerName,
+        c.customer_source     AS source,
+        c.customer_content    AS content,
+        c.customer_created_at AS createdAt
+        FROM customers c
+        LEFT JOIN users   u   ON u.user_id   = c.user_id
+        LEFT JOIN centers ctr ON ctr.center_id = u.center_id
+        WHERE c.customer_status NOT IN ('없음','회수','완료')
+        <if test="division != null and division != ''">
+            AND c.customer_division = #{division}
+        </if>
+        <include refid="LIST_FILTERS_COMMON"/>
+        <include refid="ORDER_DEFAULT"/>
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countListForHq" resultType="int">
+        SELECT COUNT(*)
+        FROM customers c
+        LEFT JOIN users u ON u.user_id = c.user_id
+        WHERE c.customer_status NOT IN ('없음','회수','완료')
+        <if test="division != null and division != ''">
+            AND c.customer_division = #{division}
+        </if>
+        <include refid="LIST_FILTERS_COMMON"/>
+    </select>
+
+    <!-- MANAGER: 현재담당=나 & 상태 NOT IN ('없음','회수','완료') -->
+    <select id="findListForManager" resultType="com.blue.customer.revoke.dto.RevokeListRowDto">
+        SELECT
+        c.customer_id         AS id,
+        c.customer_name       AS name,
+        c.customer_phone      AS phone,
+        c.customer_division   AS division,
+        c.customer_category   AS category,
+        c.customer_status     AS status,
+        (SELECT center_name FROM centers WHERE center_id = u.center_id) AS centerName,
+        c.customer_source     AS source,
+        c.customer_content    AS content,
+        c.customer_created_at AS createdAt
+        FROM customers c
+        JOIN users u ON u.user_id = c.user_id
+        WHERE c.user_id = #{managerUserId}
+        AND c.customer_status NOT IN ('없음','회수','완료')
+        <include refid="LIST_FILTERS_COMMON"/>
+        <include refid="ORDER_DEFAULT"/>
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countListForManager" resultType="int">
+        SELECT COUNT(*)
+        FROM customers c
+        JOIN users u ON u.user_id = c.user_id
+        WHERE c.user_id = #{managerUserId}
+        AND c.customer_status NOT IN ('없음','회수','완료')
+        <include refid="LIST_FILTERS_COMMON"/>
+    </select>
+
+    <!-- 회수 잠금 -->
+    <select id="lockCustomersForRevoke" resultType="long">
+        SELECT c.customer_id
+        FROM customers c
+        WHERE c.customer_id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+        AND c.customer_status NOT IN ('없음','회수','완료')
+        FOR UPDATE
+    </select>
+
+    <!-- 회수 실행 -->
+    <update id="updateToRevoked">
+        UPDATE customers
+        SET customer_status      = '회수',
+        user_id              = NULL,
+        customer_promise_time = NULL
+        WHERE customer_id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+</mapper>

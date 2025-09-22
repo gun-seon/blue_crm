@@ -161,7 +161,9 @@
     <select id="findCenterHeadUserId" resultType="long">
         SELECT user_id
         FROM users
-        WHERE center_id = #{centerId} AND user_role = 'MANAGER'
+        WHERE center_id = #{centerId}
+        AND user_role = 'MANAGER'
+        AND user_approved = 'Y'                  <!-- 승인된 센터장만 -->
         ORDER BY user_created_at ASC
         LIMIT 1
     </select>
@@ -169,11 +171,13 @@
     <select id="staffInSameCenter" resultType="int">
         SELECT COUNT(*)
         FROM users s
-                 JOIN users m ON m.user_id = #{managerUserId}
-        WHERE s.user_id = #{staffUserId}
-          AND s.center_id = m.center_id
-          AND s.user_role = 'STAFF'
+        JOIN users m ON m.user_id = #{managerUserId}
+        WHERE s.user_id   = #{staffUserId}
+        AND s.center_id = m.center_id
+        AND s.user_role = 'STAFF'
+        AND s.user_approved = 'Y'                <!-- 승인된 직원만 허용 -->
     </select>
+
 
     <!-- 잠금: HQ 대상 (상태: 없음/회수) -->
     <select id="lockCustomersForHq" resultType="long">
@@ -246,6 +250,7 @@
         FROM users u
         LEFT JOIN centers c ON c.center_id = u.center_id
         WHERE u.user_role = 'STAFF'
+        AND u.user_approved = 'Y'                <!-- 승인된 직원만 -->
         <if test="centerId != null">
             AND u.center_id = #{centerId}
         </if>
@@ -257,6 +262,37 @@
         </if>
         ORDER BY u.user_name ASC
         LIMIT 50
+    </select>
+
+    <!-- 분배용 센터 목록:
+      1) 사람 0명 센터 제외
+      2) 본사(1) 제외
+      3) hasManager 플래그/인원수 내려줌 -->
+    <select id="findCentersForAllocate" resultType="com.blue.customer.allocate.dto.CenterPickDto">
+        SELECT
+        c.center_id   AS centerId,
+        c.center_name AS centerName,
+        EXISTS(
+        SELECT 1
+        FROM users mu
+        WHERE mu.center_id = c.center_id
+        AND mu.user_role = 'MANAGER'
+        AND mu.user_approved = 'Y'           <!-- 승인된 센터장만 hasManager -->
+        ) AS hasManager,
+        (
+        SELECT COUNT(*)
+        FROM users u
+        WHERE u.center_id = c.center_id
+        AND u.user_approved = 'Y'            <!-- 승인된 인원만 카운트 -->
+        ) AS userCount
+        FROM centers c
+        WHERE c.center_id &lt;&gt; 1                    <!-- 본사 제외 -->
+        AND EXISTS (                              <!-- 승인된 인원 1명 이상 있는 센터만 노출 -->
+        SELECT 1 FROM users u
+        WHERE u.center_id = c.center_id
+        AND u.user_approved = 'Y'
+        )
+        ORDER BY c.center_name ASC
     </select>
 
 </mapper>

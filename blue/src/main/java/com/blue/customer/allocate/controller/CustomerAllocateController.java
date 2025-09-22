@@ -51,4 +51,10 @@ public class CustomerAllocateController {
   ) {
     return service.searchUsersForAllocate(auth.getName(), centerId, q);
   }
+  
+  // 센터 조회
+  @GetMapping("/work/allocate/centers")
+  public List<CenterPickDto> centers(Authentication auth) {
+    return service.centersForAllocate(auth.getName());
+  }
 }

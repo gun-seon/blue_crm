@@ -4,7 +4,7 @@
     <div class="grid grid-cols-12 gap-4 min-w-0">
       <div class="col-span-12 space-y-6 min-w-0">
         <ComponentCard
-            :buttons="['센터관리', '일괄승인']"
+            :buttons="['일괄승인']"
             :showRefresh="true"
             :refreshing="isRefreshing"
             @refresh="onRefresh"

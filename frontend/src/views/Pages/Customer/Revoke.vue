@@ -1,48 +1,166 @@
 <template>
-  <div
-      class="relative flex flex-col items-center justify-center min-h-screen p-6 overflow-hidden z-1"
-  >
-    <common-grid-shape />
-    <!-- Centered Content -->
-    <div class="mx-auto w-full max-w-[242px] text-center sm:max-w-[472px]">
-      <h1
-          class="mb-8 font-bold text-gray-800 text-title-md dark:text-white/90 xl:text-title-2xl"
-      >
-        ERROR
-      </h1>
+  <AdminLayout>
+    <PageBreadcrumb :pageTitle="pageTitle" />
+    <div class="grid grid-cols-12 gap-4 min-w-0">
+      <div class="col-span-12 space-y-6 min-w-0">
 
-      <img src="/images/error/404.svg" alt="404" class="dark:hidden" />
-      <img
-          src="/images/error/404-dark.svg"
-          alt="404"
-          class="hidden dark:block"
-      />
+        <!-- SUPERADMIN (본사) -->
+        <ComponentCard
+            v-if="role === 'SUPERADMIN'"
+            :buttons="['회수하기']"
+            :showRefresh="true"
+            :refreshing="loading"
+            @refresh="fetchData"
+            @changeSize="setSize"
+            @selectChange="onDivisionSelect"
+            @buttonClick="onHqButton"
+        >
+          <PsnsTable
+              ref="tableRef"
+              :columns="hqColumns"
+              :data="items"
+              :showCheckbox="true"
+              :page="page"
+              :totalPages="totalPages"
+              @rowSelect="onRowSelect"
+              @changePage="changePage"
+          />
+        </ComponentCard>
 
-      <p
-          class="mt-10 mb-6 text-base text-gray-700 dark:text-gray-400 sm:text-lg"
-      >
-        We can't seem to find the page you are looking for!
-      </p>
+        <!-- MANAGER (센터장) - 추후 기능 확장시 -->
+        <ComponentCard
+            v-else-if="role === 'MANAGER'"
+            :buttons="['회수하기']"
+            :showRefresh="true"
+            :refreshing="loading"
+            @refresh="fetchData"
+            @changeSize="setSize"
+            @buttonClick="onMgrButton"
+        >
+          <PsnsTable
+              ref="tableRef"
+              :columns="mgrColumns"
+              :data="items"
+              :showCheckbox="true"
+              :page="page"
+              :totalPages="totalPages"
+              @rowSelect="onRowSelect"
+              @changePage="changePage"
+          />
+        </ComponentCard>
 
-      <router-link
-          to="/"
-          class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
-      >
-        Back to Home Page
-      </router-link>
+        <!-- STAFF 접근 시 경고 안내를 노출하려면 주석 해제
+        <div v-else class="p-6 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+          이 페이지는 본사 또는 센터장만 사용할 수 있습니다.
+        </div>
+        -->
+
+      </div>
     </div>
-    <!-- Footer -->
-    <p
-        class="absolute text-sm text-center text-gray-500 -translate-x-1/2 bottom-6 left-1/2 dark:text-gray-400"
-    >
-      &copy; {{ currentYear }} - 마크CRM
-    </p>
-  </div>
+  </AdminLayout>
 </template>
 
-<script setup>
-import { ref } from "vue";
-import CommonGridShape from '@/components/common/CommonGridShape.vue'
+<script setup lang="ts">
+import { ref } from 'vue'
+import AdminLayout from '@/components/layout/AdminLayout.vue'
+import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import ComponentCard from '@/components/common/ComponentCard.vue'
+import PsnsTable from '@/components/tables/basic-tables/PsnsTable.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useTableQuery } from '@/composables/useTableQuery'
+import { globalFilters } from '@/composables/globalFilters'
+import axios from '@/plugins/axios'
 
-const currentYear = ref(new Date().getFullYear());
+/** 권한/페이지 타이틀 */
+const auth = useAuthStore()
+const role = auth.role
+const pageTitle = ref('DB 회수하기')
+
+/** 목록 훅 (공용 필터: 날짜/카테고리/키워드) */
+const {
+  items, page, totalPages, fetchData, changePage, setSize, setFilter, loading,
+} = useTableQuery({
+  url: '/api/work/revoke/list',
+  pageSize: 10,
+  externalFilters: globalFilters,
+  useExternalKeys: { from: 'dateFrom', to: 'dateTo', category: 'category', keyword: 'keyword' },
+  mapper: (res: any) => ({
+    items: res.data.items,
+    totalPages: res.data.totalPages,
+    totalCount: res.data.totalCount,
+  }),
+})
+
+/** 테이블 선택 */
+const tableRef = ref<any>(null)
+const selectedRows = ref<any[]>([])
+const onRowSelect = (rows: any[]) => { selectedRows.value = rows }
+function needSelection(): number[] {
+  const ids = selectedRows.value.map((r: any) => r.id)
+  if (!ids.length) alert('회수할 고객을 선택해주세요.')
+  return ids
+}
+
+/** HQ 전용 구분 필터 */
+function onDivisionSelect({ value }: { value: string }) {
+  setFilter('division', value === '전체' ? null : value)
+  fetchData()
+}
+
+/** 컬럼 정의 */
+const hqColumns = [
+  { key: 'createdAt', label: 'DB생성일', type: 'text' },
+  { key: 'division',  label: '구분',     type: 'badge', options: ['최초','유효'] },
+  { key: 'category',  label: '카테고리', type: 'badge', options: ['주식','코인'] },
+  { key: 'name',      label: '이름',     type: 'text' },
+  { key: 'phone',     label: '전화번호', type: 'text' },
+  { key: 'source',    label: 'DB출처',   type: 'text' },
+  { key: 'content',   label: '내용',     type: 'text', ellipsis: { width: 150 } },
+  { key: "status",    label: "상태",     type: "badge" },
+  { key: 'centerName',label: '센터',     type: 'badge' },
+  { key: 'staff',     label: '담당자',    type: 'text' },
+]
+
+const mgrColumns = [
+  { key: 'createdAt', label: 'DB생성일', type: 'text' },
+  { key: 'category',  label: '카테고리', type: 'badge', options: ['주식','코인'] },
+  { key: 'name',      label: '이름',     type: 'text' },
+  { key: 'phone',     label: '전화번호', type: 'text' },
+  { key: 'source',    label: 'DB출처',   type: 'text' },
+  { key: 'content',   label: '내용',     type: 'text', ellipsis: { width: 150 } },
+  { key: "status",    label: "상태",     type: "badge" },
+  { key: 'centerName',label: '센터',     type: 'badge' },
+  { key: 'staff',     label: '담당자',    type: 'text' },
+]
+
+/** 버튼 핸들러 */
+function onHqButton(btn: string) {
+  if (btn === '회수하기') {
+    const ids = needSelection()
+    if (!ids.length) return
+
+    if (!confirm(ids.length + "개 DB를 회수하시겠습니까?")) return
+
+    onConfirmRevoke(ids)
+  }
+}
+function onMgrButton(btn: string) {
+  if (btn === '회수하기') {
+    alert('회수는 본사만 가능합니다.')
+  }
+}
+
+/** 회수 실행 */
+async function onConfirmRevoke(ids: number[]) {
+  try {
+    await axios.post('/api/work/revoke/hq', { customerIds: ids })
+    // 초기화 & 재조회
+    selectedRows.value = []
+    tableRef.value?.clearSelection?.()
+    await fetchData()
+  } catch (e: any) {
+    console.error(e)
+    alert(e?.response?.data || '회수 중 오류가 발생했습니다.')
+  }
+}
 </script>

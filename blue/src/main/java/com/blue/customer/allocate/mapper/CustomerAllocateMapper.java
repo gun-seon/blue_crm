@@ -1,6 +1,7 @@
 package com.blue.customer.allocate.mapper;
 
 import com.blue.customer.allocate.dto.AllocateListRowDto;
+import com.blue.customer.allocate.dto.CenterPickDto;
 import com.blue.customer.allocate.dto.UserContextDto;
 import com.blue.customer.allocate.dto.UserPickDto;
 import org.apache.ibatis.annotations.Mapper;
@@ -72,4 +73,8 @@ public interface CustomerAllocateMapper {
       @Param("centerId") Long centerId,
       @Param("q") String q
   );
+  
+  // 센터 조회
+  List<CenterPickDto> findCentersForAllocate();
+  
 }
