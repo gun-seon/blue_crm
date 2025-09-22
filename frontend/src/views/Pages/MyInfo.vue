@@ -139,7 +139,23 @@
 
             <!-- 비밀번호 변경 제목 -->
             <div class="col-span-2">
-              <h3 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">비밀번호 변경</h3>
+              <div class="flex items-center justify-between">
+                <h3 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">비밀번호 변경</h3>
+                <div class="flex gap-2">
+                  <button
+                      type="button"
+                      class="h-9 rounded-lg bg-gray-200 px-3 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100"
+                      :disabled="changingPw"
+                      @click="resetPwForm"
+                  >취소</button>
+                  <button
+                      type="button"
+                      class="h-9 rounded-lg bg-brand-500 px-3 text-white hover:bg-brand-600 disabled:opacity-50"
+                      :disabled="changingPw"
+                      @click="changePassword"
+                  >{{ changingPw ? '변경 중...' : '변경' }}</button>
+                </div>
+              </div>
             </div>
 
             <!-- 현재 비밀번호 -->
@@ -159,9 +175,9 @@
                     @click="toggleCurrentPwVisibility"
                     class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
                 >
-          <EyeIcon v-if="showCurrentPw" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-        </span>
+                  <EyeIcon v-if="showCurrentPw" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                </span>
               </div>
               <p v-if="currentPwError" class="text-sm text-error-500">{{ currentPwError }}</p>
             </div>
@@ -183,9 +199,9 @@
                     @click="togglePasswordVisibility"
                     class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
                 >
-          <EyeIcon v-if="showNewPw" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-        </span>
+                  <EyeIcon v-if="showNewPw" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                </span>
               </div>
               <p v-if="newPwError" class="text-sm text-error-500">{{ newPwError }}</p>
             </div>
@@ -207,34 +223,11 @@
                     @click="togglePassword2Visibility"
                     class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
                 >
-          <EyeIcon v-if="showNewPw2" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400" />
-        </span>
+                  <EyeIcon v-if="showNewPw2" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                </span>
               </div>
               <p v-if="newPw2Error" class="text-sm text-error-500">{{ newPw2Error }}</p>
-            </div>
-
-            <!-- 비밀번호 버튼 -->
-            <div></div>
-            <div class="col-start-2">
-              <div class="flex justify-end gap-2 pt-1">
-                <button
-                    type="button"
-                    class="h-10 rounded-lg bg-gray-200 px-4 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100"
-                    :disabled="changingPw"
-                    @click="resetPwForm"
-                >
-                  취소
-                </button>
-                <button
-                    type="button"
-                    class="h-10 rounded-lg bg-brand-500 px-4 text-white hover:bg-brand-600 disabled:opacity-50"
-                    :disabled="changingPw"
-                    @click="changePassword"
-                >
-                  {{ changingPw ? '변경 중...' : '변경' }}
-                </button>
-              </div>
             </div>
 
             <!-- SUPER 이메일 전용 -->
@@ -243,64 +236,170 @@
                 <hr class="my-6 border-gray-200 dark:border-gray-700" />
               </div>
 
+              <!-- 제목 + 우측 버튼 -->
               <div class="col-span-2">
-                <h3 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Google 스프레드시트 연동</h3>
+                <div class="flex items-center justify-between">
+                  <h3 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Google 스프레드시트 연동</h3>
+                  <div class="flex gap-2">
+                    <button
+                        v-if="!sheetEditing"
+                        type="button"
+                        class="h-9 rounded-lg bg-gray-200 px-3 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100"
+                        @click="sheetEditing = true"
+                    >수정</button>
+                    <template v-else>
+                      <button
+                          type="button"
+                          class="h-9 rounded-lg bg-gray-200 px-3 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100"
+                          :disabled="savingSheet"
+                          @click="onSheetCancel"
+                      >취소</button>
+                      <button
+                          type="button"
+                          class="h-9 rounded-lg bg-brand-500 px-3 text-white hover:bg-brand-600 disabled:opacity-50"
+                          :disabled="savingSheet"
+                          @click="onSheetSave"
+                      >{{ savingSheet ? '저장 중...' : '저장' }}</button>
+                    </template>
+                  </div>
+                </div>
               </div>
 
+              <!-- Spreadsheet ID -->
               <div class="text-sm font-medium text-gray-700 dark:text-gray-300">Spreadsheet ID</div>
               <div class="col-start-2">
                 <input
                     v-model="sheetId"
-                    :disabled="savingSheet"
+                    :disabled="savingSheet || !sheetEditing"
                     placeholder="예) 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
                     @blur="validateSheetId"
-                    class="h-11 w-full rounded-lg border px-3
-                 bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-                 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                    class="h-11 w-full rounded-lg border px-3 bg-white text-gray-800
+                     focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                     dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                     disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200
+                     dark:disabled:bg-gray-900/40 dark:disabled:text-gray-500 dark:disabled:border-gray-700"
                 />
                 <p v-if="sheetIdError" class="mt-1 text-sm text-error-500">{{ sheetIdError }}</p>
               </div>
 
+              <!-- 시작 행 -->
               <div class="text-sm font-medium text-gray-700 dark:text-gray-300">시작 행</div>
               <div class="col-start-2">
                 <input
                     v-model.number="startRow"
-                    :disabled="savingSheet"
+                    :disabled="savingSheet || !sheetEditing"
                     type="number"
                     min="1"
                     step="1"
                     placeholder="예) 2"
                     @blur="validateStartRow"
-                    class="h-11 w-full rounded-lg border px-3
-                 bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-                 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 spin-dark"
+                    class="h-11 w-full rounded-lg border px-3 bg-white text-gray-800
+                     focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                     dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                     disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200
+                     dark:disabled:bg-gray-900/40 dark:disabled:text-gray-500 dark:disabled:border-gray-700"
                 />
                 <p v-if="startRowError" class="mt-1 text-sm text-error-500">{{ startRowError }}</p>
               </div>
+            </template>
 
-              <div></div>
-              <div class="col-start-2">
-                <div class="flex justify-end gap-2 pt-1">
-                  <button
-                      type="button"
-                      class="h-10 rounded-lg bg-gray-200 px-4 text-gray-800 hover:bg-gray-100
-                   dark:bg-gray-700 dark:text-gray-100"
-                      :disabled="savingSheet"
-                      @click="resetSheetForm"
-                  >
-                    초기화
-                  </button>
-                  <button
-                      type="button"
-                      class="h-10 rounded-lg bg-brand-500 px-4 text-white hover:bg-brand-600 disabled:opacity-50"
-                      :disabled="savingSheet"
-                      @click="saveSheetConfig"
-                  >
-                    {{ savingSheet ? '저장 중...' : '저장' }}
-                  </button>
+
+            <!-- ===== 센터 관리(특별계정 전용) ===== -->
+            <template v-if="isSuperEmail">
+              <div class="col-span-2">
+                <hr class="my-6 border-gray-200 dark:border-gray-700" />
+              </div>
+
+              <div class="col-span-2">
+                <div class="flex items-center justify-between">
+                  <h3 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">센터 관리</h3>
+                  <div class="flex gap-2">
+                    <button
+                        v-if="!centersEditing"
+                        type="button"
+                        class="h-9 rounded-lg bg-gray-200 px-3 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100"
+                        @click="centersEditing = true"
+                    >수정</button>
+                    <button
+                        v-else
+                        type="button"
+                        class="h-9 rounded-lg bg-gray-200 px-3 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100"
+                        @click="centersEditing = false"
+                    >완료</button>
+                  </div>
                 </div>
               </div>
+
+              <!-- 신규 추가 -->
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">신규 센터</div>
+              <div class="col-start-2">
+                <div class="flex gap-2">
+                  <input
+                      v-model="newCenterName"
+                      :disabled="!centersEditing"
+                      placeholder="예) 강남센터"
+                      class="h-11 w-full rounded-lg border px-3 bg-white text-gray-800
+                     focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                     dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                     disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200
+                     dark:disabled:bg-gray-900/40 dark:disabled:text-gray-500 dark:disabled:border-gray-700"
+                  />
+                  <button
+                      type="button"
+                      class="h-11 shrink-0 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                      :disabled="!centersEditing"
+                      @click="addCenter"
+                  >추가</button>
+                </div>
+              </div>
+
+              <!-- 목록 -->
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300">센터 목록</div>
+
+              <!-- 리스트 컨테이너: 스크롤, 라운드, 테두리 -->
+              <div class="rounded-md border border-gray-100 dark:border-gray-800 max-h-50 overflow-auto">
+                <!-- 로딩 -->
+                <div v-if="centersLoading" class="p-4 text-sm text-gray-500 dark:text-gray-400">
+                  불러오는 중...
+                </div>
+
+                <!-- 비어있음 -->
+                <div v-else-if="!centers || centers.length === 0" class="p-4 text-sm text-gray-500 dark:text-gray-400">
+                  조회 결과가 없습니다.
+                </div>
+
+                <!-- 리스트 -->
+                <ul v-else>
+                  <li
+                      v-for="c in centers"
+                      :key="c.centerId"
+                      class="flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/70"
+                  >
+                    <div class="text-sm text-gray-800 dark:text-gray-200">
+                      {{ c.centerName }}
+                    </div>
+
+                    <!-- 흰색 아웃라인 버튼 -->
+                    <button
+                        type="button"
+                        class="px-2 py-1 text-xs rounded-md border border-gray-200 dark:border-gray-700
+                             bg-white text-gray-700 hover:bg-gray-50
+                             dark:bg-transparent dark:text-gray-200 dark:hover:bg-gray-700
+                             focus:outline-hidden focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700
+                             disabled:opacity-50"
+                        :disabled="!centersEditing"
+                        @click.stop="deleteCenter(c.centerId)"
+                    >
+                      삭제
+                    </button>
+                  </li>
+                </ul>
+              </div>
+
             </template>
+
+
+
           </template>
 
           <!-- 바닥 여백 확보를 위한 구분선 -->
@@ -355,6 +454,9 @@ const savingSheet   = ref(false)
 const sheetIdError  = ref('')
 const startRowError = ref('')
 
+const sheetEditing  = ref(false)
+const originalSheet = ref({ sheetId: '', startRow: 1 })
+
 /* 비번 보기 토글 */
 const showCurrentPw = ref(false)
 const showNewPw     = ref(false)
@@ -396,6 +498,9 @@ onUnmounted(() => stopTtlTimer())
 onMounted(async () => {
   await loadMe()
   if (!mail.email) mail.email = email.value
+
+  // 스프레드시트 설정 초기 로드
+  await loadSheetConfig()
 
   // 코드 요청 버튼 누른 상태(codeSent=true)일 때만 TTL 확인
   if (codeSent.value) {
@@ -608,6 +713,30 @@ async function changePassword() {
 }
 
 /* ===== 스프레드시트 ===== */
+async function loadSheetConfig() {
+  try {
+    const { data } = await axios.get('/api/me/sheet-settings', { withCredentials: true })
+    sheetId.value  = (data?.sheetId ?? '')
+    startRow.value = Number(data?.startRow ?? 1)
+    originalSheet.value = { sheetId: sheetId.value, startRow: startRow.value }
+    sheetEditing.value = false // 초기엔 읽기전용
+  } catch {
+    // 값 없으면 기본값 유지, 편집 off
+    sheetEditing.value = false
+  }
+}
+
+async function onSheetSave() {
+  await saveSheetConfig()
+  originalSheet.value = { sheetId: sheetId.value, startRow: startRow.value }
+  sheetEditing.value = false
+}
+function onSheetCancel() {
+  sheetId.value  = originalSheet.value.sheetId
+  startRow.value = originalSheet.value.startRow
+  sheetEditing.value = false
+}
+
 function validateSheetId() {
   const v = (sheetId.value || '').trim()
   sheetIdError.value = v ? '' : 'Spreadsheet ID를 입력하세요.'
@@ -629,6 +758,12 @@ async function saveSheetConfig() {
     alert('입력값을 확인하세요.')
     return
   }
+
+  if(!confirm("스프레드시트 연동 정보를 정말 변경하시겠습니까?")) {
+    onSheetCancel()
+    return
+  }
+
   try {
     savingSheet.value = true
     await axios.put('/api/me/sheet-settings', {
@@ -641,6 +776,68 @@ async function saveSheetConfig() {
     alert(e?.response?.data || '시트 정보 저장 실패')
   } finally {
     savingSheet.value = false
+  }
+}
+
+/* ===== 센터관리 ===== */
+const centers = ref([]);
+const centersLoading = ref(false)
+const centersEditing = ref(false)
+const newCenterName = ref('')
+
+async function fetchCenters() {
+  try {
+    centersLoading.value = true;
+    const { data } = await axios.get('/api/me/centers', { withCredentials: true });
+    centers.value = Array.isArray(data) ? data : [];
+  } catch (e) {
+    alert(e?.response?.data || '센터 목록을 불러오지 못했습니다.');
+  } finally {
+    centersLoading.value = false;
+  }
+}
+
+async function addCenter() {
+  const name = (newCenterName.value || '').trim();
+  if (!name) return alert('센터 이름을 입력하세요.');
+
+  try {
+    await axios.post('/api/me/centers', { centerName: name }, { withCredentials: true });
+    newCenterName.value = '';
+    await fetchCenters();
+  } catch (e) {
+    const s = e?.response?.status;
+    if (s === 409) {
+      alert(e?.response?.data || '이미 존재하는 센터명입니다.');
+    } else if (s === 400) {
+      alert(e?.response?.data || '요청 값이 올바르지 않습니다.');
+    } else if (s === 403) {
+      alert('접근 권한이 없습니다.');
+    } else {
+      alert('센터 추가에 실패했습니다.');
+    }
+  }
+}
+
+async function deleteCenter(id) {
+  const cid = Number(id);
+  if (!Number.isFinite(cid)) return alert('잘못된 ID');
+  if (!confirm('삭제하시겠습니까?')) return;
+
+  try {
+    await axios.delete(`/api/me/centers/${cid}`, { withCredentials: true });
+    await fetchCenters();
+  } catch (e) {
+    const s = e?.response?.status;
+    if (s === 409) {
+      alert(e?.response?.data || '센터에 소속된 직원이 있어 삭제할 수 없습니다.');
+    } else if (s === 404) {
+      alert(e?.response?.data || '존재하지 않는 센터입니다.');
+    } else if (s === 403) {
+      alert('접근 권한이 없습니다.');
+    } else {
+      alert('센터 삭제에 실패했습니다.');
+    }
   }
 }
 
@@ -678,6 +875,9 @@ function stopIdleWatch() {
   if (idleTimer) { clearTimeout(idleTimer); idleTimer = null }
   if (detachIdleListeners) { detachIdleListeners(); detachIdleListeners = null }
 }
+
+// 특별계정 켜지면 센터 목록 불러오기
+watch(() => isSuperEmail.value, async (ok) => { if (ok) await fetchCenters() }, { immediate: true })
 
 /* 인증 상태가 바뀌면 유휴감시 on/off */
 watch(isVerified, (ok) => {

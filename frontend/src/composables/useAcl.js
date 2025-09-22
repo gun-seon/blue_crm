@@ -21,7 +21,6 @@ const policy = {
         'menu.dashboard',    // 대시보드
         'menu.db.all',       // 전체 DB
         'menu.db.allocate',  // DB분할하기
-        'menu.db.revoke',    // DB회수하기
         'menu.db.duplicate', // 중복 DB
         'menu.info',         // 정보보기
     ],
