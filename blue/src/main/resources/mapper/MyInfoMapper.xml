@@ -52,12 +52,13 @@
         WHERE source_id     = #{sourceId}
     </update>
 
-    <!-- 센터 조회 -->
+    <!-- 센터 조회: 본사 제외 -->
     <select id="findAll" resultType="com.blue.auth.dto.CenterDto">
         SELECT
-            center_id   AS centerId,
-            center_name AS centerName
+        center_id   AS centerId,
+        center_name AS centerName
         FROM centers
+        WHERE center_id != 1 <!-- 본사 제외 -->
         ORDER BY center_id DESC
     </select>
 

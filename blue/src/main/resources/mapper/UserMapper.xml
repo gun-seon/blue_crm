@@ -14,6 +14,7 @@
         u.user_email  AS userEmail,
         u.user_role   AS userRole,
         u.user_approved AS userApproved,
+        u.manager_phone_access AS managerPhoneAccess,
         c.center_name AS centerName
         FROM users u
         LEFT JOIN centers c ON u.center_id = c.center_id
@@ -98,6 +99,12 @@
                     WHEN #{value} = '담당자' THEN 'STAFF'
                     END
                 </when>
+
+                <!-- 가시권한(Y/N) 수정 -->
+                <when test="field == 'visible'">
+                    manager_phone_access = #{value}
+                </when>
+
             </choose>
         </set>
         WHERE user_id = #{userId}
@@ -121,6 +128,7 @@
         u.user_email    AS userEmail,
         u.user_role     AS userRole,
         u.user_approved AS userApproved,
+        u.manager_phone_access AS managerPhoneAccess,
         c.center_name   AS centerName
         FROM users u
         LEFT JOIN centers c ON u.center_id = c.center_id
@@ -139,10 +147,28 @@
             u.user_email    AS userEmail,
             u.user_role     AS userRole,
             u.user_approved AS userApproved,
+            u.manager_phone_access AS managerPhoneAccess,
             c.center_name   AS centerName
         FROM users u
                  LEFT JOIN centers c ON u.center_id = c.center_id
         WHERE u.user_id = #{userId}
+    </select>
+
+    <!-- 해당 center에 '다른' MANAGER가 있는지: 본사 제외, 본인 제외 가능 -->
+    <select id="countManagersInCenter" resultType="int">
+        SELECT COUNT(*)
+        FROM users u
+        WHERE u.user_role = 'MANAGER'
+        AND u.center_id = (
+        SELECT c.center_id
+        FROM centers c
+        WHERE c.center_name = #{centerName}
+        AND c.center_id != 1        -- 본사 제외
+        LIMIT 1
+        )
+        <if test="excludeUserId != null">
+            AND u.user_id != #{excludeUserId}  -- 본인 제외
+        </if>
     </select>
 
 </mapper>
