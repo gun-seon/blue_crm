@@ -1,168 +1,95 @@
 <template>
   <AdminLayout>
-    <PageBreadcrumb :pageTitle="currentPageTitle" />
+    <PageBreadcrumb pageTitle="중복DB 확인하기" />
     <div class="grid grid-cols-12 gap-4 min-w-0">
       <div class="col-span-12 space-y-6 min-w-0">
-        <!-- MANAGER / STAFF 전용 테이블 -->
         <ComponentCard
-            :buttons="['상태별 보기']"
-            v-if="role === 'MANAGER' || role === 'STAFF'"
+            :showRefresh="true"
+            :refreshing="isRefreshing"
+            @refresh="onRefresh"
+            @changeSize="setSize"
         >
           <PsnsTable
-              :columns="commonColumns"
-              :data="commonCustomers"
+              :columns="columns"
+              :data="items"
               :showCheckbox="true"
-              :page="commonPage"
-              :totalPages="commonTotalPages"
-              @rowSelect="onCommonRowSelect"
-              @badgeUpdate="onCommonBadgeUpdate"
-              @DateUpdate="onCommonDateUpdate"
-              @buttonClick="onCommonButtonClick"
-              @changePage="onCommonPageChange"
-          />
-        </ComponentCard>
-
-        <!-- SUPERADMIN 전용 테이블 -->
-        <ComponentCard
-            :selects="[ ['최초', '중복', '유효'] ]"
-            :buttons="['상태별 보기', '구분별 보기']"
-            v-if="role === 'SUPERADMIN'"
-        >
-          <PsnsTable
-              :columns="adminColumns"
-              :data="adminCustomers"
-              :showCheckbox="true"
-              :page="adminPage"
-              :totalPages="adminTotalPages"
-              @rowSelect="onAdminRowSelect"
-              @badgeUpdate="onAdminBadgeUpdate"
-              @DateUpdate="onAdminDateUpdate"
-              @buttonClick="onAdminButtonClick"
-              @changePage="onAdminPageChange"
+              :page="page"
+              :totalPages="totalPages"
+              @changePage="changePage"
           />
         </ComponentCard>
       </div>
     </div>
-
-    <!-- 메모 모달 -->
-    <Memo
-        v-if="isMemoOpen"
-        :row="selectedRow"
-        fullScreenBackdrop
-        @close="isMemoOpen = false"
-    >
-    </Memo>
-
   </AdminLayout>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import PageBreadcrumb from "@/components/common/PageBreadcrumb.vue";
-import AdminLayout from "@/components/layout/AdminLayout.vue";
-import ComponentCard from "@/components/common/ComponentCard.vue";
-import PsnsTable from "@/components/tables/basic-tables/PsnsTable.vue";
-import Memo from "@/components/ui/MEMO.vue";
-import { EyeIcon } from '@heroicons/vue/24/outline'
-import {useAuthStore} from "@/stores/auth.js";
+import { ref } from 'vue'
+import AdminLayout from '@/components/layout/AdminLayout.vue'
+import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import ComponentCard from '@/components/common/ComponentCard.vue'
+import PsnsTable from '@/components/tables/basic-tables/PsnsTable.vue'
+import { useTableQuery } from '@/composables/useTableQuery.js'
+import { globalFilters } from '@/composables/globalFilters.js'
+import axios from '@/plugins/axios.js'
 
-const auth = useAuthStore()
+/**
+ * 중복DB 전용 컬럼
+ * - 전체DB와 동일 구성
+ * - 메모는 아이콘/모달 없이 텍스트 그대로 노출
+ * - 배지/예약은 편집 불가(컬럼에 editable 안 줌 → PsnsTable에서 클릭 안 됨)
+ */
+const columns = [
+  { key: 'createdAt',  label: 'DB생성일', type: 'text' },
+  { key: 'staff',      label: '담당자',   type: 'text' },
+  { key: 'division',   label: '구분',     type: 'badge',  options: ['최초','중복','유효'] },
+  { key: 'category',   label: '카테고리', type: 'badge',  options: ['주식','코인'] },
+  { key: 'name',       label: '이름',     type: 'text' },
+  { key: 'phone',      label: '전화번호', type: 'text' },
+  { key: 'source',     label: 'DB출처',   type: 'text',   ellipsis: { width: 120 } },
+  { key: 'content',    label: '내용',     type: 'text',   ellipsis: { width: 180 } },
+  { key: 'memo',       label: '메모',     type: 'text',   ellipsis: { width: 200 } },
+  { key: 'status',     label: '상태',     type: 'badge',  options: ['없음'] },
+]
 
-// 예시: 로그인된 사용자 권한
-const role = auth.role
+// 테이블 데이터 훅 (공용 필터/페이지네이션 동일)
+const {
+  items,
+  page,
+  size,
+  totalPages,
+  fetchData,
+  changePage,
+  setSize
+} = useTableQuery({
+  url: '/api/work/duplicate',        // STAFF도 접근 가능 (SecurityConfig의 /api/work/**)
+  pageSize: 10,
+  externalFilters: globalFilters,     // 날짜/카테고리/키워드 공용
+  useExternalKeys: {
+    from: 'dateFrom',
+    to: 'dateTo',
+    category: 'category',
+    keyword: 'keyword'
+  },
+  mapper: (res) => ({
+    items: res.data.items,
+    totalPages: res.data.totalPages,
+    totalCount: res.data.totalCount
+  })
+})
 
-const currentPageTitle = ref("전체 고객DB관리")
-
-/* =============================
-   MANAGER / STAFF 전용 변수
-============================= */
-const commonPage = ref(1)
-const commonTotalPages = ref(50)
-
-const commonColumns = ref([
-  { key: "createdAt", label: "DB생성일", type: "text" },
-  { key: "staff", label: "담당자", type: "text" },
-  { key: "category", label: "카테고리", type: "badge", options: ["주식", "코인"] },
-  { key: "name", label: "이름", type: "text"},
-  { key: "phone", label: "전화번호", type: "text" },
-  { key: "source", label: "고객접속경로", type: "text" },
-  { key: "content", label: "내용", type: "text", ellipsis: { width: 100 } },
-  { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon },
-  { key: "status", label: "상태", type: "badge", editable: true, options: ["부재1", "부재2", "부재3", "부재4", "부재5", "재콜", "가망", "완료", "거절"] },
-  { key: "reservation", label: "예약", type: "date" }
-])
-
-const commonCustomers = ref([
-  { createdAt: "2025-09-12", staff: "김민수 / 010-1234-5678", category: "주식", name: "박지영", phone: "010-1111-2222", source: "XXX", status: "부재1", reservation: "", content: "첫 상담 예약 완료" },
-  { createdAt: "2025-09-10", staff: "이은지 / 010-9876-5432", category: "코인", name: "최현우", phone: "010-3333-4444", source: "OOO", status: "신규", reservation: "2025-09-12", content: "2개월간 미접속" }
-])
-
-function onCommonRowSelect(row, e) { console.log("Row selected:", row, e.target.checked) }
-function onCommonBadgeUpdate(row, key, newValue) { console.log("Badge updated:", row, key, newValue) }
-function onCommonDateUpdate(row, key, newValue) { console.log("Date updated:", row, key, newValue) }
-function onCommonPageChange(newPage) { commonPage.value = newPage }
-
-/* =============================
-   SUPERADMIN 전용 변수
-============================= */
-const adminPage = ref(1)
-const adminTotalPages = ref(50)
-
-const adminColumns = ref([
-  { key: "createdAt", label: "DB생성일", type: "text" },
-  { key: "staff", label: "담당자", type: "text" },
-  { key: "division", label: "구분", type: "badge", options: ["최초", "중복", "유효"] }, // 추가된 컬럼
-  { key: "category", label: "카테고리", type: "badge", options: ["주식", "코인"] },
-  { key: "name", label: "이름", type: "text" },
-  { key: "phone", label: "전화번호", type: "text" },
-  { key: "source", label: "출처", type: "text" },
-  { key: "content", label: "내용", type: "text", ellipsis: { width: 150 } },
-  { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon },
-  { key: "status", label: "상태", type: "badge", editable: true, options: ["부재1", "부재2", "부재3", "부재4", "부재5", "재콜", "가망", "완료", "거절"] },
-  { key: "reservation", label: "예약", type: "date" }
-])
-
-const adminCustomers = ref([
-  { createdAt: "2025-09-12 09:30", staff: "홍길동 / 010-1234-5678", category: "주식", division: "최초", name: "김영희", phone: "010-2222-3333", status: "부재1", reservation: "" , source: "APP", content: "계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료" },
-  { createdAt: "2025-09-11 14:20", staff: "이철수 / 010-9876-5432", category: "코인", division: "중복", name: "이민호", phone: "010-4444-5555", status: "부재2", reservation: "" , source: "WEB", content: "상담 거절" },
-  { createdAt: "2025-09-12 10:15", staff: "홍길동 / 010-1234-5678", category: "주식", division: "유효", name: "김영희", phone: "010-2222-3333", status: "재콜", reservation: "9월 12일 3:30" , source: "APP", content: "계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료" },
-  { createdAt: "2025-09-11 16:50", staff: "이철수 / 010-9876-5432", category: "코인", division: "중복", name: "이민호", phone: "010-4444-5555", status: "신규", reservation: "" , source: "WEB", content: "상담 거절" },
-  { createdAt: "2025-09-12 11:40", staff: "홍길동 / 010-1234-5678", category: "주식", division: "유효", name: "김영희", phone: "010-2222-3333", status: "가망", reservation: "" , source: "APP", content: "계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료" },
-  { createdAt: "2025-09-11 13:10", staff: "이철수 / 010-9876-5432", category: "코인", division: "중복", name: "이민호", phone: "010-4444-5555", status: "완료", reservation: "" , source: "WEB", content: "상담 거절" },
-  { createdAt: "2025-09-12 15:00", staff: "홍길동 / 010-1234-5678", category: "주식", division: "유효", name: "김영희", phone: "010-2222-3333", status: "거절", reservation: "" , source: "APP", content: "계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료" },
-  { createdAt: "2025-09-11 17:25", staff: "이철수 / 010-9876-5432", category: "코인", division: "중복", name: "이민호", phone: "010-4444-5555", status: "완료", reservation: "" , source: "WEB", content: "상담 거절" },
-  { createdAt: "2025-09-12 18:45", staff: "홍길동 / 010-1234-5678", category: "주식", division: "유효", name: "김영희", phone: "010-2222-3333", status: "완료", reservation: "" , source: "APP", content: "계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료계약 완료" },
-  { createdAt: "2025-09-11 20:05", staff: "이철수 / 010-9876-5432", category: "코인", division: "중복", name: "이민호", phone: "010-4444-5555", status: "완료", reservation: "" , source: "WEB", content: "상담 거절" }
-])
-
-function onAdminRowSelect(row, e) { console.log("Row selected:", row, e.target.checked) }
-function onAdminBadgeUpdate(row, key, newValue) { console.log("Badge updated:", row, key, newValue) }
-function onAdminDateUpdate(row, key, newValue) { console.log("Date updated:", row, key, newValue) }
-function onAdminPageChange(newPage) { adminPage.value = newPage }
-
-/* =============================
-   메모 모달 전용 변수
-============================= */
-
-const isMemoOpen = ref(false)
-const selectedRow = ref(null)
-const memoText = ref("")
-
-function onCommonButtonClick(row, key) {
-  if (key === "memo") {
-    selectedRow.value = row
-    isMemoOpen.value = true
-  } else {
-    console.log("공용 버튼:", key, row)
-  }
-}
-
-function onAdminButtonClick(row, key) {
-  if (key === "memo") {
-    selectedRow.value = row
-    isMemoOpen.value = true
-  } else {
-    console.log("관리자 버튼:", key, row)
+const isRefreshing = ref(false)
+async function onRefresh() {
+  if (isRefreshing.value) return
+  isRefreshing.value = true
+  try {
+    await axios.post('/api/sheets/refresh?sid=1')
+    await fetchData()
+  } catch (e) {
+    console.error(e)
+    alert('새로고침 중 오류가 발생했습니다.')
+  } finally {
+    isRefreshing.value = false
   }
 }
 </script>

@@ -1,6 +1,6 @@
 <template>
   <AdminLayout>
-    <PageBreadcrumb pageTitle="조직도" />
+    <PageBreadcrumb pageTitle="마크CRM 조직도" />
 
     <div class="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-0
                 dark:border-gray-800 dark:bg-white/[0.03]">
