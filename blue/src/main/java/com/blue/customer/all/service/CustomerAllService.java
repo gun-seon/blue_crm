@@ -24,7 +24,8 @@ public class CustomerAllService {
   public PagedResponse<AllDbRowDto> getAll(
       String callerEmail, int page, int size,
       String keyword, String dateFrom, String dateTo,
-      String category, String division, String sort
+      String category, String division, String sort,
+      String mine, Long staffUserId
   ) {
     UserContextDto me = mapper.findUserContextByEmail(callerEmail);
     if (me == null) throw new IllegalArgumentException("인증 사용자 정보를 찾을 수 없습니다.");
@@ -41,10 +42,28 @@ public class CustomerAllService {
         total = mapper.countAllForAdmin(keyword, dateFrom, dateTo, category, division, me.getVisible());
       }
       case "MANAGER" -> {
-        items = mapper.findAllForManager(offset, size, keyword, dateFrom, dateTo, category, division, sort, me.getCenterId());
-        total = mapper.countAllForManager(keyword, dateFrom, dateTo, category, division, me.getCenterId());
+        // mine=Y이면 '내 DB만' → 클라 staffUserId 무시, 토큰의 본인 ID 강제
+        boolean mineOnly = "Y".equalsIgnoreCase(mine);
+        if (mineOnly) {
+          Long myUserId = me.getUserId();
+          items = mapper.findAllForStaff(
+              offset, size, keyword, dateFrom, dateTo, category, division, sort, myUserId
+          );
+          total = mapper.countAllForStaff(
+              keyword, dateFrom, dateTo, category, division, myUserId
+          );
+        } else {
+          // 센터 범위
+          items = mapper.findAllForManager(
+              offset, size, keyword, dateFrom, dateTo, category, division, sort, me.getCenterId()
+          );
+          total = mapper.countAllForManager(
+              keyword, dateFrom, dateTo, category, division, me.getCenterId()
+          );
+        }
       }
       case "STAFF" -> {
+        // STAFF는 원래 '내 DB'만
         items = mapper.findAllForStaff(offset, size, keyword, dateFrom, dateTo, category, division, sort, me.getUserId());
         total = mapper.countAllForStaff(keyword, dateFrom, dateTo, category, division, me.getUserId());
       }

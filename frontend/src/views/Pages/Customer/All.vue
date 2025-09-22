@@ -36,7 +36,7 @@
         <!-- MANAGER / STAFF -->
         <ComponentCard
             v-else
-            :buttons="['상태별 보기']"
+            :buttons=managerButtons
             :showRefresh="true"
             :refreshing="isRefreshing"
             @refresh="onRefresh"
@@ -73,7 +73,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import {ref, computed, onMounted} from "vue";
 import PageBreadcrumb from "@/components/common/PageBreadcrumb.vue";
 import AdminLayout from "@/components/layout/AdminLayout.vue";
 import ComponentCard from "@/components/common/ComponentCard.vue";
@@ -87,6 +87,19 @@ import axios from "@/plugins/axios.js"
 
 const auth = useAuthStore();
 const role = auth.role;
+const isManager = computed(() => role === 'MANAGER');
+const sortMode = ref(null);
+const mineOnly = ref(false);
+
+// 매니저 카드의 버튼 목록
+const managerButtons = computed(() => {
+  // MANAGER면 "내 DB만 보기" 토글 버튼 추가, STAFF면 기존 그대로
+  const arr = ['상태별 보기'];
+  if (isManager.value) {
+    arr.push(mineOnly.value ? '전체 보기' : '내 DB만 보기');
+  }
+  return arr;
+});
 
 const currentPageTitle = ref("전체 고객DB관리");
 const tableKey = ref(0); // 선택 초기화 강제 리렌더용
@@ -135,7 +148,15 @@ const {
   url: "/api/work/db", // 공통 API
   pageSize: 10,
   externalFilters: globalFilters,
-  useExternalKeys: { from: "dateFrom", to: "dateTo", category: "category", keyword: "keyword" },
+  useExternalKeys: {
+    from: "dateFrom",
+    to: "dateTo",
+    category: "category",
+    keyword: "keyword",
+    sort: "sort",
+    mine: "mine",
+    staffUserId: "staffUserId"
+  },
   mapper: (res) => ({
     items: res.data.items,
     totalPages: res.data.totalPages,
@@ -305,7 +326,31 @@ async function onAdminButtonClick(btn) {
 
 function onCommonButtonClick(btn) {
   if (btn === "상태별 보기") {
-    setFilter("sort", "status");
+    sortMode.value = 'status';
+    setFilter("sort", sortMode.value);                 // 정렬 유지
+    setFilter("mine", mineOnly.value ? "Y" : null);    // 내것 토글 상태 유지
+    setFilter("staffUserId", mineOnly.value ? auth.userId : null);
+    fetchData();
+    return;
+  }
+
+// MANAGER 전용: 내 DB만 보기 / 전체 보기 토글
+  if (btn === "내 DB만 보기" && isManager.value) {
+    mineOnly.value = true;
+    setFilter("mine", "Y");
+    setFilter("staffUserId", auth.userId);
+    // 현재 정렬도 유지해서 함께 적용
+    setFilter("sort", sortMode.value);
+    fetchData();
+    return;
+  }
+
+  if (btn === "전체 보기" && isManager.value) {
+    mineOnly.value = false;
+    setFilter("mine", null);
+    setFilter("staffUserId", null);
+    // 정렬은 유지
+    setFilter("sort", sortMode.value);
     fetchData();
   }
 }
