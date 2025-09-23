@@ -5,21 +5,15 @@
     <div v-if="isSuperAdmin">
       <!-- KPI -->
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
-        <KpiCardCompact title="직원수" :value="kpi.users" delta="11.0%" trend="up">
+        <KpiCardCompact title="마크CRM 총 직원 수" :value="kpi.users" delta="11.0%" trend="up">
           <template #icon>
-            <svg class="fill-gray-800 dark:fill-white/90" width="24" height="24" viewBox="0 0 24 24">
-              <path fill-rule="evenodd" clip-rule="evenodd"
-                    d="M8.804 5.602c-1.213 0-2.197.984-2.197 2.197s.984 2.197 2.197 2.197 2.197-.984 2.197-2.197-.984-2.197-2.197-2.197Zm-3.697 2.197c0-2.042 1.655-3.697 3.697-3.697s3.697 1.655 3.697 3.697-1.655 3.697-3.697 3.697-3.697-1.655-3.697-3.697Zm-.245 7.522c-.775.767-1.159 1.74-1.346 2.54-.033.142.004.256.09.35.095.103.26.188.469.188h9.349c.209 0 .374-.085.468-.188.086-.094.123-.208.09-.35-.187-.8-.571-1.773-1.346-2.54-.756-.749-1.948-1.366-3.888-1.366s-3.132.617-3.888 1.366Z"/>
-            </svg>
+            <UserGroupIcon class="w-6 h-6 fill-gray-800 dark:fill-white/90" />
           </template>
         </KpiCardCompact>
 
-        <KpiCardCompact title="센터수" :value="kpi.centers" delta="9.1%" trend="down">
+        <KpiCardCompact title="마크CRM 총 센터 수" :value="kpi.centers" delta="9.1%" trend="down">
           <template #icon>
-            <svg class="fill-gray-800 dark:fill-white/90" width="24" height="24" viewBox="0 0 24 24">
-              <path fill-rule="evenodd" clip-rule="evenodd"
-                    d="M11.665 3.756c.211-.105.46-.105.671 0l6.445 3.222-6.445 3.223a.75.75 0 0 1-.671 0L5.22 6.978 11.665 3.756ZM4.293 8.192v7.903c0 .284.16.544.414.671L11.25 20.037V11.65a2.23 2.23 0 0 1-.256-.108L4.293 8.192Zm8.457 11.845 6.543-3.271a.75.75 0 0 0 .415-.671V8.192l-6.701 3.351c-.083.042-.169.078-.257.109v8.385Z"/>
-            </svg>
+            <HomeIcon class="w-6 h-6 fill-gray-800 dark:fill-white/90" />
           </template>
         </KpiCardCompact>
       </div>
@@ -145,21 +139,15 @@
     <div v-else class="mt-2 grid grid-cols-12 gap-4 md:gap-6">
       <!-- KPI -->
       <div class="col-span-12 xl:col-span-4 space-y-4">
-        <KpiCardCompact title="직원수" :value="kpi.users" delta="11.0%" trend="up">
+        <KpiCardCompact title="마크CRM 총 직원 수" :value="kpi.users" delta="11.0%" trend="up">
           <template #icon>
-            <svg class="fill-gray-800 dark:fill-white/90" width="24" height="24" viewBox="0 0 24 24">
-              <path fill-rule="evenodd" clip-rule="evenodd"
-                    d="M8.804 5.602c-1.213 0-2.197.984-2.197 2.197s.984 2.197 2.197 2.197 2.197-.984 2.197-2.197-.984-2.197-2.197-2.197Zm-3.697 2.197c0-2.042 1.655-3.697 3.697-3.697s3.697 1.655 3.697 3.697-1.655 3.697-3.697 3.697-3.697-1.655-3.697-3.697Zm-.245 7.522c-.775.767-1.159 1.74-1.346 2.54-.033.142.004.256.09.35.095.103.26.188.469.188h9.349c.209 0 .374-.085.468-.188.086-.094.123-.208.09-.35-.187-.8-.571-1.773-1.346-2.54-.756-.749-1.948-1.366-3.888-1.366s-3.132.617-3.888 1.366Z"/>
-            </svg>
+            <UserGroupIcon class="w-6 h-6 fill-gray-800 dark:fill-white/90" />
           </template>
         </KpiCardCompact>
 
-        <KpiCardCompact title="센터수" :value="kpi.centers" delta="9.1%" trend="down">
+        <KpiCardCompact title="마크CRM 총 센터 수" :value="kpi.centers" delta="9.1%" trend="down">
           <template #icon>
-            <svg class="fill-gray-800 dark:fill-white/90" width="24" height="24" viewBox="0 0 24 24">
-              <path fill-rule="evenodd" clip-rule="evenodd"
-                    d="M11.665 3.756c.211-.105.46-.105.671 0l6.445 3.222-6.445 3.223a.75.75 0 0 1-.671 0L5.22 6.978 11.665 3.756ZM4.293 8.192v7.903c0 .284.16.544.414.671L11.25 20.037V11.65a2.23 2.23 0 0 1-.256-.108L4.293 8.192Zm8.457 11.845 6.543-3.271a.75.75 0 0 0 .415-.671V8.192l-6.701 3.351c-.083.042-.169.078-.257.109v8.385Z"/>
-            </svg>
+            <HomeIcon class="w-6 h-6 fill-gray-800 dark:fill-white/90" />
           </template>
         </KpiCardCompact>
       </div>
@@ -338,6 +326,7 @@ import KpiCardCompact from '@/components/ui/KpiCardCompact.vue'
 import { globalFilters as gf } from '@/composables/globalFilters'
 import axios from '@/plugins/axios.js'
 import { useAuthStore } from '@/stores/auth'
+import { UserGroupIcon, HomeIcon } from '@/icons'
 
 const auth = useAuthStore()
 const roleLabel = (r) => {
