@@ -83,7 +83,7 @@ const columns = [
   {
     key: "centerName",
     label: "센터",
-    type: "html",
+    type: "badge",
     width: 140,
     render: (val: string) => `<span class="px-2 py-1 rounded-full bg-gray-100">${val ?? '미배정'}</span>`,
   },
