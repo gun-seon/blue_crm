@@ -16,7 +16,9 @@
 
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
         <!-- 데이터 있을 때 -->
-        <tr v-for="(row, rowIndex) in data" key="getRowKey(row, rowIndex)" class="border-t border-gray-100 dark:border-gray-800">
+        <tr v-for="(row, rowIndex) in data"
+            key="getRowKey(row, rowIndex)"
+            class="border-t border-gray-100 dark:border-gray-800">
           <!-- 체크박스 -->
           <td v-if="showCheckbox" class="px-5 py-4 sm:px-6">
             <input type="checkbox"
