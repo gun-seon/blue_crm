@@ -41,6 +41,9 @@ public class CustomerCenterService {
     if (me == null) throw new IllegalArgumentException("인증 사용자 정보를 찾을 수 없습니다.");
     if (!"SUPERADMIN".equals(me.getRole())) throw new IllegalArgumentException("본사 전용 메뉴입니다.");
     
+    // 카테고리 필터 무시 (향후 확장성 고려해서 필드는 남겨둠)
+    category = null;
+    
     int offset = (page - 1) * size;
     List<CenterDbRowDto> items = mapper.findForAdmin(
         offset, size, keyword, dateFrom, dateTo, category, division, centerId, me.getVisible()

@@ -65,7 +65,7 @@ const {
   useExternalKeys: {
     from: "dateFrom",
     to: "dateTo",
-    category: "category",
+    // category: "category",
     keyword: "keyword",
   },
   mapper: (res) => ({
@@ -141,9 +141,9 @@ async function downloadExcel() {
   const params: any = {
     dateFrom:  globalFilters.dateFrom || undefined,
     dateTo:    globalFilters.dateTo   || undefined,
-    category:  Array.isArray(globalFilters.category)
-        ? globalFilters.category.join(",")
-        : (globalFilters.category || undefined),
+    // category:  Array.isArray(globalFilters.category)
+    //     ? globalFilters.category.join(",")
+    //     : (globalFilters.category || undefined),
     keyword:   (globalFilters.keyword || "").trim() || undefined,
     centerId:  centerId.value ?? undefined,
   };
