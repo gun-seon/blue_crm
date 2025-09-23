@@ -49,11 +49,15 @@
             <span class="w-24 font-semibold">현재 담당자</span>
             <span>{{ effectiveStaff }}</span>
           </div>
-          <div class="flex">
-            <span class="w-24 font-semibold mb-1">담당자 이력</span>
-            <span class="flex-1">
-              {{ effectiveHistory.length ? effectiveHistory.join(', ') : '없음' }}
-            </span>
+          <div class="flex items-start">
+            <span class="w-24 font-semibold mb-1 shrink-0">담당자 이력</span>
+            <div
+                class="flex-1 max-h-20 overflow-y-auto pr-2 break-words whitespace-pre-wrap history-scroll"
+            >
+              <span>
+                {{ effectiveHistory.length ? effectiveHistory.join(', ') : '없음' }}
+              </span>
+            </div>
           </div>
         </template>
         <hr class="border-gray-200 dark:border-gray-700" />
@@ -485,5 +489,17 @@ watch(
 .dark .flatpickr-time-separator {
   color: #f9fafb !important;
   font-weight: 500;
+}
+
+/* 담당자 이력 스크롤 디자인(필요시) */
+.history-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.history-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(107,114,128,.5); /* gray-600 정도 */
+  border-radius: 9999px;
+}
+.dark .history-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(156,163,175,.5); /* gray-400 정도 */
 }
 </style>

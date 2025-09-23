@@ -11,7 +11,7 @@
             :buttons="['분배하기']"
             :showRefresh="true"
             :refreshing="loading"
-            @refresh="fetchData"
+            @refresh="refetchAndClamp"
             @changeSize="setSize"
             @selectChange="onDivisionSelect"
             @buttonClick="onHqButton"
@@ -34,7 +34,7 @@
             :buttons="['분배하기']"
             :showRefresh="true"
             :refreshing="loading"
-            @refresh="fetchData"
+            @refresh="refetchAndClamp"
             @changeSize="setSize"
             @buttonClick="onMgrButton"
         >
@@ -50,10 +50,10 @@
           />
         </ComponentCard>
 
-<!--        &lt;!&ndash; STAFF 접근 X: 보안상 라우팅에서 막히겠지만 방어적으로 안내 &ndash;&gt;-->
-<!--        <div v-else class="p-6 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">-->
-<!--          이 페이지는 본사 또는 센터장만 사용할 수 있습니다.-->
-<!--        </div>-->
+        <!--        &lt;!&ndash; STAFF 접근 X: 보안상 라우팅에서 막히겠지만 방어적으로 안내 &ndash;&gt;-->
+        <!--        <div v-else class="p-6 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">-->
+        <!--          이 페이지는 본사 또는 센터장만 사용할 수 있습니다.-->
+        <!--        </div>-->
 
         <AllocateModal
             v-if="modal.open"
@@ -116,7 +116,7 @@ const hqColumns = [
   { key: 'phone',     label: '전화번호', type: 'text' },
   { key: 'source',    label: 'DB출처',   type: 'text' },
   { key: 'content',   label: '내용',     type: 'text', ellipsis: { width: 150 } },
-  { key: 'paststaff',     label: '담당자 이력', type: 'text', ellipsis: { width: 150 } }, // HQ 전용
+  { key: 'paststaff',     label: '담당자 이력', type: 'text', ellipsis: { width: 200 } }, // HQ 전용
 ]
 
 // 매니저는 담당자 이력/구분 X (분배만)
@@ -162,10 +162,27 @@ async function onConfirmAllocate(payload: { centerId?:number|null, userId?:numbe
     selectedRows.value = []
     tableRef.value?.clearSelection?.()
 
-    await fetchData()
+    // 페이지 검사하며 새로고침
+    await refetchAndClamp()
   } catch (e:any) {
     console.error(e)
     alert(e?.response?.data || '분배 중 오류가 발생했습니다.')
+  }
+}
+
+// 페이지 검사하며 새로고침
+async function refetchAndClamp() {
+  await fetchData();
+
+  // 총 페이지 수가 줄어 현재 page가 범위를 넘으면 마지막 페이지로
+  if (page.value > totalPages.value) {
+    changePage(Math.max(1, totalPages.value)); // changePage가 알아서 fetch 호출
+    return;
+  }
+
+  // 총 페이지 값은 맞지만 현 페이지 데이터가 0개면 한 페이지 앞으로
+  if ((items.value?.length ?? 0) === 0 && page.value > 1) {
+    changePage(page.value - 1);
   }
 }
 </script>

@@ -16,7 +16,9 @@
 
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
         <!-- 데이터 있을 때 -->
-        <tr v-for="(row, rowIndex) in data" key="getRowKey(row, rowIndex)" class="border-t border-gray-100 dark:border-gray-800">
+        <tr v-for="(row, rowIndex) in data"
+            key="getRowKey(row, rowIndex)"
+            class="border-t border-gray-100 dark:border-gray-800">
           <!-- 체크박스 -->
           <td v-if="showCheckbox" class="px-5 py-4 sm:px-6">
             <input type="checkbox"
@@ -377,10 +379,6 @@ watch(
               // flatpickr 비우기
               ins.clear()
 
-              // // 셀 값 비우고 부모에 알림
-              // props.data[row][col] = ""
-              // emit("DateUpdate", props.data[row], col, "")
-
               // 중복 방지
               ins._wasCleared = true
 
@@ -409,10 +407,6 @@ watch(
               // 1) flatpickr 비우기
               ins.clear();
 
-              // // 2) 셀 값 비우고 부모에 알림
-              // props.data[row][col] = "";
-              // emit("DateUpdate", props.data[row], col, "");
-
               // 3) onClose에서 중복 반영 방지 플래그
               ins._wasCleared = true;
 
@@ -427,14 +421,6 @@ watch(
           }
         },
         onClose: (dates, _str, ins) => {
-          // 과거 코드 (close 후 재클릭시 오늘 날짜로 초기화 되지 않는 문제 있었음)
-          // X버튼으로 지웠다면 빈 문자열, 아니면 input의 현재 값을 그대로 반영
-          // const value = ins._wasCleared ? "" : ((ins.input?.value || "").trim());
-          // ins._wasCleared = false;
-          //
-          // props.data[row][col] = value;
-          // emit("DateUpdate", props.data[row], col, value);
-
           let displayStr = ""
           let apiStr = ""
 
@@ -470,29 +456,6 @@ watch(
             ins._clearButton.remove()
             ins._clearButton = null
           }
-
-          // 과거 코드 (close 후 재클릭시 오늘 날짜로 초기화 되지 않는 문제 있었음)
-          // const isCleared = ins._wasCleared || !dates?.length || !ins.input?.value?.trim();
-          // ins._wasCleared = false;
-          //
-          // // 1) 화면 표시용 (연도 없이)
-          // const displayStr = isCleared ? "" : (ins.input.value || "").trim(); // "9월 19일 15:00"
-          // // 2) 백엔드 전송용 (연도 포함, 표준형)
-          // const apiStr     = isCleared ? "" : ins.formatDate(dates[0], "Y-m-d H:i"); // "2025-09-19 15:00"
-          //
-          // // 셀에는 표시용 반영
-          // props.data[row][col] = displayStr;
-          // // 부모에는 저장용 문자열로 emit
-          // emit("DateUpdate", props.data[row], col, apiStr);
-          //
-          // // 편집 모드 종료
-          // cancelEdit()
-          //
-          // // X 버튼 정리
-          // if (ins._clearButton) {
-          //   ins._clearButton.remove()
-          //   ins._clearButton = null
-          // }
         }
       })
     },
@@ -527,6 +490,7 @@ const badgeClass = (value) => {
     case "탈퇴":
     case "거절":
     case "회수":
+    case "차단":
       return "bg-[#F8D7DA] text-[#B23A48] dark:bg-[#4A1C1C]/80 dark:text-[#F28B82]/85"
     case "담당자":
     case "신규":

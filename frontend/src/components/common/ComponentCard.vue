@@ -31,7 +31,9 @@
           <template v-for="(selectOptions, idx) in selects" :key="'sel-' + idx">
             <select
                 @input="$emit('selectChange', { idx, value: $event.target.value })"
-                class="w-30 h-11 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-200 text-gray-500"
+                class="w-30 h-11 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1
+                text-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                dark:bg-gray-800 dark:text-gray-200 text-gray-500"
             >
               <option v-for="opt in selectOptions" :key="opt" :value="opt">{{ opt }}</option>
             </select>
