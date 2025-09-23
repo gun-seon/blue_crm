@@ -1,39 +1,3 @@
-<!--<template>-->
-<!--  <admin-layout>-->
-<!--    <div class="grid grid-cols-12 gap-4 md:gap-6">-->
-<!--      <div class="col-span-12 space-y-6 xl:col-span-7">-->
-<!--        &lt;!&ndash; 총 회원수 등 간략화된 지표 &ndash;&gt;-->
-<!--        <ecommerce-metrics />-->
-<!--      </div>-->
-
-<!--&lt;!&ndash;      <div class="col-span-12 xl:col-span-5">&ndash;&gt;-->
-<!--&lt;!&ndash;        <customer-demographic />&ndash;&gt;-->
-<!--&lt;!&ndash;      </div>&ndash;&gt;-->
-
-<!--&lt;!&ndash;      <div class="col-span-12 xl:col-span-7">&ndash;&gt;-->
-<!--&lt;!&ndash;        <recent-orders />&ndash;&gt;-->
-<!--&lt;!&ndash;      </div>&ndash;&gt;-->
-<!--    </div>-->
-<!--  </admin-layout>-->
-<!--</template>-->
-
-<!--<script>-->
-<!--import AdminLayout from '../components/layout/AdminLayout.vue'-->
-<!--import EcommerceMetrics from '../components/ecommerce/EcommerceMetrics.vue'-->
-<!--import CustomerDemographic from '../components/ecommerce/CustomerDemographic.vue'-->
-<!--import RecentOrders from '../components/ecommerce/RecentOrders.vue'-->
-<!--export default {-->
-<!--  components: {-->
-<!--    AdminLayout,-->
-<!--    EcommerceMetrics,-->
-<!--    CustomerDemographic,-->
-<!--    RecentOrders,-->
-<!--  },-->
-<!--  name: 'Ecommerce',-->
-<!--}-->
-<!--</script>-->
-
-<!-- src/views/Dashboard.vue -->
 <template>
   <AdminLayout>
     <!-- KPI -->
@@ -61,28 +25,29 @@
     <div class="mt-6 grid grid-cols-12 gap-4 md:gap-6">
 
       <!-- 센터별 -->
-      <div class="col-span-12 xl:col-span-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm
-                  dark:border-white/10 dark:bg-[#0f172a]">
-        <div class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">센터별</div>
-
-        <!-- 트리거 -->
-        <div class="mb-4 flex flex-wrap items-center gap-2">
-          <button
-              class="h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 hover:bg-gray-50
-                   dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700/60"
-              @click="openCenterPicker = true">
-            센터 선택 <span class="ml-1 text-gray-500 dark:text-gray-400">({{ pickedCenters.size }}개)</span>
-          </button>
-          <button
-              class="h-11 rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 hover:bg-gray-50
-                   disabled:opacity-50
-                   dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700/60"
-              @click="clearCenters" :disabled="pickedCenters.size===0">
-            초기화
-          </button>
+      <div class="col-span-12 xl:col-span-6 rounded-2xl border border-gray-200 bg-white p-5
+            dark:border-gray-800 dark:bg-white/[0.03]">
+        <!-- 헤더 + 버튼을 같은 행 -->
+        <div class="mb-4 flex items-center justify-between">
+          <div class="text-lg font-semibold text-gray-900 dark:text-gray-100">센터별</div>
+          <div class="flex items-center gap-2">
+            <button
+                class="h-11 shrink-0 rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 hover:bg-gray-50
+             dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700/60"
+                @click="openCenterPicker = true">
+              센터 선택 <span class="ml-1 text-gray-500 dark:text-gray-400">({{ pickedCenters.size }}개)</span>
+            </button>
+            <button
+                class="h-11 shrink-0 rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 hover:bg-gray-50
+             disabled:opacity-50
+             dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700/60"
+                @click="clearCenters" :disabled="pickedCenters.size===0">
+              초기화
+            </button>
+          </div>
         </div>
 
-        <!-- 값 리스트: 구분선 다크모드 색상 지정 -->
+        <!-- 값 리스트 -->
         <ul class="divide-y divide-gray-200 rounded-xl border border-gray-200 overflow-hidden
                    dark:divide-white/10 dark:border-white/10">
           <li class="flex items-center justify-between px-4 py-3">
@@ -109,31 +74,45 @@
       </div>
 
       <!-- 담당자별 (단일 선택) -->
-      <div class="col-span-12 xl:col-span-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm
-                  dark:border-white/10 dark:bg-[#0f172a]">
-        <div class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">담당자별</div>
-
+      <div class="col-span-12 xl:col-span-6 rounded-2xl border border-gray-200 bg-white p-5
+            dark:border-gray-800 dark:bg-white/[0.03]">
+        <!-- 제목 + 검색창 + 버튼 같은 행 -->
         <div class="mb-4 flex items-center gap-2">
-          <input
-              v-model="userQuery"
-              placeholder="담당자 검색"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400
-                   focus:border-gray-400 focus:outline-hidden focus:ring-3 focus:ring-gray-500/10
-                   dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-400 dark:focus:border-gray-600" />
-          <button
-              class="h-11 shrink-0 rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 hover:bg-gray-50
-                   dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700/60"
-              @click="pickFirstUser">
-            선택
-          </button>
+          <div class="text-lg font-semibold text-gray-900 dark:text-gray-100 shrink-0 mr-2">
+            담당자별
+          </div>
+
+          <!-- 검색창 + 버튼 묶음 -->
+          <div class="flex items-center gap-2 flex-1">
+            <input
+                v-model="userQuery"
+                placeholder="담당자 검색"
+                class="h-11 w-full rounded-lg border px-3
+                   bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                   dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
+            <button
+                class="h-11 shrink-0 rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-800 hover:bg-gray-50
+             dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700/60"
+                @click="pickFirstUser">
+              선택
+            </button>
+          </div>
         </div>
 
-        <!-- 여기도 구분선 색상 지정 -->
+        <!-- 값 리스트 -->
         <ul class="divide-y divide-gray-200 rounded-xl border border-gray-200 overflow-hidden
                    dark:divide-white/10 dark:border-white/10">
+          <!-- 담당자 정보 -->
           <li class="flex items-center justify-between px-4 py-3">
             <span class="text-sm text-gray-600 dark:text-gray-300">담당자</span>
-            <b class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.totalOwners.toLocaleString() }}</b>
+            <b class="text-base text-gray-900 dark:text-gray-100">
+              <template v-if="pickedUserInfo">
+                {{ pickedUserInfo.name }} ({{ pickedUserInfo.center }}, {{ pickedUserInfo.role }})
+              </template>
+              <template v-else>
+                없음
+              </template>
+            </b>
           </li>
           <li class="flex items-center justify-between px-4 py-3">
             <span class="text-sm text-gray-600 dark:text-gray-300">DB(기간+중복)</span>
@@ -255,29 +234,15 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import KpiCardCompact from '@/components/ui/KpiCardCompact.vue'
 import { globalFilters as gf } from '@/composables/globalFilters'
+import axios from '@/plugins/axios.js'
 
-/* 더미 데이터 (API 교체 예정) */
-const centers = ref([{ id:1, name:'수지' }, { id:2, name:'분당' }, { id:3, name:'강남' }])
-const users = ref([
-  { id:11, name:'홍길동', centerId:1 },
-  { id:12, name:'김철수', centerId:1 },
-  { id:21, name:'이영희', centerId:2 },
-  { id:31, name:'박민수', centerId:3 },
-])
-// type: '유효' | '최신' | '중복'
-const dbs = ref([
-  { id:1, ownerId:11, centerId:1, type:'유효',  created:'2025-09-10' },
-  { id:2, ownerId:12, centerId:1, type:'최신',  created:'2025-09-22' },
-  { id:3, ownerId:12, centerId:1, type:'중복',  created:'2025-09-18' },
-  { id:4, ownerId:21, centerId:2, type:'유효',  created:'2025-09-01' },
-  { id:5, ownerId:21, centerId:2, type:'최신',  created:'2025-09-20' },
-  { id:6, ownerId:31, centerId:3, type:'유효',  created:'2025-08-31' },
-  { id:7, ownerId:31, centerId:3, type:'중복',  created:'2025-09-05' },
-])
+const centers = ref([])
+const users = ref([])
+const dbs = ref([])
 
 /* KPI */
 const kpi = computed(() => ({ users: users.value.length, centers: centers.value.length }))
@@ -344,6 +309,22 @@ const userAgg = computed(() => {
     dbRangeOnly: r.filter(x => x.type !== '중복').length,
     dbAllWithDup: a.length,
     dbAllOnly: a.filter(x => x.type !== '중복').length,
+  }
+})
+
+onMounted(async () => {
+  try {
+    const [centersRes, usersRes, dbsRes] = await Promise.all([
+      axios.get('/api/centers'),
+      axios.get('/api/users'),
+      axios.get('/api/customers'), // DB 데이터
+    ])
+
+    centers.value = centersRes.data
+    users.value = usersRes.data
+    dbs.value = dbsRes.data
+  } catch (e) {
+    console.error('대시보드 데이터 로드 실패:', e)
   }
 })
 </script>
