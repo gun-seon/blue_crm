@@ -6,16 +6,6 @@
                 dark:border-gray-800 dark:bg-white/[0.03]">
       <div class="relative z-10 p-6">
 
-<!--        <CommonGridShape-->
-<!--            src="/images/shape/grid-01.svg"-->
-<!--            mode="mask"-->
-<!--            size="w-56 h-56"-->
-<!--            position="-top-1 -right-4"-->
-<!--            opacity="opacity-[0.06] dark:opacity-[0.10]"-->
-<!--            lightColor="bg-gray-900"-->
-<!--            darkColor="dark:bg-gray-900"-->
-<!--        />-->
-
         <ul class="space-y-3">
           <UserNode
               v-for="node in treeData"
