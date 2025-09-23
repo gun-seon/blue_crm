@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blue.customer.center.mapper.CustomerCenterMapper">
+
+    <!-- 로그인 컨텍스트 -->
+    <select id="findUserContextByEmail" resultType="com.blue.customer.all.dto.UserContextDto">
+        SELECT u.user_id AS userId, u.user_role AS role, u.center_id AS centerId,
+               u.user_email AS email, u.manager_phone_access AS visible
+        FROM users u
+        WHERE u.user_email = #{email}
+        LIMIT 1
+    </select>
+
+    <!-- 본사 제외 센터 목록 -->
+    <select id="findCentersExcludingHQ" resultType="com.blue.customer.center.dto.CenterSimpleDto">
+        SELECT c.center_id AS centerId, c.center_name AS centerName
+        FROM centers c
+        WHERE c.center_id &lt;&gt; 1
+        ORDER BY c.center_id ASC
+    </select>
+
+    <!-- 공용 필터: 4컬럼 테이블 대상 (t.*) -->
+    <sql id="COMMON_FILTERS">
+        <if test="keyword != null and keyword != ''">
+            <choose>
+                <!-- SUPERADMIN 가시권한 N: 전화 검색 금지 -->
+                <when test='visible == "N"'>
+                    AND (t.name LIKE CONCAT('%', #{keyword}, '%'))
+                </when>
+                <otherwise>
+                    AND (t.name LIKE CONCAT('%', #{keyword}, '%')
+                    OR t.phone LIKE CONCAT('%', #{keyword}, '%'))
+                </otherwise>
+            </choose>
+        </if>
+
+        <if test="dateFrom != null and dateFrom != ''">
+            AND t.createdAt &gt;= #{dateFrom}
+        </if>
+        <if test="dateTo != null and dateTo != ''">
+            AND t.createdAt &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
+        </if>
+
+        <if test="category != null and category != ''">
+            AND t.category = #{category}
+        </if>
+        <if test="division != null and division != ''">
+            AND t.division = #{division}
+        </if>
+        <if test="centerId != null">
+            AND t.centerId = #{centerId}
+        </if>
+    </sql>
+
+    <!-- SUPERADMIN: customers + customers_duplicate -->
+    <select id="findForAdmin" resultType="com.blue.customer.center.dto.CenterDbRowDto">
+        SELECT t.id, t.createdAt, t.name, t.phone, t.centerId, t.centerName
+        FROM (
+        /* customers */
+        SELECT
+        c.customer_id          AS id,
+        c.customer_created_at  AS createdAt,
+        c.customer_name        AS name,
+        c.customer_phone       AS phone,
+        u.center_id            AS centerId,
+        ce.center_name         AS centerName,
+        c.customer_division    AS division,     -- 필터용
+        c.customer_category    AS category      -- 필터용
+        FROM customers c
+        LEFT JOIN users u   ON u.user_id = c.user_id
+        LEFT JOIN centers ce ON ce.center_id = u.center_id
+
+        UNION ALL
+
+        /* duplicates (원본 고객 담당자의 센터 기준) */
+        SELECT
+        d.duplicate_id         AS id,
+        d.duplicate_created_at AS createdAt,
+        d.duplicate_name       AS name,
+        c2.customer_phone      AS phone,
+        u2.center_id           AS centerId,
+        ce2.center_name        AS centerName,
+        '중복'                  AS division,     -- 필터용
+        d.duplicate_category   AS category      -- 필터용
+        FROM customers_duplicate d
+        JOIN customers c2   ON c2.customer_id = d.customer_id
+        LEFT JOIN users u2  ON u2.user_id      = c2.user_id
+        LEFT JOIN centers ce2 ON ce2.center_id = u2.center_id
+        WHERE d.duplicate_display = 1
+        ) t
+        WHERE 1=1
+        <include refid="COMMON_FILTERS"/>
+        ORDER BY t.createdAt DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countForAdmin" resultType="int">
+        SELECT COUNT(*)
+        FROM (
+        SELECT
+        c.customer_id AS id,
+        c.customer_created_at AS createdAt,
+        c.customer_name AS name,
+        c.customer_phone AS phone,
+        u.center_id AS centerId,
+        ce.center_name AS centerName,
+        c.customer_division AS division,
+        c.customer_category AS category
+        FROM customers c
+        LEFT JOIN users u   ON u.user_id = c.user_id
+        LEFT JOIN centers ce ON ce.center_id = u.center_id
+
+        UNION ALL
+        SELECT
+        d.duplicate_id AS id,
+        d.duplicate_created_at AS createdAt,
+        d.duplicate_name AS name,
+        c2.customer_phone AS phone,
+        u2.center_id AS centerId,
+        ce2.center_name AS centerName,
+        '중복' AS division,
+        d.duplicate_category AS category
+        FROM customers_duplicate d
+        JOIN customers c2   ON c2.customer_id = d.customer_id
+        LEFT JOIN users u2  ON u2.user_id      = c2.user_id
+        LEFT JOIN centers ce2 ON ce2.center_id = u2.center_id
+        WHERE d.duplicate_display = 1
+        ) t
+        WHERE 1=1
+        <include refid="COMMON_FILTERS"/>
+    </select>
+
+</mapper>
