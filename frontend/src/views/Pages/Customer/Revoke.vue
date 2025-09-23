@@ -10,7 +10,7 @@
             :buttons="['회수하기']"
             :showRefresh="true"
             :refreshing="loading"
-            @refresh="fetchData"
+            @refresh="refetchAndClamp"
             @changeSize="setSize"
             @selectChange="onDivisionSelect"
             @buttonClick="onHqButton"
@@ -33,7 +33,7 @@
             :buttons="['회수하기']"
             :showRefresh="true"
             :refreshing="loading"
-            @refresh="fetchData"
+            @refresh="refetchAndClamp"
             @changeSize="setSize"
             @buttonClick="onMgrButton"
         >
@@ -154,13 +154,34 @@ function onMgrButton(btn: string) {
 async function onConfirmRevoke(ids: number[]) {
   try {
     await axios.post('/api/work/revoke/hq', { customerIds: ids })
-    // 초기화 & 재조회
+
+    // 선택 초기화
     selectedRows.value = []
     tableRef.value?.clearSelection?.()
-    await fetchData()
+
+    // 페이지 검사 후 새로고침
+    await refetchAndClamp()
   } catch (e: any) {
     console.error(e)
     alert(e?.response?.data || '회수 중 오류가 발생했습니다.')
+  }
+}
+
+// 페이지 검사 후 새로고침
+async function refetchAndClamp() {
+  await fetchData();
+
+  // 총 페이지 수가 줄어 현재 page가 범위를 넘으면 마지막 페이지로
+  if (page.value > totalPages.value) {
+    changePage(Math.max(1, totalPages.value));
+    await fetchData();        // <- 바로 로드
+    return;
+  }
+
+  // 총 페이지는 같지만 현 페이지 데이터가 0이면 한 페이지 앞으로
+  if ((items.value?.length ?? 0) === 0 && page.value > 1) {
+    changePage(page.value - 1);
+    await fetchData();        // <- 바로 로드
   }
 }
 </script>
