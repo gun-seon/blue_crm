@@ -129,12 +129,26 @@ async function onButtonClick(btn: string) {
   }
 }
 
+// 선택된 센터 이름 계산 (없으면 빈 문자열)
+const currentCenterName = computed(() => {
+  const id = centerId.value
+  if (id == null) return "마크CRM" // '전체'일 때 빈 문자열로
+  const found = centers.value.find(c => c.centerId === id)
+  return found?.centerName ?? ""
+})
+
+// yyyy-mm-dd
 function todayStr() {
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
+}
+
+// 파일명에서 불가 문자 치환 (윈도우 대비)
+function sanitize(name: string) {
+  return name.replace(/[\\/:*?"<>|]/g, "_");
 }
 
 // 엑셀 다운로드 (전역 + 페이지 필터 그대로 전달)
@@ -152,7 +166,12 @@ async function downloadExcel() {
   const blob = new Blob([res.data], { type: res.headers["content-type"] });
   const a    = document.createElement("a");
   a.href     = URL.createObjectURL(blob);
-  a.download = "center-db.xlsx";
+
+  const namePart = currentCenterName.value
+  a.download = sanitize(
+      namePart ? `${namePart} (${todayStr()}).xlsx` : `${todayStr()}.xlsx`
+  )
+
   a.click();
   URL.revokeObjectURL(a.href);
 }
