@@ -120,7 +120,8 @@ async function onRefresh() {
     // tableRef.value?.clearSelection?.();
 
     // 테이블 데이터 재조회
-    await fetchData();
+    // 페이지 검사하며 새로고침
+    await refetchAndClamp();
 
     // (선택) 서버 reason에 따라 토스트/알림
     // if (data?.reason === 'debounced') alert('조금 뒤에 다시 시도해주세요.');
@@ -313,7 +314,9 @@ async function onAdminButtonClick(btn) {
       selectedRows.value = [];
       tableRef.value?.clearSelection?.(); // PsnsTable이 메서드 제공 시
       tableKey.value++; // 강제 리렌더로 selection state 초기화
-      await fetchData();
+
+      // 페이지 검사하며 새로고침
+      await refetchAndClamp();
     } catch (err) {
       console.error("중복 이동 실패", err);
       alert("중복 이동 중 오류가 발생했습니다.");
@@ -391,6 +394,22 @@ function onMemoSaved(patch) {
     // 현재 페이지에 행이 없을 때만 안전 재조회 (페이지 유지)
     const curPage = page.value;
     fetchData().then(() => { if (page.value !== curPage) changePage(curPage); });
+  }
+}
+
+// 페이지 방어
+async function refetchAndClamp() {
+  await fetchData();
+
+  // 총 페이지가 줄어들어 현재 페이지가 범위를 넘은 경우 → 마지막 페이지로 이동
+  if (page.value > totalPages.value) {
+    changePage(Math.max(1, totalPages.value)); // watch가 트리거되어 fetch 자동 호출
+    return;
+  }
+
+  // 방어: 총 페이지 값은 맞지만, 현재 페이지에 레코드가 0개면 이전 페이지로 한 칸
+  if ((items.value?.length ?? 0) === 0 && page.value > 1) {
+    changePage(page.value - 1);
   }
 }
 </script>
