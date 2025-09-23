@@ -169,7 +169,7 @@ public class InfoService {
   /** 전역 열람 판단: HQ(센터ID=1) 또는 super 계정만 true */
   private boolean canSeeAllCenters(UserRow u) {
     if (u == null) return false;
-    if (isSuper(u)) return true; // super@naver.com 전권
+    if (isSuper(u)) return true; // 슈퍼어드민(특별한계정) 전권
     return Objects.equals(u.getCenterId(), 1L);  // 본사 소속만 전역 열람
   }
   
@@ -180,7 +180,7 @@ public class InfoService {
    */
   private List<UserRow> filterVisible(UserRow me, List<UserRow> all) {
     if (me == null) return List.of();
-    if (canSeeAllCenters(me)) return all;                 // super 또는 HQ
+    if (canSeeAllCenters(me)) return all; // super 또는 HQ
     
     if (isAdmin(me) || isManager(me)) {
       // 관리자(SUPERADMIN)인데 HQ가 아니면 ‘자기 센터만’
@@ -199,7 +199,7 @@ public class InfoService {
   private boolean canEdit(UserRow viewer, UserRow target) {
     if (viewer == null || target == null) return false;
     
-    if (isSuper(viewer)) return true;                                     // super 전권
+    if (isSuper(viewer)) return true; // super 전권
     if (Objects.equals(viewer.getUserId(), target.getUserId())) return false; // 본인 금지
     
     if (canSeeAllCenters(viewer)) {

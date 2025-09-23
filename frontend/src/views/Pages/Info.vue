@@ -94,7 +94,6 @@
 import { ref, onMounted, nextTick, watch } from "vue"
 import AdminLayout from "@/components/layout/AdminLayout.vue"
 import PageBreadcrumb from "@/components/common/PageBreadcrumb.vue"
-import CommonGridShape from "@/components/common/CommonGridShape.vue"
 import UserNode from "@/components/profile/UserNode.vue"
 import axios from "@/plugins/axios.js"
 import { globalFilters } from "@/composables/globalFilters.js" // 헤더 검색 상태
