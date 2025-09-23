@@ -116,7 +116,7 @@ const hqColumns = [
   { key: 'phone',     label: '전화번호', type: 'text' },
   { key: 'source',    label: 'DB출처',   type: 'text' },
   { key: 'content',   label: '내용',     type: 'text', ellipsis: { width: 150 } },
-  { key: 'paststaff',     label: '담당자 이력', type: 'text', ellipsis: { width: 150 } }, // HQ 전용
+  { key: 'paststaff',     label: '담당자 이력', type: 'text', ellipsis: { width: 200 } }, // HQ 전용
 ]
 
 // 매니저는 담당자 이력/구분 X (분배만)
