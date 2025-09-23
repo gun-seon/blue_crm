@@ -71,10 +71,13 @@
                 ORDER BY FIELD(t.division, '최초','유효','중복'), t.createdAt DESC
             </when>
             <when test="sort == 'status'">
-                ORDER BY FIELD(t.status,
-                        '부재1','부재2','부재3','부재4','부재5',
-                        '재콜','신규', '회수', '가망','완료','거절', '없음'),
-                t.createdAt DESC
+                ORDER BY
+                    FIELD(t.status,
+                    '부재1','부재2','부재3','부재4','부재5',
+                    '재콜','신규','회수','가망','완료','거절','없음'),
+                    CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,
+                    CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,
+                    CASE WHEN t.status&lt;&gt;'재콜' THEN t.createdAt END DESC
             </when>
             <otherwise>
                 ORDER BY t.createdAt DESC
@@ -101,6 +104,7 @@
         c.customer_content      AS content,
         c.customer_memo         AS memo,
         c.customer_status       AS status,
+        c.customer_promise_time AS promiseAt,
         DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
         FROM customers c
         LEFT JOIN users u ON u.user_id = c.user_id
@@ -120,6 +124,7 @@
         d.duplicate_content     AS content,
         d.duplicate_memo        AS memo,
         '없음'                  AS status,
+        NULL                    AS promiseAt,
         NULL                    AS reservation
         FROM customers_duplicate d
         JOIN customers c2 ON c2.customer_id = d.customer_id
@@ -147,6 +152,7 @@
         c.customer_content   AS content,
         c.customer_memo      AS memo,
         c.customer_status    AS status,
+        c.customer_promise_time AS promiseAt,
         DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
         FROM customers c
         LEFT JOIN users u ON u.user_id = c.user_id
@@ -165,7 +171,8 @@
         d.duplicate_source   AS source,
         d.duplicate_content  AS content,
         d.duplicate_memo     AS memo,
-        '없음'         AS status,
+        '없음'               AS status,
+        NULL                   AS promiseAt,
         CAST(NULL AS CHAR(20)) AS reservation
         FROM customers_duplicate d
         JOIN customers c2 ON c2.customer_id = d.customer_id
@@ -200,10 +207,13 @@
     <sql id="CUSTOMER_ONLY_ORDER">
         <choose>
             <when test="sort == 'status'">
-                ORDER BY FIELD(c.customer_status,
-                        '부재1','부재2','부재3','부재4','부재5',
-                        '재콜','신규', '회수', '가망','완료','거절', '없음'),
-                c.customer_created_at DESC
+                ORDER BY
+                    FIELD(c.customer_status,
+                    '부재1','부재2','부재3','부재4','부재5',
+                    '재콜','신규','회수','가망','완료','거절','없음'),
+                    CASE WHEN c.customer_status='재콜' THEN (c.customer_promise_time IS NULL) END ASC,
+                    CASE WHEN c.customer_status='재콜' THEN c.customer_promise_time END ASC,
+                    CASE WHEN c.customer_status&lt;&gt;'재콜' THEN c.customer_created_at END DESC
             </when>
             <otherwise>
                 ORDER BY c.customer_created_at DESC
