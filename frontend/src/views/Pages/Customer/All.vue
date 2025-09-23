@@ -294,6 +294,7 @@ async function onAdminButtonClick(btn) {
   if (btn === "구분별 보기") {
     setFilter("sort", "division");
   }
+
   if (btn === "중복DB로 이동") {
     const dupIds = selectedRows.value
         .filter(r => r.origin === 'DUPLICATE')
@@ -321,6 +322,11 @@ async function onAdminButtonClick(btn) {
     return;
   }
 
+  // 선택 초기화(내부/외부 모두): 테이블 메서드 + 강제리렌더 + 배열 초기화
+  selectedRows.value = [];
+  tableRef.value?.clearSelection?.(); // PsnsTable이 메서드 제공 시
+  tableKey.value++; // 강제 리렌더로 selection state 초기화
+
   fetchData();
 }
 
@@ -330,6 +336,11 @@ function onCommonButtonClick(btn) {
     setFilter("sort", sortMode.value);                 // 정렬 유지
     setFilter("mine", mineOnly.value ? "Y" : null);    // 내것 토글 상태 유지
     setFilter("staffUserId", mineOnly.value ? auth.userId : null);
+
+    // 선택 초기화(내부/외부 모두): 테이블 메서드 + 강제리렌더 + 배열 초기화
+    selectedRows.value = [];
+    tableRef.value?.clearSelection?.(); // PsnsTable이 메서드 제공 시
+    tableKey.value++; // 강제 리렌더로 selection state 초기화
     fetchData();
     return;
   }
@@ -341,6 +352,11 @@ function onCommonButtonClick(btn) {
     setFilter("staffUserId", auth.userId);
     // 현재 정렬도 유지해서 함께 적용
     setFilter("sort", sortMode.value);
+
+    // 선택 초기화(내부/외부 모두): 테이블 메서드 + 강제리렌더 + 배열 초기화
+    selectedRows.value = [];
+    tableRef.value?.clearSelection?.(); // PsnsTable이 메서드 제공 시
+    tableKey.value++; // 강제 리렌더로 selection state 초기화
     fetchData();
     return;
   }
@@ -351,6 +367,11 @@ function onCommonButtonClick(btn) {
     setFilter("staffUserId", null);
     // 정렬은 유지
     setFilter("sort", sortMode.value);
+
+    // 선택 초기화(내부/외부 모두): 테이블 메서드 + 강제리렌더 + 배열 초기화
+    selectedRows.value = [];
+    tableRef.value?.clearSelection?.(); // PsnsTable이 메서드 제공 시
+    tableKey.value++; // 강제 리렌더로 selection state 초기화
     fetchData();
   }
 }
