@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.blue.dashboard.mapper.DashboardMapper">
+
+    <!-- 센터 목록 (본사 제외) -->
+    <select id="findCenters" resultType="com.blue.dashboard.dto.CenterDto">
+        SELECT c.center_id AS id, c.center_name AS name
+        FROM centers c
+        WHERE c.center_name &lt;&gt; '본사'
+        ORDER BY c.center_name ASC
+    </select>
+
+    <!-- 승인 사용자 목록 -->
+    <select id="findUsers" resultType="com.blue.dashboard.dto.UserDto">
+        SELECT
+            u.user_id      AS id,
+            u.user_name    AS name,
+            u.center_id    AS centerId,
+            c.center_name  AS center,
+            u.user_role    AS role
+        FROM users u
+                 LEFT JOIN centers c ON c.center_id = u.center_id
+        WHERE u.user_approved = 'Y'
+        ORDER BY u.user_created_at DESC
+    </select>
+
+    <!-- 정확 일치 검색: 이름 -->
+    <select id="findUsersExactByName" parameterType="string" resultType="com.blue.dashboard.dto.UserDto">
+        SELECT
+            u.user_id      AS id,
+            u.user_name    AS name,
+            u.center_id    AS centerId,
+            c.center_name  AS center,
+            u.user_role    AS role
+        FROM users u
+                 LEFT JOIN centers c ON c.center_id = u.center_id
+        WHERE u.user_approved = 'Y'
+          AND u.user_name = #{name}
+        ORDER BY u.user_created_at DESC
+    </select>
+
+    <!-- 정확 일치 검색: 이메일 -->
+    <select id="findUsersExactByEmail" parameterType="string" resultType="com.blue.dashboard.dto.UserDto">
+        SELECT
+            u.user_id      AS id,
+            u.user_name    AS name,
+            u.center_id    AS centerId,
+            c.center_name  AS center,
+            u.user_role    AS role
+        FROM users u
+                 LEFT JOIN centers c ON c.center_id = u.center_id
+        WHERE u.user_approved = 'Y'
+          AND u.user_email = #{email}
+        ORDER BY u.user_created_at DESC
+    </select>
+
+    <!-- 본체 + 중복 UNION ALL (필터: userId / centerIds / from / to) -->
+    <select id="findCustomers" resultType="com.blue.dashboard.dto.CustomerDto">
+        (
+        SELECT
+        c.customer_id            AS id,
+        c.user_id                AS userId,
+        u.center_id              AS centerId,
+        c.customer_created_at    AS created,
+        c.customer_division      AS type
+        FROM customers c
+        LEFT JOIN users u ON u.user_id = c.user_id
+        WHERE 1=1
+        <if test="userId != null">
+            AND c.user_id = #{userId}
+        </if>
+        <if test="centerIds != null and centerIds.size() &gt; 0">
+            AND u.center_id IN
+            <foreach collection="centerIds" item="cid" open="(" close=")" separator=",">
+                #{cid}
+            </foreach>
+        </if>
+        <if test="from != null and from != ''">
+            AND DATE(c.customer_created_at) &gt;= #{from}
+        </if>
+        <if test="to != null and to != ''">
+            AND DATE(c.customer_created_at) &lt;= #{to}
+        </if>
+        )
+        UNION ALL
+        (
+        SELECT
+        d.duplicate_id           AS id,
+        c.user_id                AS userId,
+        u.center_id              AS centerId,
+        d.duplicate_created_at   AS created,
+        '중복'                    AS type
+        FROM customers_duplicate d
+        JOIN customers c ON c.customer_id = d.customer_id
+        LEFT JOIN users u ON u.user_id = c.user_id
+        WHERE 1=1
+        <if test="userId != null">
+            AND c.user_id = #{userId}
+        </if>
+        <if test="centerIds != null and centerIds.size() &gt; 0">
+            AND u.center_id IN
+            <foreach collection="centerIds" item="cid" open="(" close=")" separator=",">
+                #{cid}
+            </foreach>
+        </if>
+        <if test="from != null and from != ''">
+            AND DATE(d.duplicate_created_at) &gt;= #{from}
+        </if>
+        <if test="to != null and to != ''">
+            AND DATE(d.duplicate_created_at) &lt;= #{to}
+        </if>
+        )
+        ORDER BY created DESC
+    </select>
+
+    <!-- KPI: 승인 사용자 수 -->
+    <select id="countApprovedUsers" resultType="int">
+        SELECT COUNT(*) FROM users WHERE user_approved = 'Y'
+    </select>
+
+    <!-- KPI: 센터 수 (본사 제외) -->
+    <select id="countCentersExcludingHQ" resultType="int">
+        SELECT COUNT(*) FROM centers WHERE center_name &lt;&gt; '본사'
+    </select>
+
+</mapper>
