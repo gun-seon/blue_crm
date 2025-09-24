@@ -2,7 +2,7 @@ import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
 const api = axios.create({
-    baseURL: '',
+    baseURL: 'https://api.psns0122.com',
     withCredentials: true
 })
 
@@ -48,14 +48,6 @@ api.interceptors.response.use(
             return Promise.reject(err);
         }
 
-        // 과거 코드 (엑세스 토큰 갱신이 안되는 문제가 잇었음)
-        // // 403 → 강제로그아웃으로 권한이 없을 때
-        // if (err.response?.status === 403) {
-        //     console.warn("403 Forbidden 응답:", err.response?.data)
-        //     // await authStore.logout()
-        //     return Promise.reject(err)
-        // }
-
         if (err.response?.status === 403) {
             // console.warn("403 Forbidden 응답:", err.response?.data);
             return Promise.reject(err);
@@ -65,7 +57,7 @@ api.interceptors.response.use(
         const expiredHeader = typeof h?.get === 'function' ? h.get('x-token-expired') : (h?.['x-token-expired'] ?? h?.['X-Token-Expired'])
         const shouldRefresh = (expiredHeader === '1') || err.config?._hadAuth === true
 
-        // 🔑 401 또는 403 → refresh 시도 (accessToken 존재 여부와 무관)
+        // 401 또는 403 → refresh 시도 (accessToken 존재 여부와 무관)
         if (err.response?.status === 401 && shouldRefresh) {
             if (!refreshPromise) {
                 refreshPromise = authStore.refreshToken().finally(() => {
@@ -84,21 +76,6 @@ api.interceptors.response.use(
                 return Promise.reject(refreshErr);
             }
         }
-
-        // 과거 코드 (엑세스 토큰 갱신이 안되는 문제가 잇었음)
-        // if (err.response?.status === 401 && !err.config._retry) {
-        //     if (!refreshPromise) {
-        //         refreshPromise = authStore.refreshToken().finally(() => {
-        //             refreshPromise = null
-        //         })
-        //     }
-        //     const ok = await refreshPromise
-        //     if (ok) {
-        //         err.config._retry = true
-        //         err.config.headers['Authorization'] = `Bearer ${authStore.accessToken}`
-        //         return api.request(err.config)
-        //     }
-        // }
 
         // 나머지는 그대로 에러
         return Promise.reject(err)
