@@ -25,7 +25,7 @@
       </jdbc-additional-properties>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="jdbc:mysql://blue-prod-db-01.cxcqmm28cpaq.ap-northeast-2.rds.amazonaws.com:3306/" uuid="9ee2c058-daca-45f0-84e6-6361fc2e19a4">
+    <data-source source="LOCAL" name="blue-prod-db-01.cxcqmm28cpaq.ap-northeast-2.rds.amazonaws.com" uuid="9ee2c058-daca-45f0-84e6-6361fc2e19a4">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>

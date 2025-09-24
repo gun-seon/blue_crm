@@ -2,7 +2,8 @@ import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
 const api = axios.create({
-    baseURL: 'https://api.psns0122.com',
+    // baseURL: 'https://api.psns0122.com',
+    baseURL: '',
     withCredentials: true
 })
 
