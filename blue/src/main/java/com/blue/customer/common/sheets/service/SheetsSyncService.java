@@ -264,7 +264,7 @@ public class SheetsSyncService {
   private static final DateTimeFormatter KOREAN_TS =
       new DateTimeFormatterBuilder()
           .parseCaseInsensitive()
-          .appendPattern("yyyy. M. d. ")
+          .appendPattern("yyyy. M. d ")
           .appendPattern("a ")       // 오전/오후
           .appendPattern("h:mm")
           .optionalStart().appendPattern(":ss").optionalEnd()
@@ -279,8 +279,8 @@ public class SheetsSyncService {
     String name = asStr(get(r, 2));
     if (name == null || name.isEmpty()) return false;
     
-    // D(전화): 한국 포맷 하이픈 표준화 가능해야 함
-    String phoneFmt = formatPhoneKR(asStr(get(r, 3)));
+    // E(전화): 한국 포맷 하이픈 표준화 가능해야 함
+    String phoneFmt = formatPhoneKR(asStr(get(r, 4)));
     if (phoneFmt == null) return false;
     
     // I(출처)
@@ -305,7 +305,7 @@ public class SheetsSyncService {
     if (at == null) at = LocalDateTime.now(Z_SEOUL);
     dto.setCustomerCreatedAt(at);                 // A
     dto.setCustomerName(asStr(get(r, 2)));        // C
-    dto.setCustomerPhone(formatPhoneKR(asStr(get(r, 3)))); // D
+    dto.setCustomerPhone(formatPhoneKR(asStr(get(r, 4)))); // E
     dto.setCustomerMemo(asStr(get(r, 5)));        // F
     dto.setCustomerContent(asStr(get(r, 6)));     // G
     dto.setCustomerSource(asStr(get(r, 8)));      // I
