@@ -78,16 +78,18 @@ const {
 
 // 4컬럼 고정
 const columns = [
-  { key: "createdAt",  label: "생성일",   type: "text", width: 150 },
-  { key: "name",       label: "이름",     type: "text", width: 140 },
-  { key: "phone",      label: "전화번호", type: "text", width: 160 },
+  { key: "",  label: "",   type: "text", ellipsis: { width: 20 } },
+  { key: "createdAt",  label: "생성일",   type: "text", ellipsis: { width: 150 } },
+  { key: "name",       label: "이름",     type: "text", ellipsis: { width: 100 } },
+  { key: "phone",      label: "전화번호", type: "text", ellipsis: { width: 150 } },
   {
     key: "centerName",
     label: "센터",
     type: "badge",
-    width: 140,
+    width: 100,
     render: (val: string) => `<span class="px-2 py-1 rounded-full bg-gray-100">${val ?? '미배정'}</span>`,
   },
+  { key: "",  label: "",   type: "text", ellipsis: { width: 20 } },
 ];
 
 onMounted(async () => {

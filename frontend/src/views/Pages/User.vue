@@ -120,12 +120,16 @@ const {
 // 컬럼 정의에 조건부로 super 전용 칼럼 삽입
 const columns = computed(() => {
   const base = [
+    { key: "",  label: "",   type: "text", ellipsis: { width: 10 } },
     { key: "type", label: "구분", type: "badge", editable: canEdit, options: ["관리자", "센터장", "담당자"] },
-    { key: "name", label: "이름", type: "text", ellipsis: { width: 100 } },
-    { key: "phone", label: "전화번호", type: "text", ellipsis: { width: 100 } },
-    { key: "email", label: "ID(Email)", type: "text", ellipsis: { width: 150 } },
+    { key: "",  label: "",   type: "text", ellipsis: { width: 20 } },
+    { key: "name", label: "이름", type: "text", ellipsis: { width: 150 } },
+    { key: "phone", label: "전화번호", type: "text", ellipsis: { width: 180 } },
+    { key: "email", label: "ID(Email)", type: "text", ellipsis: { width: 250 } },
     { key: "center", label: "소속", type: "badge", editable: (row) => row.center !== "본사", options: centerOptions.value },
-    { key: "requestStatus", label: "요청상태", type: "badge", editable: canEdit, options: ["승인", "대기", "탈퇴"] }
+    { key: "",  label: "",   type: "text", ellipsis: { width: 20 } },
+    { key: "requestStatus", label: "요청상태", type: "badge", editable: canEdit, options: ["승인", "대기", "탈퇴"] },
+    { key: "",  label: "",   type: "text", ellipsis: { width: 20 } },
   ];
 
   if (isSuper.value) {
@@ -137,7 +141,7 @@ const columns = computed(() => {
       // super가 볼 때만 노출, 그리고 "행의 권한이 관리자"인 경우에만 편집 허용 (자기 자신은 수정 불가)
       editable: (row) => isSuper.value && row.type === "관리자" && row.email !== auth.email,
       options: ["공개", "차단"]
-    });
+    }, { key: "",  label: "",   type: "text", ellipsis: { width: 20 } })
   }
   return base;
 });

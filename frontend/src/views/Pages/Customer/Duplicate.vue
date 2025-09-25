@@ -44,12 +44,13 @@ const columns = [
   { key: 'createdAt',  label: 'DB생성일', type: 'text' },
   { key: 'staff',      label: '담당자',   type: 'text' },
   { key: 'division',   label: '구분',     type: 'badge',  options: ['최초','중복','유효'] },
-  { key: 'category',   label: '카테고리', type: 'badge',  options: ['주식','코인'] },
+  { key: "",  label: "",   type: "text", ellipsis: { width: 5 } },
+  // { key: 'category',   label: '카테고리', type: 'badge',  options: ['주식','코인'] },
   { key: 'name',       label: '이름',     type: 'text' },
-  { key: 'phone',      label: '전화번호', type: 'text' },
-  { key: 'source',     label: 'DB출처',   type: 'text',   ellipsis: { width: 120 } },
-  { key: 'content',    label: '내용',     type: 'text',   ellipsis: { width: 180 } },
-  { key: 'memo',       label: '메모',     type: 'text',   ellipsis: { width: 200 } },
+  { key: 'phone',      label: '전화번호', type: 'text', ellipsis: { width: 150 } },
+  { key: 'source',     label: 'DB출처',   type: 'text' },
+  { key: 'content',    label: '내용',     type: 'text' },
+  { key: 'memo',       label: '메모',     type: 'text', ellipsis: { width: 150 } },
   { key: 'status',     label: '상태',     type: 'badge',  options: ['없음'] },
 ]
 

@@ -111,11 +111,16 @@ const baseCols = [
 const hqColumns = [
   { key: 'createdAt', label: 'DB생성일', type: 'text' },
   { key: 'division',  label: '구분',     type: 'badge', options: ['최초','유효'] },
-  { key: 'category',  label: '카테고리', type: 'badge', options: ['주식','코인'] },
+  // { key: 'category',  label: '카테고리', type: 'badge', options: ['주식','코인'] },
   { key: 'name',      label: '이름',     type: 'text' },
-  { key: 'phone',     label: '전화번호', type: 'text' },
+  { key: 'phone',     label: '전화번호', type: 'text', ellipsis: { width: 150 } },
   { key: 'source',    label: 'DB출처',   type: 'text' },
   { key: 'content',   label: '내용',     type: 'text', ellipsis: { width: 150 } },
+  { key: "status", label: "상태", type: "badge",
+    // 회수와 신규 상태는 수동으로 줄 수 없음
+    // 회수 : DB회수하기 메뉴에서
+    // 신규 : 한번도 분배가 되지 않은 항목만
+    options: ["부재1","부재2","부재3","부재4","부재5","재콜","가망","완료","거절"] },
   { key: 'paststaff',     label: '담당자 이력', type: 'text', ellipsis: { width: 200 } }, // HQ 전용
 ]
 

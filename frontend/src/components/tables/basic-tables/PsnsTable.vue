@@ -27,7 +27,7 @@
           </td>
 
           <!-- 동적 컬럼 -->
-          <td v-for="(col, colIndex) in columns" :key="colIndex" class="px-2 py-4">
+          <td v-for="(col, colIndex) in columns" :key="colIndex" class="px-2 py-4 min-w-0">
             <!-- 생성일 컬럼 -->
             <span
                 v-if="col.key === 'createdAt'"
@@ -38,23 +38,32 @@
             </span>
 
             <!-- 텍스트 -->
-            <span
-                v-else-if="col.type === 'text'"
-                @click="toggleExpand(row, rowIndex, col.key)"
-                :class="[
-                    'text-gray-500 text-theme-sm dark:text-gray-400 block cursor-pointer',
-                    isExpanded(row, rowIndex, col.key)
-                      ? 'whitespace-normal break-words overflow-auto'
-                      : 'truncate whitespace-nowrap overflow-hidden'
-                  ]"
-                :style="{
-                maxWidth: (((typeof col.ellipsis === 'object' ? col.ellipsis.width : col.ellipsis) ?? 150) + 'px'),
-                width: '100%',
-                ...(isExpanded(row, rowIndex, col.key) ? { maxHeight: '6.75rem', lineHeight: '1.25rem' } : {})
-              }"
-                        >
-              {{ col.key === 'staff' ? (row[col.key]?.toString().trim() || '담당자 없음') : (row[col.key] ?? '') }}
-            </span>
+            <template v-else-if="col.type === 'text'">
+              <!-- 셀 전체 클릭/호버 영역(배경 X) -->
+              <button
+                  class="block w-full -mx-2 -my-1 px-2 py-1 rounded focus:outline-none"
+                  @click="toggleExpand(row, rowIndex, col.key)"
+              >
+                <!-- 회색 박스 = 텍스트 영역 -->
+                <span
+                    :class="isExpanded(row, rowIndex, col.key)
+                    ? 'block rounded text-gray-500 text-theme-sm dark:text-gray-400 text-left leading-tight whitespace-pre-wrap break-words overflow-auto'
+                    : 'block rounded text-gray-500 text-theme-sm dark:text-gray-400 text-left leading-tight truncate whitespace-nowrap overflow-hidden'"
+                                :style="(() => {
+                    const pref = ellipsisPx(col)
+                    // 'maxWidth'가 아니라 'width'를 줘서 배경 폭=텍스트 폭으로 고정
+                    const base = { width: `${pref}px` }
+                    return isExpanded(row, rowIndex, col.key)
+                      ? { ...base, maxHeight: '6.75rem', lineHeight: '1.25rem', paddingRight: '0.25rem' }
+                      : base
+                  })()"
+                >
+                  {{ col.key === 'staff'
+                                ? (row[col.key]?.toString().trim() || '담당자 없음')
+                                : (row[col.key] ?? '') }}
+                </span>
+              </button>
+            </template>
 
             <!-- 배지 -->
             <div v-else-if="col.type === 'badge'" class="relative inline-block w-[60px] h-[28px]">
@@ -108,7 +117,7 @@
                        overflow-hidden whitespace-nowrap text-ellipsis cursor-pointer bg-transparent"
                   @click.stop="startDateEdit(rowIndex, col.key, row[col.key])"
               >
-                {{ row[col.key] || '' }}
+                {{ row[col.key] || '없음' }}
               </span>
 
               <!-- 수정 모드(Flatpickr 대상 input) -->
@@ -184,6 +193,13 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/solid'
 
 // 내용 - 툴팁 확장용
 const expandedCell = ref(null)
+function ellipsisPx(col) {
+  const raw = (col && typeof col.ellipsis === 'object' && col.ellipsis !== null)
+      ? col.ellipsis.width
+      : col?.ellipsis;
+  const n = (typeof raw === 'number') ? raw : Number.parseInt(raw, 10);
+  return Number.isFinite(n) ? n : 100;
+}
 
 const props = defineProps({
   columns: { type: Array, required: true },
