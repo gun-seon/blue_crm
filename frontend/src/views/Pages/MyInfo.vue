@@ -283,7 +283,7 @@
               </div>
 
               <!-- 시작 행 -->
-              <div class="text-sm font-medium text-gray-700 dark:text-gray-300">시작 행</div>
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300">마지막 행</div>
               <div class="col-start-2">
                 <input
                     v-model.number="startRow"
