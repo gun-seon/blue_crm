@@ -72,51 +72,6 @@
         t.centerId,
         t.centerName
         FROM (
-        /* ========== customers (담당자/센터 반드시 존재, 본사 제외) ========== */
-        SELECT
-        c.customer_id          AS id,
-        c.customer_created_at  AS createdAt,
-        c.customer_name        AS name,
-        c.customer_phone       AS phone,
-        u.center_id            AS centerId,
-        ce.center_name         AS centerName,
-        c.customer_division    AS division   -- 필터용
-        FROM customers c
-        JOIN users   u   ON u.user_id    = c.user_id
-        JOIN centers ce  ON ce.center_id = u.center_id
-        WHERE 1=1
-        AND u.center_id &lt;&gt; 1
-        AND c.user_id IS NOT NULL
-        AND u.center_id IS NOT NULL
-
-        UNION ALL
-
-        /* ========== duplicates (원본 고객 담당자의 센터 기준, 본사 제외) ========== */
-        SELECT
-        d.duplicate_id         AS id,
-        d.duplicate_created_at AS createdAt,
-        d.duplicate_name       AS name,
-        c2.customer_phone      AS phone,
-        u2.center_id           AS centerId,
-        ce2.center_name        AS centerName,
-        '중복'                  AS division
-        FROM customers_duplicate d
-        JOIN customers c2   ON c2.customer_id  = d.customer_id
-        JOIN users    u2    ON u2.user_id      = c2.user_id
-        JOIN centers  ce2   ON ce2.center_id   = u2.center_id
-        WHERE d.duplicate_display = 1
-        AND u2.center_id &lt;&gt; 1
-        ) t
-        WHERE 1=1
-        <include refid="COMMON_FILTERS"/>
-        ORDER BY t.createdAt DESC
-        LIMIT #{size} OFFSET #{offset}
-    </select>
-
-    <select id="countForAdmin" resultType="int">
-        SELECT COUNT(*)
-        FROM (
-        /* ========== customers (담당자/센터 반드시 존재, 본사 제외) ========== */
         SELECT
         c.customer_id          AS id,
         c.customer_created_at  AS createdAt,
@@ -130,24 +85,33 @@
         JOIN centers ce  ON ce.center_id = u.center_id
         WHERE 1=1
         AND u.center_id &lt;&gt; 1
+        AND c.user_id IS NOT NULL
+        AND u.center_id IS NOT NULL
+        ) t
+        WHERE 1=1
+        <include refid="COMMON_FILTERS"/>
+        ORDER BY t.createdAt DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
 
-        UNION ALL
-
-        /* ========== duplicates (원본 고객 담당자의 센터 기준, 본사 제외) ========== */
+    <select id="countForAdmin" resultType="int">
+        SELECT COUNT(*)
+        FROM (
         SELECT
-        d.duplicate_id         AS id,
-        d.duplicate_created_at AS createdAt,
-        d.duplicate_name       AS name,
-        c2.customer_phone      AS phone,
-        u2.center_id           AS centerId,
-        ce2.center_name        AS centerName,
-        '중복'                  AS division
-        FROM customers_duplicate d
-        JOIN customers c2   ON c2.customer_id  = d.customer_id
-        JOIN users    u2    ON u2.user_id      = c2.user_id
-        JOIN centers  ce2   ON ce2.center_id   = u2.center_id
-        WHERE d.duplicate_display = 1
-        AND u2.center_id &lt;&gt; 1
+        c.customer_id          AS id,
+        c.customer_created_at  AS createdAt,
+        c.customer_name        AS name,
+        c.customer_phone       AS phone,
+        u.center_id            AS centerId,
+        ce.center_name         AS centerName,
+        c.customer_division    AS division
+        FROM customers c
+        JOIN users   u   ON u.user_id    = c.user_id
+        JOIN centers ce  ON ce.center_id = u.center_id
+        WHERE 1=1
+        AND u.center_id &lt;&gt; 1
+        AND c.user_id IS NOT NULL
+        AND u.center_id IS NOT NULL
         ) t
         WHERE 1=1
         <include refid="COMMON_FILTERS"/>

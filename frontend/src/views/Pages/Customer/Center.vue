@@ -7,7 +7,7 @@
         <ComponentCard
             v-if="role === 'SUPERADMIN'"
             :selects="[centerOptions]"
-            :buttons="['오늘만 보기', '엑셀 다운로드']"
+            :buttons="buttons"
             :showRefresh="true"
             :refreshing="loading"
             @refresh="fetchData"
@@ -53,6 +53,7 @@ const centers   = ref<C[]>([]);
 const centerMap = ref<Record<string, number>>({}); // name -> id
 const centerId  = ref<number|null>(null);          // 페이지 전용 필터
 
+const todayOnly = ref(false)
 const centerOptions = computed(() => ['전체', ...centers.value.map(c => c.centerName)]);
 
 // 테이블 데이터: 공용 훅 사용
@@ -78,7 +79,7 @@ const {
 
 // 4컬럼 고정
 const columns = [
-  { key: "",  label: "",   type: "text", ellipsis: { width: 20 } },
+  { key: "",  label: "",   type: "text", ellipsis: { width: 10 } },
   { key: "createdAt",  label: "생성일",   type: "text", ellipsis: { width: 150 } },
   { key: "name",       label: "이름",     type: "text", ellipsis: { width: 100 } },
   { key: "phone",      label: "전화번호", type: "text", ellipsis: { width: 150 } },
@@ -117,13 +118,26 @@ function onSelectChange({ idx, value }: { idx:number; value:string }) {
   fetchData();
 }
 
+// 버튼 라벨 토글용
+const buttons = computed(() => [
+  todayOnly.value ? "전체 보기" : "오늘만 보기",
+  "엑셀 다운로드",
+])
+
 // ComponentCard button emit 핸들러
 async function onButtonClick(btn: string) {
-  if (btn === '오늘만 보기') {
-    const s = todayStr();
-    setGlobalFilters({ dateFrom: s, dateTo: s }); // 전역 필터에 오늘만
-    await fetchData();
-    return;
+  if (btn === "오늘만 보기") {
+    const s = todayStr()
+    setGlobalFilters({ dateFrom: s, dateTo: s }) // 오늘만
+    todayOnly.value = true
+    await fetchData()
+    return
+  }
+  if (btn === "전체 보기") {
+    setGlobalFilters({ dateFrom: null, dateTo: null }) // 날짜 필터 초기화
+    todayOnly.value = false
+    await fetchData()
+    return
   }
   if (btn === '엑셀 다운로드') {
     await downloadExcel();

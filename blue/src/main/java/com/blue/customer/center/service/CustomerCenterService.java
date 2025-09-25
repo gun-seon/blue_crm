@@ -57,7 +57,9 @@ public class CustomerCenterService {
       items.forEach(r -> r.setPhone(maskPhone(r.getPhone())));
     }
     
-    return new PagedResponse<>(items, (int)Math.ceil((double) total / size), total);
+    int totalPages = (int) Math.ceil((double) total / size);
+    if (totalPages == 0) totalPages = 1;
+    return new PagedResponse<>(items, totalPages, total);
   }
   
   public ResponseEntity<byte[]> exportExcel(
