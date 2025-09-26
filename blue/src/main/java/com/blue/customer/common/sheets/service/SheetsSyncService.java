@@ -307,7 +307,14 @@ public class SheetsSyncService {
     dto.setCustomerName(asStr(get(r, 2)));        // C
     dto.setCustomerPhone(formatPhoneKR(asStr(get(r, 4)))); // E
     dto.setCustomerMemo(asStr(get(r, 5)));        // F
-    dto.setCustomerContent(asStr(get(r, 6)));     // G
+    
+    String content = asStr(get(r, 6));        // G
+    if (content != null && !content.isEmpty()) {
+      dto.setCustomerContent("시청한 종목명 : " + content);
+    } else {
+      dto.setCustomerContent(null);
+    }
+    
     dto.setCustomerSource(asStr(get(r, 8)));      // I
     return dto;
   }
