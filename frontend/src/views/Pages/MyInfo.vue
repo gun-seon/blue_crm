@@ -422,6 +422,7 @@ import { EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline'
 import axios from '@/plugins/axios.js'
 import { useMailStore } from '@/stores/mail'
 import { onBeforeRouteLeave } from 'vue-router'
+import { useIdleRefresh } from '@/composables/useIdleRefresh.js'
 
 /* ===== 기본 프로필 ===== */
 const email = ref('')
@@ -640,7 +641,6 @@ async function savePhone() {
     })
     phone.value = phoneInput.value
     alert('전화번호가 저장되었습니다.')
-    resetIdleTimer() // 활동으로 간주하여 유휴타이머 리셋(선택)
   } catch (e) {
     alert(e?.response?.data || '전화번호 저장 실패')
   } finally {
@@ -698,7 +698,6 @@ async function changePassword() {
     }, { withCredentials: true })
     alert('비밀번호가 변경되었습니다. 다음 로그인부터 적용됩니다.')
     resetPwForm()
-    resetIdleTimer() // 활동으로 간주하여 유휴타이머 리셋(선택)
   } catch (e) {
     if (e.response?.status === 400) {
       alert(e?.response?.data || '입력값 확인')
@@ -771,7 +770,6 @@ async function saveSheetConfig() {
       startRow: startRow.value
     }, { withCredentials: true })
     alert('시트 설정이 저장되었습니다.')
-    resetIdleTimer() // 활동으로 간주하여 유휴타이머 리셋(선택)
   } catch (e) {
     alert(e?.response?.data || '시트 정보 저장 실패')
   } finally {
@@ -841,51 +839,12 @@ async function deleteCenter(id) {
   }
 }
 
-/* ===== 인증 완료 후 3분 유휴 시 자동 새로고침 ===== */
-const IDLE_REFRESH_MS = 3 * 60 * 1000
-let idleTimer = null
-let detachIdleListeners = null
-
-function refreshNow() {
-  window.location.reload()
-}
-
-function resetIdleTimer() {
-  if (idleTimer) clearTimeout(idleTimer)
-  idleTimer = setTimeout(refreshNow, IDLE_REFRESH_MS)
-}
-
-function startIdleWatch() {
-  stopIdleWatch() // 중복 방지
-
-  const handler = () => resetIdleTimer()
-
-  const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'wheel', 'touchstart', 'input', 'visibilitychange']
-  events.forEach(ev => window.addEventListener(ev, handler, { passive: true }))
-
-  // 시작 즉시 타이머 설정
-  resetIdleTimer()
-
-  detachIdleListeners = () => {
-    events.forEach(ev => window.removeEventListener(ev, handler))
-  }
-}
-
-function stopIdleWatch() {
-  if (idleTimer) { clearTimeout(idleTimer); idleTimer = null }
-  if (detachIdleListeners) { detachIdleListeners(); detachIdleListeners = null }
-}
-
 // 특별계정 켜지면 센터 목록 불러오기
 watch(() => isSuperEmail.value, async (ok) => { if (ok) await fetchCenters() }, { immediate: true })
 
-/* 인증 상태가 바뀌면 유휴감시 on/off */
-watch(isVerified, (ok) => {
-  if (ok) startIdleWatch()
-  else    stopIdleWatch()
-}, { immediate: true })
+// 인증 완료 후에만 3분 유휴 감시
+const idle = useIdleRefresh({ enabled: () => isVerified.value, timeoutMs: 1000 * 60 * 3 })
 
-onUnmounted(() => stopIdleWatch())
 </script>
 
 <style>

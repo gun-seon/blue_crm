@@ -177,6 +177,7 @@ import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline'
 import ThemeToggler from "@/components/common/ThemeToggler.vue";
+import { useIdleRefresh } from '@/composables/useIdleRefresh.js'
 
 // 줌 비율 적용 시작
 const mt = ref('mt-[0vh]')
@@ -215,6 +216,10 @@ const verified = ref(false)
 const ttl = ref(0)
 let timer = null
 const extendedOnce = ref(false)
+
+
+// 인증 완료 후부터 3분 유휴 감시
+useIdleRefresh({ enabled: () => verified.value, timeoutMs: 1000 * 60 * 3 })
 
 // 포커스 이동
 const codeInput = ref(null)

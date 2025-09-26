@@ -204,6 +204,7 @@ import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline'
 import ThemeToggler from '@/components/common/ThemeToggler.vue'
+import { useIdleRefresh } from '@/composables/useIdleRefresh.js'
 import axios from '@/plugins/axios.js'
 
 /** ── 상단 여백(줌/배율 대응) ────────────────────────────────────────────── */
@@ -229,6 +230,9 @@ const email = ref('')
 const code = ref('')
 const codeSent = ref(false)
 const verified = ref(false)
+
+// 인증 완료 후부터 3분 유휴 감시
+useIdleRefresh({ enabled: () => verified.value, timeoutMs: 1000 * 60 * 3 })
 
 // 타이머
 const ttl = ref(0)
