@@ -253,7 +253,7 @@ async function onBadgeUpdate(row, key, newValue) {
   // === 센터장 1명 제한 가드 ===
   try {
     // 1) 구분을 '센터장'으로 바꾸려는 경우
-    if (key === "type" && newValue === "MANAGER") {
+    if (key === "type" && newValue === "센터장") {
       const targetCenter = row.center; // 현재 소속
       if (targetCenter && targetCenter !== "본사") {
         const exists = await hasManager(targetCenter, row.userId);
