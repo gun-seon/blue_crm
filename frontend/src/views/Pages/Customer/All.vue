@@ -8,7 +8,8 @@
         <ComponentCard
             v-if="role === 'SUPERADMIN'"
             :selects="[ ['전체', '최초', '중복', '유효'] ]"
-            :buttons="['상태별 보기', '구분별 보기', '중복DB로 이동']"
+            :buttons="['구분별 보기', '상태별 보기', '중복DB로 이동']"
+            :active="adminActiveLabels"
             :showRefresh="true"
             :refreshing="isRefreshing"
             @refresh="onRefresh"
@@ -88,18 +89,7 @@ import axios from "@/plugins/axios.js"
 const auth = useAuthStore();
 const role = auth.role;
 const isManager = computed(() => role === 'MANAGER');
-const sortMode = ref(null);
 const mineOnly = ref(false);
-
-// 매니저 카드의 버튼 목록
-const managerButtons = computed(() => {
-  // MANAGER면 "내 DB만 보기" 토글 버튼 추가, STAFF면 기존 그대로
-  const arr = ['상태별 보기'];
-  if (isManager.value) {
-    arr.push(mineOnly.value ? '전체 보기' : '내 DB만 보기');
-  }
-  return arr;
-});
 
 const currentPageTitle = ref("전체 고객DB관리");
 const tableKey = ref(0); // 선택 초기화 강제 리렌더용
@@ -289,14 +279,18 @@ function onDivisionSelect({ idx, value }) {
   fetchData();
 }
 
-async function onAdminButtonClick(btn) {
-  if (btn === "상태별 보기") {
-    setFilter("sort", "status");
-  }
-  if (btn === "구분별 보기") {
-    setFilter("sort", "division");
-  }
+// 버튼 토클
+const adminActive = ref({ status: false, division: false })
 
+const adminActiveLabels = computed(() => {
+  const arr = []
+  if (adminActive.value.status) arr.push('상태별 보기')
+  if (adminActive.value.division) arr.push('구분별 보기')
+  return arr
+})
+
+async function onAdminButtonClick(btn) {
+  // 1) 먼저 중복 이동을 처리 (조기 return)
   if (btn === "중복DB로 이동") {
     const dupIds = selectedRows.value
         .filter(r => r.origin === 'DUPLICATE')
@@ -326,6 +320,17 @@ async function onAdminButtonClick(btn) {
     return;
   }
 
+  // 2) 상태/구분 토글
+  if (btn === "상태별 보기")   adminActive.value.status   = !adminActive.value.status
+  if (btn === "구분별 보기")   adminActive.value.division = !adminActive.value.division
+
+  // 3) sort 조합
+  const sortParts = []
+  if (adminActive.value.status)   sortParts.push('status')
+  if (adminActive.value.division) sortParts.push('division')
+  // 아무 것도 안 눌리면 null → 날짜순 기본
+  setFilter("sort", sortParts.length ? sortParts.join(",") : null)
+
   // 선택 초기화(내부/외부 모두): 테이블 메서드 + 강제리렌더 + 배열 초기화
   selectedRows.value = [];
   tableRef.value?.clearSelection?.(); // PsnsTable이 메서드 제공 시
@@ -334,19 +339,32 @@ async function onAdminButtonClick(btn) {
   fetchData();
 }
 
+// 정렬 모드
+const sortMode = ref('date')
+
+const managerButtons = computed(() => {
+  const primary = sortMode.value === 'status' ? '최신순 보기' : '상태별 보기'
+  const arr = [primary]
+
+  // MANAGER면 "내 DB만 보기" 토글 버튼 추가, STAFF면 기존 그대로
+  if (isManager.value) arr.push(mineOnly.value ? '전체 보기' : '내 DB만 보기')
+  return arr
+})
+
 function onCommonButtonClick(btn) {
-  if (btn === "상태별 보기") {
-    sortMode.value = 'status';
-    setFilter("sort", sortMode.value);                 // 정렬 유지
-    setFilter("mine", mineOnly.value ? "Y" : null);    // 내것 토글 상태 유지
-    setFilter("staffUserId", mineOnly.value ? auth.userId : null);
+  if (btn === "상태별 보기" || btn === "최신순 보기") {
+    sortMode.value = (sortMode.value === 'status') ? 'date' : 'status'
+
+    setFilter("sort", sortMode.value === 'status' ? "status" : null)
+    setFilter("mine", mineOnly.value ? "Y" : null)
+    setFilter("staffUserId", mineOnly.value ? auth.userId : null)
 
     // 선택 초기화(내부/외부 모두): 테이블 메서드 + 강제리렌더 + 배열 초기화
     selectedRows.value = [];
     tableRef.value?.clearSelection?.(); // PsnsTable이 메서드 제공 시
     tableKey.value++; // 강제 리렌더로 selection state 초기화
     fetchData();
-    return;
+    return
   }
 
 // MANAGER 전용: 내 DB만 보기 / 전체 보기 토글

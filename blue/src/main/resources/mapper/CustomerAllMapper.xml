@@ -66,19 +66,43 @@
     </sql>
 
     <sql id="ADMIN_ORDER">
+        <bind name="hasStatus"   value="sort != null and sort.contains('status')" />
+        <bind name="hasDivision" value="sort != null and sort.contains('division')" />
+
         <choose>
-            <when test="sort == 'division'">
-                ORDER BY FIELD(t.division, '최초','유효','중복'), t.createdAt DESC
-            </when>
-            <when test="sort == 'status'">
+            <!-- 구분 + 상태: 1) 구분 2) 상태 3) (재콜:예약↑ / 그외:생성일↓) -->
+            <when test="hasDivision and hasStatus">
                 ORDER BY
-                    FIELD(t.status,
-                    '부재1','부재2','부재3','부재4','부재5',
-                    '재콜','신규','회수','가망','완료','거절','없음'),
-                    CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,
-                    CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,
-                    CASE WHEN t.status&lt;&gt;'재콜' THEN t.createdAt END DESC
+                FIELD(t.division, '최초','유효','중복'),
+                FIELD(t.status,
+                '부재1','부재2','부재3','부재4','부재5',
+                '재콜','신규','회수','가망','완료','거절','없음'),
+                /* 재콜 묶음 내부: 예약 없는 것 뒤로, 예약 빠른 순 */
+                CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,
+                CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,
+                /* 재콜 이외: 최신 생성일 우선 */
+                CASE WHEN t.status&lt;&gt;'재콜' THEN t.createdAt END DESC
             </when>
+
+            <!-- 상태만: 1) 상태 2) (재콜:예약↑ / 그외:생성일↓) -->
+            <when test="hasStatus">
+                ORDER BY
+                FIELD(t.status,
+                '부재1','부재2','부재3','부재4','부재5',
+                '재콜','신규','회수','가망','완료','거절','없음'),
+                CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,
+                CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,
+                CASE WHEN t.status&lt;&gt;'재콜' THEN t.createdAt END DESC
+            </when>
+
+            <!-- 구분만: 1) 구분 2) 생성일 최신 -->
+            <when test="hasDivision">
+                ORDER BY
+                FIELD(t.division, '최초','유효','중복'),
+                t.createdAt DESC
+            </when>
+
+            <!-- 아무 것도 안 켜짐: 최신순 -->
             <otherwise>
                 ORDER BY t.createdAt DESC
             </otherwise>

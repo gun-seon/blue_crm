@@ -43,9 +43,16 @@
           <template v-for="(btn, idx) in buttons" :key="'btn-' + idx">
             <button
                 @click="$emit('buttonClick', btn)"
-                class="w-30 h-11 px-3 py-1 rounded-lg border border-gray-200 text-sm font-medium
-                     text-gray-500 hover:bg-gray-100
-                     dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+                :aria-pressed="active && active.includes(btn) ? 'true' : 'false'"
+                :data-state="active && active.includes(btn) ? 'on' : 'off'"
+                :class="[
+    // 기존 디자인 그대로
+    'w-30 h-11 px-3 py-1 rounded-lg border border-gray-200 text-sm font-medium ' +
+    'text-gray-500 hover:bg-gray-100 ' +
+    'dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800',
+    // ✅ 활성(토글됨)일 때 hover와 동일한 배경 유지
+    active && active.includes(btn) ? 'bg-gray-100 dark:bg-gray-800' : ''
+  ]"
             >
               {{ btn }}
             </button>
@@ -88,6 +95,7 @@ interface Props {
   desc?: string
   selects?: string[][] // select option 문자열 배열들의 배열
   buttons?: string[] // 버튼 문자열 배열
+  active?: string[] // 버튼 문자열 토글 가시화 (프론트 디자인)
   showRefresh?: boolean // 새로고침 아이콘 표시 여부
   refreshing?: boolean // 새로고침 중(스피너)
 }
