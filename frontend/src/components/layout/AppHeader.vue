@@ -102,17 +102,17 @@
             />
           </div>
 
-          <!-- 카테고리 필터 -->
-          <select
-              v-model="selectedCategory"
-              class="w-20 h-11 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1
-             text-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-             dark:bg-gray-800 dark:text-gray-400 text-gray-500"
-          >
-            <option value="all">전체</option>
-            <option value="주식">주식</option>
-            <option value="코인">코인</option>
-          </select>
+<!--          &lt;!&ndash; 카테고리 필터 &ndash;&gt;-->
+<!--          <select-->
+<!--              v-model="selectedCategory"-->
+<!--              class="w-20 h-11 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1-->
+<!--             text-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10-->
+<!--             dark:bg-gray-800 dark:text-gray-400 text-gray-500"-->
+<!--          >-->
+<!--            <option value="all">전체</option>-->
+<!--            <option value="주식">주식</option>-->
+<!--            <option value="코인">코인</option>-->
+<!--          </select>-->
 
           <!-- 검색창 -->
           <SearchBar />
@@ -181,17 +181,17 @@
             />
           </div>
 
-          <!-- 카테고리 필터 -->
-          <select
-              v-model="selectedCategory"
-              class="w-20 h-11 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1
-             text-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-             dark:bg-gray-800 dark:text-gray-400 text-gray-500"
-          >
-            <option value="all">전체</option>
-            <option value="주식">주식</option>
-            <option value="코인">코인</option>
-          </select>
+<!--          &lt;!&ndash; 카테고리 필터 &ndash;&gt;-->
+<!--          <select-->
+<!--              v-model="selectedCategory"-->
+<!--              class="w-20 h-11 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1-->
+<!--             text-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10-->
+<!--             dark:bg-gray-800 dark:text-gray-400 text-gray-500"-->
+<!--          >-->
+<!--            <option value="all">전체</option>-->
+<!--            <option value="주식">주식</option>-->
+<!--            <option value="코인">코인</option>-->
+<!--          </select>-->
         </div>
 
         <!-- 오른쪽 그룹 -->
