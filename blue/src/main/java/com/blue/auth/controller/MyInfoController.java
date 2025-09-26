@@ -1,6 +1,5 @@
 package com.blue.auth.controller;
 
-
 import com.blue.auth.dto.CenterDto;
 import com.blue.auth.dto.ChangePasswordRequest;
 import com.blue.auth.dto.CreateCenterRequest;
