@@ -6,7 +6,6 @@ import com.blue.auth.dto.SheetSettingsDto;
 import com.blue.auth.mapper.MyInfoMapper;
 import com.blue.global.exception.AuthException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,13 +22,9 @@ public class MyInfoService {
   private final MyInfoMapper myInfoMapper;
   private final PasswordEncoder passwordEncoder;
   
-  @Value("${app.security.super-account}")
-  private String superAccount;
-  
   public MyInfoResponse getMeByEmail(String email) {
     MyInfoResponse dto = myInfoMapper.findByEmail(email);
-    dto.setUserPassword("");
-    dto.setSuper(superAccount.equalsIgnoreCase(email));
+    dto.setUserPassword(""); // 보안상 비번 제거
     return dto;
   }
   
@@ -119,7 +114,8 @@ public class MyInfoService {
   
   // 공통 함수
   private void ensureSuper(String email) {
-    if (email == null || !superAccount.equalsIgnoreCase(email.trim())) {
+    MyInfoResponse user = myInfoMapper.findByEmail(email);
+    if (user == null || !user.isSuper()) {
       throw new AuthException("접근 권한이 없습니다.", HttpStatus.FORBIDDEN);
     }
   }

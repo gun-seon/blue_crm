@@ -13,7 +13,7 @@
                u.user_role     AS userRole,
                u.user_password AS userPassword,
                c.center_name   AS centerName,
-               false           AS isSuper
+               CASE WHEN u.is_super = 'Y' THEN true ELSE false END AS isSuper
         FROM users u
                  LEFT JOIN centers c ON u.center_id = c.center_id
         WHERE u.user_email = #{userEmail}
