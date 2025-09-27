@@ -137,23 +137,33 @@
               <hr class="my-6 border-gray-200 dark:border-gray-700" />
             </div>
 
-            <!-- 비밀번호 변경 제목 -->
+            <!-- 비밀번호 변경 -->
             <div class="col-span-2">
               <div class="flex items-center justify-between">
                 <h3 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">비밀번호 변경</h3>
                 <div class="flex gap-2">
                   <button
+                      v-if="!pwEditing"
                       type="button"
                       class="h-9 rounded-lg bg-gray-200 px-3 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100"
                       :disabled="changingPw"
-                      @click="resetPwForm"
-                  >취소</button>
-                  <button
-                      type="button"
-                      class="h-9 rounded-lg bg-brand-500 px-3 text-white hover:bg-brand-600 disabled:opacity-50"
-                      :disabled="changingPw"
-                      @click="changePassword"
-                  >{{ changingPw ? '변경 중...' : '변경' }}</button>
+                      @click="onPwEdit"
+                  >수정</button>
+
+                  <template v-else>
+                    <button
+                        type="button"
+                        class="h-9 rounded-lg bg-gray-200 px-3 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100"
+                        :disabled="changingPw"
+                        @click="onPwCancel"
+                    >취소</button>
+                    <button
+                        type="button"
+                        class="h-9 rounded-lg bg-brand-500 px-3 text-white hover:bg-brand-600 disabled:opacity-50"
+                        :disabled="changingPw"
+                        @click="changePassword"
+                    >{{ changingPw ? '변경 중...' : '변경' }}</button>
+                  </template>
                 </div>
               </div>
             </div>
@@ -166,14 +176,18 @@
                     v-model="currentPassword"
                     :type="showCurrentPw ? 'text' : 'password'"
                     placeholder="현재 비밀번호"
+                    :disabled="!pwEditing || changingPw"
                     class="h-11 w-full rounded-lg border px-3
-                 bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-                 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                       bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                       dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                       disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200
+                       dark:disabled:bg-gray-900/40 dark:disabled:text-gray-500 dark:disabled:border-gray-700"
                     @blur="validateCurrentPassword"
                 />
                 <span
-                    @click="toggleCurrentPwVisibility"
-                    class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
+                    @click="pwEditing && !changingPw ? toggleCurrentPwVisibility() : null"
+                    :class="['absolute right-4 top-1/2 -translate-y-1/2',
+               (!pwEditing || changingPw) ? 'pointer-events-none opacity-50' : 'cursor-pointer']"
                 >
                   <EyeIcon v-if="showCurrentPw" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400" />
@@ -190,14 +204,18 @@
                     v-model="newPassword"
                     :type="showNewPw ? 'text' : 'password'"
                     placeholder="새 비밀번호 (6자 이상)"
+                    :disabled="!pwEditing || changingPw"
                     class="h-11 w-full rounded-lg border px-3
-                 bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-                 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                       bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                       dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                       disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200
+                       dark:disabled:bg-gray-900/40 dark:disabled:text-gray-500 dark:disabled:border-gray-700"
                     @blur="validateNewPassword"
                 />
                 <span
-                    @click="togglePasswordVisibility"
-                    class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
+                    @click="pwEditing && !changingPw ? togglePasswordVisibility() : null"
+                    :class="['absolute right-4 top-1/2 -translate-y-1/2',
+               (!pwEditing || changingPw) ? 'pointer-events-none opacity-50' : 'cursor-pointer']"
                 >
                   <EyeIcon v-if="showNewPw" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400" />
@@ -214,14 +232,18 @@
                     v-model="newPassword2"
                     :type="showNewPw2 ? 'text' : 'password'"
                     placeholder="새 비밀번호 확인"
+                    :disabled="!pwEditing || changingPw"
                     class="h-11 w-full rounded-lg border px-3
-                 bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-                 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                       bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                       dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                       disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200
+                       dark:disabled:bg-gray-900/40 dark:disabled:text-gray-500 dark:disabled:border-gray-700"
                     @blur="validateNewPasswordConfirm"
                 />
                 <span
-                    @click="togglePassword2Visibility"
-                    class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
+                    @click="pwEditing && !changingPw ? togglePassword2Visibility() : null"
+                    :class="['absolute right-4 top-1/2 -translate-y-1/2',
+               (!pwEditing || changingPw) ? 'pointer-events-none opacity-50' : 'cursor-pointer']"
                 >
                   <EyeIcon v-if="showNewPw2" class="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400" />
@@ -232,6 +254,64 @@
 
             <!-- SUPER 이메일 전용 -->
             <template v-if="isSuperEmail">
+
+              <!-- ===== 접속 로그 다운로드 ===== -->
+              <div class="col-span-2">
+                <hr class="my-6 border-gray-200 dark:border-gray-700" />
+              </div>
+
+              <div class="col-span-2">
+                <div class="flex items-center justify-between">
+                  <h3 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    접속 로그 다운로드 (기간별 Excel)
+                  </h3>
+                </div>
+              </div>
+
+              <!-- 날짜 선택 -->
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300">기간</div>
+              <div class="col-start-2">
+                <div class="flex gap-2">
+                  <!-- 날짜 필터 -->
+                  <div class="flex flex-wrap">
+                    <!-- 시작일 -->
+                    <input
+                        type="text"
+                        ref="logStartInput"
+                        class="w-[12.8rem] h-11 border border-gray-200 dark:border-gray-700 rounded-l-lg px-3 py-2 text-sm text-center
+                             focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                             dark:bg-gray-800 dark:text-gray-200"
+                        placeholder="시작일"
+                    />
+
+                    <!-- 구분자 -->
+                    <span
+                        class="flex items-center justify-center w-8 h-11 border-t border-b border-gray-200 dark:border-gray-700
+                              text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900">~</span>
+
+                    <!-- 종료일 -->
+                    <input
+                        type="text"
+                        ref="logEndInput"
+                        class="w-[12.8rem] h-11 border border-gray-200 dark:border-gray-700 rounded-r-lg px-3 py-2 text-sm text-center
+                           focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                           dark:bg-gray-800 dark:text-gray-200"
+                        placeholder="종료일"
+                    />
+                  </div>
+                  <button
+                      type="button"
+                      class="h-11 shrink-0 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                      :disabled="downloading || !logFrom || !logTo"
+                      @click="downloadLogs"
+                  >
+                    {{ downloading ? '다운로드 중...' : '엑셀 다운로드' }}
+                  </button>
+                </div>
+                <p v-if="logRangeError" class="mt-1 text-sm text-error-500">{{ logRangeError }}</p>
+              </div>
+
+              <!-- ===== google 스프레드 시트 연동 ===== -->
               <div class="col-span-2">
                 <hr class="my-6 border-gray-200 dark:border-gray-700" />
               </div>
@@ -301,11 +381,8 @@
                 />
                 <p v-if="startRowError" class="mt-1 text-sm text-error-500">{{ startRowError }}</p>
               </div>
-            </template>
 
-
-            <!-- ===== 센터 관리(특별계정 전용) ===== -->
-            <template v-if="isSuperEmail">
+              <!-- ===== 센터 관리 ===== -->
               <div class="col-span-2">
                 <hr class="my-6 border-gray-200 dark:border-gray-700" />
               </div>
@@ -325,12 +402,12 @@
                         type="button"
                         class="h-9 rounded-lg bg-gray-200 px-3 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100"
                         @click="centersEditing = false"
-                    >완료</button>
+                    >취소</button>
                   </div>
                 </div>
               </div>
 
-              <!-- 신규 추가 -->
+              <!-- 신규 센터 추가 -->
               <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">신규 센터</div>
               <div class="col-start-2">
                 <div class="flex gap-2">
@@ -354,10 +431,13 @@
               </div>
 
               <!-- 목록 -->
-              <div class="text-sm font-medium text-gray-700 dark:text-gray-300">센터 목록</div>
+              <div v-if="centersEditing"
+                   class="text-sm font-medium text-gray-700 dark:text-gray-300">센터 목록</div>
 
               <!-- 리스트 컨테이너: 스크롤, 라운드, 테두리 -->
-              <div class="rounded-md border border-gray-100 dark:border-gray-800 max-h-50 overflow-auto">
+              <div v-if="centersEditing"
+                   class="rounded-md border border-gray-100 dark:border-gray-800 max-h-50 overflow-auto">
+
                 <!-- 로딩 -->
                 <div v-if="centersLoading" class="p-4 text-sm text-gray-500 dark:text-gray-400">
                   불러오는 중...
@@ -396,10 +476,97 @@
                 </ul>
               </div>
 
+              <!-- ===== 슈퍼계정 위임 ===== -->
+              <div class="col-span-2">
+                <hr class="my-6 border-gray-200 dark:border-gray-700" />
+              </div>
+
+              <div class="col-span-2">
+                <div class="flex items-center justify-between">
+                  <h3 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">슈퍼계정 위임</h3>
+                  <div class="flex gap-2">
+                    <button
+                        v-if="!delegateEditing"
+                        type="button"
+                        class="h-9 rounded-lg bg-gray-200 px-3 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100"
+                        @click="onDelegateEdit"
+                    >수정</button>
+                    <button
+                        v-else
+                        type="button"
+                        class="h-9 rounded-lg bg-gray-200 px-3 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-100"
+                        @click="onDelegateCancel"
+                    >취소</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 대상 ID 입력 -->
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">대상 사용자 ID</div>
+              <div class="col-start-2">
+                <div class="flex gap-2">
+                  <input
+                      v-model.number="delegateIdInput"
+                      placeholder="예) example@naver.com"
+                      :disabled="!delegateEditing"
+                      class="h-11 w-full rounded-lg border px-3
+                           bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                           dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                           disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200
+                           dark:disabled:bg-gray-900/40 dark:disabled:text-gray-500 dark:disabled:border-gray-700"
+                  />
+                  <button
+                      type="button"
+                      class="h-11 shrink-0 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                      :disabled="!delegateEditing || lookingUp || !delegateIdInput"
+                      @click="lookupDelegate"
+                  >
+                    {{ lookingUp ? '조회 중...' : '검색' }}
+                  </button>
+                </div>
+              </div>
+              <div class="col-start-2" v-if="delegateLookupError">
+                <p class="mt-1 text-sm text-error-500">{{ delegateLookupError }}</p>
+              </div>
+
+              <!-- 조회 결과 카드 -->
+              <template v-if="delegateEditing && candidate">
+                <div class="col-span-2"></div>
+                <div class="col-start-2 w-full rounded-lg border border-gray-200 dark:border-gray-800 p-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm text-gray-600 dark:text-gray-400">
+                        ID: <b class="text-gray-800 dark:text-gray-200">{{ candidate.userId }}</b>
+                      </p>
+                      <p class="text-sm text-gray-600 dark:text-gray-400">
+                        이름/이메일:
+                        <b class="text-gray-800 dark:text-gray-200">{{ candidate.userName }}</b>
+                        <span class="text-gray-400">/</span>
+                        <b class="text-gray-800 dark:text-gray-200">{{ candidate.userEmail }}</b>
+                      </p>
+                      <p class="text-sm text-gray-600 dark:text-gray-400">
+                        구분/소속:
+                        <b class="text-gray-800 dark:text-gray-200">
+                          {{ roleHuman(candidate.userRole) }} / {{ candidate.centerName || '미할당' }}
+                        </b>
+                      </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="h-10 shrink-0 rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                        :disabled="!delegateEditing || delegating"
+                        @click="delegateNow"
+                    >
+                      {{ delegating ? '위임 중...' : '위임' }}
+                    </button>
+                  </div>
+                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    위임 후 현재 계정의 슈퍼 권한은 해제됩니다. 진행 전에 꼭 확인하세요.
+                  </p>
+                </div>
+              </template>
+
             </template>
-
-
-
           </template>
 
           <!-- 바닥 여백 확보를 위한 구분선 -->
@@ -465,6 +632,14 @@ const showNewPw2    = ref(false)
 const toggleCurrentPwVisibility = () => { showCurrentPw.value = !showCurrentPw.value }
 const togglePasswordVisibility   = () => { showNewPw.value = !showNewPw.value }
 const togglePassword2Visibility  = () => { showNewPw2.value = !showNewPw2.value }
+
+// 비밀번호 변경 편집 토글
+const pwEditing = ref(false)
+function onPwEdit() { pwEditing.value = true }
+function onPwCancel() {
+  pwEditing.value = false
+  resetPwForm()
+}
 
 // 화면에 찍힐 남은 시간
 const mail = useMailStore()
@@ -845,6 +1020,259 @@ watch(() => isSuperEmail.value, async (ok) => { if (ok) await fetchCenters() }, 
 // 인증 완료 후에만 3분 유휴 감시
 const idle = useIdleRefresh({ enabled: () => isVerified.value, timeoutMs: 1000 * 60 * 3 })
 
+// -----------------------
+// -----------------------
+// -----------------------
+
+// 날짜 피커 + 다운로드 + 위임용 상태/메서드 (상단 import 아래쪽에 추가)
+import flatpickr from 'flatpickr'
+import { Korean } from 'flatpickr/dist/l10n/ko.js'
+import 'flatpickr/dist/flatpickr.css'
+
+// ====== 접속 로그 다운로드 ======
+const logStartInput = ref(null)
+const logEndInput   = ref(null)
+const logFrom = ref(null) // Date | null
+const logTo   = ref(null) // Date | null
+const logRangeError = ref('')
+const downloading = ref(false)
+
+let fpStart = null
+let fpEnd = null
+
+function mountLogPickers() {
+  // 시작일
+  try { fpStart?.destroy() } catch {}
+  if (logStartInput.value) {
+    fpStart = flatpickr(logStartInput.value, {
+      locale: Korean,
+      dateFormat: 'Y-m-d',
+      allowInput: true,
+      disableMobile: true,
+      onReady: (_d, _s, fp) => {
+        fp.calendarContainer.style.zIndex = '999999'
+        // --- ✕ 클리어 버튼 (중복 방지) ---
+        const anyFp = fp
+        if (!anyFp._clearBtn) {
+          const btn = document.createElement('button')
+          btn.type = 'button'
+          btn.title = '입력값 지우기'
+          btn.textContent = '✕'
+          btn.className =
+              'fp-clear-btn absolute top-1 right-1 w-6 h-6 flex items-center justify-center ' +
+              'text-xs text-gray-500 hover:text-gray-700 rounded'
+          btn.addEventListener('mousedown', (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            fp.clear()   // 로그 시작일 제거
+            logFrom.value = null
+            fp.close()
+          })
+          fp.calendarContainer.appendChild(btn)
+          anyFp._clearBtn = btn
+        }
+      },
+      onChange: (dates) => { logFrom.value = dates[0] ?? null }
+    })
+    if (logFrom.value) fpStart.setDate(logFrom.value, false, 'Y-m-d')
+  }
+
+  // 종료일
+  try { fpEnd?.destroy() } catch {}
+  if (logEndInput.value) {
+    fpEnd = flatpickr(logEndInput.value, {
+      locale: Korean,
+      dateFormat: 'Y-m-d',
+      allowInput: true,
+      disableMobile: true,
+      onReady: (_d, _s, fp) => {
+        fp.calendarContainer.style.zIndex = '999999'
+        // --- ✕ 클리어 버튼 (중복 방지) ---
+        const anyFp = fp
+        if (!anyFp._clearBtn) {
+          const btn = document.createElement('button')
+          btn.type = 'button'
+          btn.title = '입력값 지우기'
+          btn.textContent = '✕'
+          btn.className =
+              'fp-clear-btn absolute top-1 right-1 w-6 h-6 flex items-center justify-center ' +
+              'text-xs text-gray-500 hover:text-gray-700 rounded'
+          btn.addEventListener('mousedown', (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            fp.clear()   // 로그 종료일 제거
+            logTo.value = null
+            fp.close()
+          })
+          fp.calendarContainer.appendChild(btn)
+          anyFp._clearBtn = btn
+        }
+      },
+      onChange: (dates) => { logTo.value = dates[0] ?? null }
+    })
+    if (logTo.value) fpEnd.setDate(logTo.value, false, 'Y-m-d')
+  }
+}
+function cleanupLogPickers() {
+  try { fpStart?.close(); fpStart?.destroy() } catch {}
+  try { fpEnd?.close();   fpEnd?.destroy() } catch {}
+  fpStart = fpEnd = null
+}
+
+function rebindLogPickers() {
+  // DOM이 바뀐 뒤 실행되도록 한 템포 미룸
+  nextTick().then(() => {
+    cleanupLogPickers()
+    mountLogPickers()
+  })
+}
+
+// 윈도우 리사이즈 시 재바인딩
+onMounted(() => window.addEventListener('resize', rebindLogPickers))
+onUnmounted(() => window.removeEventListener('resize', rebindLogPickers))
+
+// 스크롤/휠 시 열려있으면 닫기 (달력 잔상 방지)
+const closeLogPickersOnScroll = () => {
+  if (fpStart?.isOpen) fpStart.close()
+  if (fpEnd?.isOpen) fpEnd.close()
+}
+onMounted(() => {
+  window.addEventListener('wheel', closeLogPickersOnScroll, { passive: true, capture: true })
+  window.addEventListener('scroll', closeLogPickersOnScroll, { passive: true, capture: true })
+  window.addEventListener('touchmove', closeLogPickersOnScroll, { passive: true, capture: true })
+})
+onUnmounted(() => {
+  window.removeEventListener('wheel', closeLogPickersOnScroll, true)
+  window.removeEventListener('scroll', closeLogPickersOnScroll, true)
+  window.removeEventListener('touchmove', closeLogPickersOnScroll, true)
+})
+
+onMounted(() => mountLogPickers())
+onUnmounted(() => cleanupLogPickers())
+watch([logStartInput, logEndInput], () => nextTick().then(mountLogPickers))
+
+const ymd = (d) => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth()+1).padStart(2,'0')
+  const day = String(d.getDate()).padStart(2,'0')
+  return `${y}-${m}-${day}`
+}
+
+async function downloadLogs() {
+  logRangeError.value = ''
+  if (!logFrom.value || !logTo.value) return
+  if (logFrom.value > logTo.value) {
+    logRangeError.value = '시작일이 종료일보다 늦을 수 없습니다.'
+    return
+  }
+
+  try {
+    downloading.value = true
+    // 백엔드: GET /api/super/logs/export?from=YYYY-MM-DD&to=YYYY-MM-DD
+    const params = { from: ymd(logFrom.value), to: ymd(logTo.value) }
+    const res = await axios.get('/api/super/logs/export', {
+      params,
+      responseType: 'blob',
+      withCredentials: true
+    })
+
+    // 파일명 추출
+    const cd = res.headers['content-disposition'] || ''
+    const match = /filename\*\=UTF-8''([^;]+)/i.exec(cd)
+    const fname = match ? decodeURIComponent(match[1]) : `login_logs_${params.from}_to_${params.to}.xlsx`
+
+    const url = window.URL.createObjectURL(new Blob([res.data]))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fname
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    alert(e?.response?.data || '다운로드 실패')
+  } finally {
+    downloading.value = false
+  }
+}
+
+// ====== 슈퍼계정 위임 ======
+const delegateIdInput = ref(null)
+const lookingUp = ref(false)
+const delegating = ref(false)
+const delegateLookupError = ref('')
+
+// 슈퍼계정 위임 편집 토글
+const delegateEditing = ref(false)
+function onDelegateEdit() { delegateEditing.value = true }
+function onDelegateCancel() {
+  delegateEditing.value = false
+  // 입력/에러/결과 초기화
+  delegateIdInput.value = null
+  delegateLookupError.value = ''
+  candidate.value = null
+}
+
+const candidate = ref(null) // { userId, userName, userEmail, userRole, centerName? }
+
+const roleHuman = (role) =>
+    role === 'SUPERADMIN' ? '관리자'
+        : role === 'MANAGER'  ? '센터장'
+            : role === 'STAFF'    ? '담당자'
+                : role
+
+async function lookupDelegate() {
+  candidate.value = null
+  delegateLookupError.value = ''
+  if (!delegateIdInput.value || delegateIdInput.value <= 0) {
+    delegateLookupError.value = '올바른 사용자 ID를 입력하세요.'
+    return
+  }
+  try {
+    lookingUp.value = true
+    const { data } = await axios.get('/api/super/delegate/lookup', {
+      params: { userId: delegateIdInput.value },
+      withCredentials: true
+    })
+    candidate.value = data
+  } catch (e) {
+    candidate.value = null
+    const s = e?.response?.status
+    if (s === 404) delegateLookupError.value = '대상 사용자를 찾을 수 없습니다.'
+    else if (s === 403) delegateLookupError.value = '접근 권한이 없습니다.'
+    else delegateLookupError.value = '조회 실패'
+  } finally {
+    lookingUp.value = false
+  }
+}
+
+async function delegateNow() {
+  if (!candidate.value) return
+  const c = candidate.value
+  const ok = confirm(
+      `[위임 확인]\n\n대상: ${c.userName} (${c.userEmail})\n구분: ${roleHuman(c.userRole)} / ${c.centerName || '미할당'}\n\n정말 슈퍼 권한을 위 사용자에게 위임하시겠습니까?\n(현재 계정의 슈퍼 권한은 해제됩니다)`
+  )
+  if (!ok) return
+
+  try {
+    delegating.value = true
+    await axios.post('/api/super/delegate', { userId: c.userId }, { withCredentials: true })
+    alert('슈퍼 권한이 위임되었습니다. 다시 로그인해 주세요.')
+
+    // 필요하면 즉시 로그아웃/리다이렉트:
+    // await axios.post('/api/auth/token/logout', {}, { withCredentials: true })
+    // location.replace('/login')
+  } catch (e) {
+    const s = e?.response?.status
+    if (s === 403) alert('접근 권한이 없습니다.')
+    else alert(e?.response?.data || '위임 실패')
+  } finally {
+    delegating.value = false
+  }
+}
+
+// 라우트 이탈 시 초기화
+onBeforeRouteLeave(() => { onDelegateCancel() })
 </script>
 
 <style>

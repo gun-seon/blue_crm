@@ -97,7 +97,7 @@ export const useAuthStore = defineStore('auth', {
         // 로그아웃
         async logout() {
             try {
-                await axios.post('/api/auth/token/logout', {}, { withCredentials: true })
+                await axios.post('/api/auth/token/logout', { email: this.email }, { withCredentials: true })
             } catch (err) {
                 console.warn('로그아웃 요청 실패:', err)
             } finally {

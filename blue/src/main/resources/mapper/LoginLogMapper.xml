@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.blue.auth.mapper.LoginLogMapper">
+
+    <!-- 로그인 시 INSERT -->
+    <insert id="insertLoginLog">
+        INSERT INTO login_logs (user_id, snapshot_name, snapshot_phone, snapshot_role, login_at)
+        VALUES (#{userId}, #{name}, #{phone}, #{role}, NOW())
+    </insert>
+
+    <!-- 로그아웃 시 UPDATE (가장 최근 로그인 건) -->
+    <update id="updateLogoutLog">
+        UPDATE login_logs
+        SET logout_at = NOW()
+        WHERE log_id = (
+            SELECT t.log_id
+            FROM (
+                     SELECT l.log_id
+                     FROM login_logs l
+                              JOIN users u ON u.user_id = l.user_id
+                     WHERE u.user_email = #{email}
+                       AND l.logout_at IS NULL
+                     ORDER BY l.login_at DESC
+                     LIMIT 1
+                 ) t
+        )
+    </update>
+
+</mapper>

@@ -9,7 +9,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -76,8 +80,8 @@ public class AuthController {
   
   // 로그아웃
   @PostMapping("/token/logout")
-  public ResponseEntity<Void> logout(HttpServletResponse response) {
-    authService.logout(response);
+  public ResponseEntity<Void> logout(@RequestBody Map<String, String> body, HttpServletResponse response) {
+    authService.logout(body.get("email"), response);
     return ResponseEntity.ok().build();
   }
   

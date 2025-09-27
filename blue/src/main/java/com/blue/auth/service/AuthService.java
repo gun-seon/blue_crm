@@ -2,6 +2,7 @@ package com.blue.auth.service;
 
 import com.blue.auth.dto.*;
 import com.blue.auth.mapper.AuthMapper;
+import com.blue.auth.mapper.LoginLogMapper;
 import com.blue.global.exception.AuthException;
 import com.blue.global.security.JwtUtil;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -12,6 +13,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +24,10 @@ import org.springframework.beans.factory.annotation.Value;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+  
   private final AuthMapper authMapper;
+  private final LoginLogMapper loginLogMapper;
+  
   private final PasswordEncoder passwordEncoder;
   private final JwtUtil jwtUtil;
   
@@ -65,6 +71,19 @@ public class AuthService {
     // Refresh Token exp 추출
     var claims = jwtUtil.validateRefreshToken(refreshToken);
     long refreshExp = claims.getExpiration().getTime();
+    
+    // 로그인 로그 기록
+    try {
+      loginLogMapper.insertLoginLog(
+          user.getUserId(),
+          user.getUserName(),
+          user.getUserPhone(),
+          user.getUserRole()
+      );
+    } catch (Exception e) {
+      log.warn("로그인 로그 기록 실패: {}", e.getMessage(), e);
+      // 로깅 실패는 로그인 자체에는 영향 X
+    }
     
     return new AuthResponse(accessToken, null,
         user.getUserRole(),
@@ -164,7 +183,7 @@ public class AuthService {
   }
   
   // 로그아웃
-  public void logout(HttpServletResponse response) {
+  public void logout(String email, HttpServletResponse response) {
     // 쿠키 제거
     Cookie cookie = new Cookie("refreshToken", "");
     cookie.setMaxAge(0); // 즉시 만료
@@ -172,6 +191,14 @@ public class AuthService {
     cookie.setHttpOnly(true);
     cookie.setSecure(cookieSecure);
     response.addCookie(cookie);
+    
+    // 로그아웃 성공 직후 기록
+//    System.out.println(email);
+    if (email != null) {
+      loginLogMapper.updateLogoutLog(email);
+    } else {
+      log.warn("로그아웃 시 인증정보가 없습니다.");
+    }
   }
   
   // 이메일 중복 확인

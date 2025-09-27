@@ -158,7 +158,7 @@ public class MailCodeService {
     
     String savedCode = saved.split(":")[0];
     if (!savedCode.equals(code)) {
-      throw new AuthException("인증코드가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED);
+      throw new AuthException("인증코드가 일치하지 않습니다.", HttpStatus.UNPROCESSABLE_ENTITY);
     }
     
     // 인증 성공시 코드 삭제
