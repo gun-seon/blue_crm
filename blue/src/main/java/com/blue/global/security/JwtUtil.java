@@ -27,6 +27,7 @@ public class JwtUtil {
         .setSubject(user.getUserEmail())
         .claim("role", user.getUserRole())
         .claim("name", user.getUserName())
+        .claim("isSuper", user.isSuper())
         // 토큰 기본 정보
         .setIssuedAt(new Date())
         .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION))
@@ -45,6 +46,7 @@ public class JwtUtil {
         .setSubject(user.getUserEmail())
         .claim("role", user.getUserRole())
         .claim("name", user.getUserName())
+        .claim("isSuper", user.isSuper())
         // 토큰 기본 정보
         .setIssuedAt(new Date())
         .setExpiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))

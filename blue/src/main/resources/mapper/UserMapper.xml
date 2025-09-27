@@ -5,6 +5,14 @@
 
 <mapper namespace="com.blue.user.mapper.UserMapper">
 
+    <!-- 요청자 이메일로 특별계정 여부 조회 -->
+    <select id="isSuperByEmail" resultType="boolean">
+        SELECT (u.is_super = 'Y') AS is_super
+        FROM users u
+        WHERE u.user_email = #{email}
+        LIMIT 1
+    </select>
+
     <!-- 직원 목록 조회 -->
     <select id="findUsers" resultType="com.blue.user.dto.UserSelectDto">
         SELECT

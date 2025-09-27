@@ -16,4 +16,5 @@ public class UserRow {
   private Long centerId;          // nullable
   private String centerName;      // nullable
   private LocalDateTime userCreatedAt;
+  private boolean isSuper;
 }

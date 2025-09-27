@@ -62,7 +62,7 @@
                   :disabled="!canEdit(currentUser, child)"
                   @click="$emit('edit', child)"
                   class="px-2 py-1 text-xs rounded
-                       disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed
+                       disabled:bg-gray-300 disabled:text-gray-500
                        bg-brand-500 text-white hover:bg-brand-600"
               >
                 수정

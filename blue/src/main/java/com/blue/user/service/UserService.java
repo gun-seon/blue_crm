@@ -5,7 +5,6 @@ import com.blue.user.dto.PageResponse;
 import com.blue.user.dto.UserSelectDto;
 import com.blue.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,8 +17,11 @@ public class UserService {
   
   private final UserMapper userMapper;
   
-  @Value("${app.security.super-account}")
-  private String superAccount;
+  // 슈퍼계정인지 판단
+  private boolean isRequesterSuper(String email) {
+    Boolean b = userMapper.isSuperByEmail(email);
+    return Boolean.TRUE.equals(b);
+  }
   
   // 페이지 로딩시 최초 조회
   public PageResponse<UserSelectDto> getUsers(int page, int size, String keyword) {
@@ -53,12 +55,12 @@ public class UserService {
     
     // 2. 특별 계정이 아닌 경우 → 본사/관리자 계정 수정 불가
     boolean isRestricted = "SUPERADMIN".equals(target.getUserRole()) || "본사".equals(target.getCenterName());
-    if (isRestricted && !superAccount.equals(requesterEmail)) {
+    if (isRestricted && !isRequesterSuper(requesterEmail)) {
       throw new SecurityException("권한이 없습니다.");
     }
     
     // 3) 가시권한(visible)은 super만 수정 가능
-    if ("visible".equals(field) && !superAccount.equals(requesterEmail)) {
+    if ("visible".equals(field) && !isRequesterSuper(requesterEmail)) {
       throw new SecurityException("권한이 없습니다.");
     }
     
@@ -97,13 +99,14 @@ public class UserService {
     List<Long> approved = new ArrayList<>(); // 승인 성공한 사람들
     List<Long> skipped = new ArrayList<>(); // 제외된 사람들
     
+    boolean requesterIsSuper = isRequesterSuper(requesterEmail);
     for (UserSelectDto u : users) {
       // 승인하고 싶은 계정이 관리자권한 혹은 본사소속인지 확인
       boolean isRestricted = "SUPERADMIN".equals(u.getUserRole()) || "본사".equals(u.getCenterName());
       
       // 만약 승인대상에 관리자/본사가 포함되어있으면서
       // 동시에 요청한 사람의 계정이 특별한 계정이 아니라면
-      if (isRestricted && !superAccount.equals(requesterEmail)) {
+      if (isRestricted && !requesterIsSuper) {
         // 승인불가 리스트에 추가
         skipped.add(u.getUserId());
       } else {

@@ -17,7 +17,8 @@
             user_name       AS userName,
             user_phone      AS userPhone,
             user_approved   AS userApproved,
-            user_created_at AS userCreatedAt
+            user_created_at AS userCreatedAt,
+            CASE WHEN is_super = 'Y' THEN TRUE ELSE FALSE END AS isSuper
         FROM users
         WHERE user_email = #{email}
     </select>
@@ -34,7 +35,8 @@
             user_name       AS userName,
             user_phone      AS userPhone,
             user_approved   AS userApproved,
-            user_created_at AS userCreatedAt
+            user_created_at AS userCreatedAt,
+            CASE WHEN is_super = 'Y' THEN TRUE ELSE FALSE END AS isSuper
         FROM users
         WHERE user_phone = #{phone}
     </select>

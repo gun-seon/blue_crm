@@ -70,7 +70,8 @@ public class AuthService {
         user.getUserRole(),
         user.getUserEmail(),
         user.getUserName(),
-        refreshExp);
+        refreshExp,
+        user.isSuper());
   }
   
   // 엑세스 토큰의 재발급
@@ -83,6 +84,7 @@ public class AuthService {
       user.setUserEmail(claims.getSubject());
       user.setUserRole(claims.get("role", String.class));
       user.setUserName(claims.get("name", String.class));
+      user.setSuper(Boolean.TRUE.equals(claims.get("isSuper", Boolean.class)));
       
       // 기존 refreshToken 그대로 쓰므로 exp도 동일
       long refreshExp = claims.getExpiration().getTime();
@@ -92,7 +94,8 @@ public class AuthService {
           user.getUserRole(),
           user.getUserEmail(),
           user.getUserName(),
-          refreshExp);
+          refreshExp,
+          user.isSuper());
     } catch (ExpiredJwtException e) {
       // Refresh Token 자체가 만료된 경우
       // 정상종료이므로 사용자의 재로그인이 필요함
@@ -115,6 +118,7 @@ public class AuthService {
       user.setUserEmail(claims.getSubject());
       user.setUserRole(claims.get("role", String.class));
       user.setUserName(claims.get("name", String.class));
+      user.setSuper(Boolean.TRUE.equals(claims.get("isSuper", Boolean.class)));
       
       // 새 Access Token + 새 Refresh Token 발급
       String newAccessToken = jwtUtil.generateAccessToken(user);
@@ -131,7 +135,8 @@ public class AuthService {
           user.getUserRole(),
           user.getUserEmail(),
           user.getUserName(),
-          refreshExp);
+          refreshExp,
+          user.isSuper());
     } catch (ExpiredJwtException e) {
       // Refresh Token 자체가 만료된 경우
       // 정상종료이므로 사용자의 재로그인이 필요함

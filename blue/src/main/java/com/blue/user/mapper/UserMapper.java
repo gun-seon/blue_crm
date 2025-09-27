@@ -8,6 +8,9 @@ import java.util.List;
 
 @Mapper
 public interface UserMapper {
+  // 슈퍼계정인지 판단
+  Boolean isSuperByEmail(String email);
+  
   // 페이지 로딩시 최초 조회 - 데이터 목록 조회
   List<UserSelectDto> findUsers(@Param("offset") int offset,
                                 @Param("size") int size,

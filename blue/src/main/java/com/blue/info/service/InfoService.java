@@ -6,7 +6,6 @@ import com.blue.info.dto.UserRow;
 import com.blue.info.mapper.InfoMapper;
 import com.blue.user.dto.UpdateUserRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,10 +20,6 @@ public class InfoService {
   
   private final InfoMapper infoMapper;
   private final CenterService centerService;
-  
-  /** 환경설정(super 이메일)으로 최종 권한 판정은 서버에서! */
-  @Value("${app.security.super-account}")
-  private String superAccount;
   
   // 회사명 상수
   private static final String COMPANY_NAME = "마크CRM";
@@ -63,8 +58,7 @@ public class InfoService {
         .filter(u -> Objects.equals(u.getCenterId(), 1L))
         .sorted(
             Comparator
-                .comparing((UserRow u) -> superAccount != null
-                    && superAccount.equalsIgnoreCase(u.getUserEmail()) ? 0 : 1) // ★ superAccount 먼저
+                .comparing((UserRow u) -> u.isSuper() ? 0 : 1) //  superAccount 먼저
                 .thenComparingInt(u -> -rank(u.getUserRole())) // 권한: 관리자>센터장>담당자
                 .thenComparing(UserRow::getUserCreatedAt,
                     Comparator.nullsLast(Comparator.naturalOrder())) // 입사순
@@ -163,7 +157,7 @@ public class InfoService {
   private boolean isAdmin(UserRow u)   { return u != null && "SUPERADMIN".equals(u.getUserRole()); }
   private boolean isManager(UserRow u) { return u != null && "MANAGER".equals(u.getUserRole()); }
   private boolean isStaff(UserRow u)   { return u != null && "STAFF".equals(u.getUserRole()); }
-  private boolean isSuper(UserRow u)   { return u != null && superAccount != null && superAccount.equalsIgnoreCase(u.getUserEmail()); }
+  private boolean isSuper(UserRow u)   { return u != null && u.isSuper(); }
   private int rank(String r){ return switch (r){ case "SUPERADMIN"->3; case "MANAGER"->2; case "STAFF"->1; default->0; }; }
   
   /** 전역 열람 판단: HQ(센터ID=1) 또는 super 계정만 true */

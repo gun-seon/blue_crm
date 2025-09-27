@@ -8,7 +8,8 @@ export const useAuthStore = defineStore('auth', {
         refreshExp: null, // 서버에서 계산해온 refresh 토큰 만료시간
         email: null, // 사용자 email
         name: null, // 사용자 name
-        role: null // 사용자 권한
+        role: null, // 사용자 권한
+        isSuper: false, // 특별계정 여부 (DB users.is_super)
     }),
     actions: {
         async pingPong() {
@@ -30,6 +31,7 @@ export const useAuthStore = defineStore('auth', {
             this.email = data.email
             this.name = data.name
             this.role = data.role
+            this.isSuper = data.isSuper
             this.refreshExp = data.refreshExp
             // axios.defaults.headers.common['Authorization'] = `Bearer ${this.accessToken}`
         },
@@ -41,6 +43,7 @@ export const useAuthStore = defineStore('auth', {
             this.role = null
             this.accessToken = null
             this.refreshExp = null
+            this.isSuper = false
             delete axios.defaults.headers.common['Authorization']
         },
 

@@ -20,4 +20,5 @@ public class UserDto {
   private String userPhone;
   private String userApproved;
   private LocalDateTime userCreatedAt;
+  private boolean isSuper;
 }

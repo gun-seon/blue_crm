@@ -15,7 +15,8 @@
             u.manager_phone_access   AS managerPhoneAccess,
             u.center_id              AS centerId,
             c.center_name            AS centerName,
-            u.user_created_at        AS userCreatedAt
+            u.user_created_at        AS userCreatedAt,
+            CASE WHEN u.is_super = 'Y' THEN true ELSE false END AS isSuper
         FROM users u
                  LEFT JOIN centers c ON c.center_id = u.center_id
                  WHERE u.user_approved = 'Y'
@@ -33,7 +34,8 @@
             u.manager_phone_access   AS managerPhoneAccess,
             u.center_id              AS centerId,
             c.center_name            AS centerName,
-            u.user_created_at        AS userCreatedAt
+            u.user_created_at        AS userCreatedAt,
+            CASE WHEN u.is_super = 'Y' THEN true ELSE false END AS isSuper
         FROM users u
                  LEFT JOIN centers c ON c.center_id = u.center_id
         WHERE u.user_email = #{email}
@@ -51,7 +53,8 @@
             u.manager_phone_access   AS managerPhoneAccess,
             u.center_id              AS centerId,
             c.center_name            AS centerName,
-            u.user_created_at        AS userCreatedAt
+            u.user_created_at        AS userCreatedAt,
+            CASE WHEN u.is_super = 'Y' THEN true ELSE false END AS isSuper
         FROM users u
                  LEFT JOIN centers c ON c.center_id = u.center_id
         WHERE u.user_id = #{userId}

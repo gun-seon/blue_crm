@@ -152,7 +152,7 @@ function canEdit(row) {
   // 1. 본인 계정이면 불가
   if (row.email === requesterEmail) return false
   // 2. super 계정 제외, 관리자 계정 수정 불가
-  return !((row.type === "관리자" || row.center === "본사") && requesterEmail !== "cksccs4u@naver.com");
+  return !((row.type === "관리자" || row.center === "본사") && !auth.isSuper);
 }
 
 // super만 수정할 수 있는지 판단
@@ -160,8 +160,9 @@ function canEditVisible() {
   return isSuper.value; // super만 true
 }
 
-// 이미 센터장 존재 여부 확인 API
-const isSuper = computed(() => auth.email === "cksccs4u@naver.com");
+// 프론트는 백엔드가 내려준 isSuper만 사용
+const isSuper = computed(() => !!auth.isSuper);
+
 async function hasManager(centerName, excludeUserId) {
   const { data } = await axios.get("/api/super/users/has-manager", {
     params: { centerName, excludeUserId }
