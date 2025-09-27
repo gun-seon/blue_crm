@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface MyInfoMapper {
@@ -30,5 +31,21 @@ public interface MyInfoMapper {
   int insert(@Param("centerName") String centerName);
   int countUsersInCenter(@Param("centerId") long centerId);
   int delete(@Param("centerId") long centerId);
+  
+  // 기간 내 원본 행 조회 (SELECT * 그대로, login_at 기준)
+  List<java.util.Map<String, Object>> findLoginLogsRaw(
+      @Param("fromYmd") String fromYmd,
+      @Param("toYmd")   String toYmd,
+      @Param("limit")   int limit
+  );
+  
+  // 슈퍼 단일성: 모두 해제 (is_super = 'N')
+  int demoteAllSuperToManager();
+  
+  // 특정 사용자 권한 변경 (role 세팅 + SUPER면 is_super='Y' 세팅)
+  int updateRoleByUserId(@Param("userId") long userId, @Param("role") String role);
+  
+  // 위임 대상 요약 조회 (프론트 카드에 필요한 필드만)
+  MyInfoResponse findUserBriefById(@Param("userId") long userId);
   
 }

@@ -1,10 +1,6 @@
 package com.blue.auth.controller;
 
-import com.blue.auth.dto.CenterDto;
-import com.blue.auth.dto.ChangePasswordRequest;
-import com.blue.auth.dto.CreateCenterRequest;
-import com.blue.auth.dto.MyInfoResponse;
-import com.blue.auth.dto.SheetSettingsDto;
+import com.blue.auth.dto.*;
 import com.blue.auth.service.MyInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -84,4 +80,29 @@ public class MyInfoController {
     myInfoService.removeCenter(email, id);
     return ResponseEntity.ok().build();
   }
+  
+  /** 접속 로그 엑셀 (기간 내 전체 사용자, login_at 기준) */
+  @GetMapping("/logs/export")
+  public ResponseEntity<byte[]> exportLoginLogs(Authentication auth,
+                                                @RequestParam("from") String fromYmd,
+                                                @RequestParam("to") String toYmd) {
+    return myInfoService.exportLoginLogsExcel(auth.getName(), fromYmd, toYmd);
+  }
+  
+  /** 위임 대상 조회 (userId 기준) */
+  @GetMapping("/delegate/lookup")
+  public ResponseEntity<MyInfoResponse> lookup(@RequestParam("email") String email,
+                                               Authentication auth) {
+    return ResponseEntity.ok(myInfoService.lookupDelegateTargetByEmail(auth.getName(), email));
+  }
+  
+  /** 슈퍼 권한 위임 */
+  @PostMapping("/delegate")
+  public ResponseEntity<Void> delegate(@RequestBody DelegateRequest req, Authentication auth) {
+    myInfoService.delegateSuper(auth.getName(), req.userId());
+    return ResponseEntity.ok().build();
+  }
+  
+  // POST 바디 바인딩용 경량 DTO (record → 불변, 보일러플레이트 없음)
+  public static record DelegateRequest(Long userId) {}
 }

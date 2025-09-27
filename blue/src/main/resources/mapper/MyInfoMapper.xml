@@ -7,13 +7,15 @@
 
     <!-- 내 정보 조회 (Response DTO 매핑, 패스워드 포함) -->
     <select id="findByEmail" resultType="com.blue.auth.dto.MyInfoResponse">
-        SELECT u.user_name     AS userName,
-               u.user_email    AS userEmail,
-               u.user_phone    AS userPhone,
-               u.user_role     AS userRole,
-               u.user_password AS userPassword,
-               c.center_name   AS centerName,
-               CASE WHEN u.is_super = 'Y' THEN true ELSE false END AS isSuper
+        SELECT
+           u.user_id      AS userId,
+           u.user_name     AS userName,
+           u.user_email    AS userEmail,
+           u.user_phone    AS userPhone,
+           u.user_role     AS userRole,
+           u.user_password AS userPassword,
+           c.center_name   AS centerName,
+           CASE WHEN u.is_super = 'Y' THEN true ELSE false END AS isSuper
         FROM users u
                  LEFT JOIN centers c ON u.center_id = c.center_id
         WHERE u.user_email = #{userEmail}
@@ -86,5 +88,47 @@
         DELETE FROM centers
         WHERE center_id = #{centerId}
     </delete>
+
+    <!-- 엑셀 다운로드 : login_at 기준, SELECT * 원본 그대로 -->
+    <select id="findLoginLogsRaw" resultType="map">
+        SELECT *
+        FROM login_logs
+        WHERE login_at BETWEEN CONCAT(#{fromYmd}, ' 00:00:00')
+                  AND     CONCAT(#{toYmd},   ' 23:59:59')
+        ORDER BY login_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 슈퍼 단일성 유지를 위해 : 기존에 슈퍼였던 사람 전부 해제 (role 안 건드리고 is_super만 끔) -->
+    <update id="demoteAllSuperToManager">
+        UPDATE users
+        SET is_super = 'N'
+        WHERE is_super = 'Y'
+    </update>
+
+    <!-- 특정 사용자 권한 변경: role 세팅 + is_super='Y' && center_id=1 -->
+    <update id="updateRoleByUserId">
+        UPDATE users
+        SET user_role = #{role},
+            is_super  = CASE WHEN #{role} = 'SUPERADMIN' THEN 'Y' ELSE is_super END,
+            center_id = CASE WHEN #{role} = 'SUPERADMIN' THEN 1 ELSE center_id END
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 위임 대상 요약 -->
+    <select id="findUserBriefById" resultType="com.blue.auth.dto.MyInfoResponse">
+        SELECT
+            u.user_id      AS userId,
+            u.user_name    AS userName,
+            u.user_email   AS userEmail,
+            u.user_role    AS userRole,
+            c.center_name  AS centerName,
+            u.is_super     AS super,
+            ''             AS userPassword
+        FROM users u
+                 LEFT JOIN centers c ON c.center_id = u.center_id
+        WHERE u.user_id = #{userId}
+        LIMIT 1
+    </select>
 
 </mapper>

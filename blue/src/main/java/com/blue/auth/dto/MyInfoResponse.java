@@ -1,5 +1,6 @@
 package com.blue.auth.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,6 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class MyInfoResponse {
+  private Long userId;
   private String userName;
   private String userEmail;
   private String userPhone;

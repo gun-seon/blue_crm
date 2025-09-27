@@ -278,7 +278,7 @@
                     <input
                         type="text"
                         ref="logStartInput"
-                        class="w-[12.8rem] h-11 border border-gray-200 dark:border-gray-700 rounded-l-lg px-3 py-2 text-sm text-center
+                        class="w-[11.85rem] h-11 border border-gray-200 dark:border-gray-700 rounded-l-lg px-3 py-2 text-sm text-center
                              focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
                              dark:bg-gray-800 dark:text-gray-200"
                         placeholder="시작일"
@@ -293,7 +293,7 @@
                     <input
                         type="text"
                         ref="logEndInput"
-                        class="w-[12.8rem] h-11 border border-gray-200 dark:border-gray-700 rounded-r-lg px-3 py-2 text-sm text-center
+                        class="w-[11.85rem] h-11 border border-gray-200 dark:border-gray-700 rounded-r-lg px-3 py-2 text-sm text-center
                            focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
                            dark:bg-gray-800 dark:text-gray-200"
                         placeholder="종료일"
@@ -305,7 +305,7 @@
                       :disabled="downloading || !logFrom || !logTo"
                       @click="downloadLogs"
                   >
-                    {{ downloading ? '다운로드 중...' : '엑셀 다운로드' }}
+                    엑셀 다운로드
                   </button>
                 </div>
                 <p v-if="logRangeError" class="mt-1 text-sm text-error-500">{{ logRangeError }}</p>
@@ -502,7 +502,7 @@
               </div>
 
               <!-- 대상 ID 입력 -->
-              <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">대상 사용자 ID</div>
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">대상 사용자 ID(Email)</div>
               <div class="col-start-2">
                 <div class="flex gap-2">
                   <input
@@ -536,16 +536,15 @@
                   <div class="flex items-center justify-between">
                     <div>
                       <p class="text-sm text-gray-600 dark:text-gray-400">
-                        ID: <b class="text-gray-800 dark:text-gray-200">{{ candidate.userId }}</b>
+                        이름 :
+                        <b class="text-gray-800 dark:text-gray-200">{{ candidate.userName }}</b>
                       </p>
                       <p class="text-sm text-gray-600 dark:text-gray-400">
-                        이름/이메일:
-                        <b class="text-gray-800 dark:text-gray-200">{{ candidate.userName }}</b>
-                        <span class="text-gray-400">/</span>
+                        이메일 :
                         <b class="text-gray-800 dark:text-gray-200">{{ candidate.userEmail }}</b>
                       </p>
                       <p class="text-sm text-gray-600 dark:text-gray-400">
-                        구분/소속:
+                        구분/소속 :
                         <b class="text-gray-800 dark:text-gray-200">
                           {{ roleHuman(candidate.userRole) }} / {{ candidate.centerName || '미할당' }}
                         </b>
@@ -557,7 +556,7 @@
                         :disabled="!delegateEditing || delegating"
                         @click="delegateNow"
                     >
-                      {{ delegating ? '위임 중...' : '위임' }}
+                      {{ delegating ? '위임 중...' : '위임 확정' }}
                     </button>
                   </div>
                   <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -1021,8 +1020,6 @@ watch(() => isSuperEmail.value, async (ok) => { if (ok) await fetchCenters() }, 
 const idle = useIdleRefresh({ enabled: () => isVerified.value, timeoutMs: 1000 * 60 * 3 })
 
 // -----------------------
-// -----------------------
-// -----------------------
 
 // 날짜 피커 + 다운로드 + 위임용 상태/메서드 (상단 import 아래쪽에 추가)
 import flatpickr from 'flatpickr'
@@ -1170,7 +1167,7 @@ async function downloadLogs() {
     downloading.value = true
     // 백엔드: GET /api/super/logs/export?from=YYYY-MM-DD&to=YYYY-MM-DD
     const params = { from: ymd(logFrom.value), to: ymd(logTo.value) }
-    const res = await axios.get('/api/super/logs/export', {
+    const res = await axios.get('/api/me/logs/export', {
       params,
       responseType: 'blob',
       withCredentials: true
@@ -1224,14 +1221,19 @@ const roleHuman = (role) =>
 async function lookupDelegate() {
   candidate.value = null
   delegateLookupError.value = ''
-  if (!delegateIdInput.value || delegateIdInput.value <= 0) {
-    delegateLookupError.value = '올바른 사용자 ID를 입력하세요.'
+
+  // 이메일 형식 검사
+  const email = String(delegateIdInput.value ?? '').trim()
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  if (!ok) {
+    delegateLookupError.value = '올바른 이메일을 입력하세요.'
     return
   }
+
   try {
     lookingUp.value = true
-    const { data } = await axios.get('/api/super/delegate/lookup', {
-      params: { userId: delegateIdInput.value },
+    const { data } = await axios.get('/api/me/delegate/lookup', {
+      params: { email },
       withCredentials: true
     })
     candidate.value = data
@@ -1256,12 +1258,12 @@ async function delegateNow() {
 
   try {
     delegating.value = true
-    await axios.post('/api/super/delegate', { userId: c.userId }, { withCredentials: true })
+    await axios.post('/api/me/delegate', { userId: c.userId }, { withCredentials: true })
     alert('슈퍼 권한이 위임되었습니다. 다시 로그인해 주세요.')
 
-    // 필요하면 즉시 로그아웃/리다이렉트:
-    // await axios.post('/api/auth/token/logout', {}, { withCredentials: true })
-    // location.replace('/login')
+    // 권한 위임 즉시 로그아웃/리다이렉트:
+    await axios.post('/api/auth/token/logout', {}, { withCredentials: true })
+    location.replace('/login')
   } catch (e) {
     const s = e?.response?.status
     if (s === 403) alert('접근 권한이 없습니다.')
