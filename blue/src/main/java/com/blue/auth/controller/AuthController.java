@@ -80,8 +80,9 @@ public class AuthController {
   
   // 로그아웃
   @PostMapping("/token/logout")
-  public ResponseEntity<Void> logout(@RequestBody Map<String, String> body, HttpServletResponse response) {
-    authService.logout(body.get("email"), response);
+  public ResponseEntity<Void> logout(HttpServletResponse response,
+                                     HttpServletRequest request) {
+    authService.logout(response, request);
     return ResponseEntity.ok().build();
   }
   

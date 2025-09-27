@@ -27,4 +27,27 @@
         )
     </update>
 
+    <!-- 세선으로 로그인 : INSERT -->
+    <insert id="insertLoginLogWithSession">
+        INSERT INTO login_logs (user_id, snapshot_name, snapshot_phone, snapshot_role, login_at, session_key)
+        VALUES (#{userId}, #{name}, #{phone}, #{role}, NOW(), #{sessionKey})
+        ON DUPLICATE KEY UPDATE
+            login_at = VALUES(login_at)
+    </insert>
+
+    <!-- 세선으로 로그아웃 : UPDATE -->
+    <update id="updateLogoutLogBySession">
+        UPDATE login_logs
+        SET logout_at = NOW()
+        WHERE session_key = #{sessionKey}
+          AND logout_at IS NULL
+    </update>
+
+    <!-- 세션 키 회전: 열린 행만(oldJti) 새 jti로 교체 -->
+    <update id="rotateSessionKey">
+        UPDATE login_logs
+        SET session_key = #{newJti}
+        WHERE session_key = #{oldJti}
+          AND logout_at IS NULL
+    </update>
 </mapper>

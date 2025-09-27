@@ -47,5 +47,6 @@ public interface MyInfoMapper {
   
   // 위임 대상 요약 조회 (프론트 카드에 필요한 필드만)
   MyInfoResponse findUserBriefById(@Param("userId") long userId);
+  MyInfoResponse findUserBriefByEmail(@Param("email") String email);
   
 }

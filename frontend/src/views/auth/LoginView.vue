@@ -135,7 +135,7 @@
                   </span>
                   <!-- 오른쪽 -->
                   <router-link to="/find-password" class="text-brand-500 hover:text-brand-600 dark:text-brand-400">
-                    비밀번호 찾기
+                    비밀번호 초기화
                   </router-link>
                 </div>
               </div>

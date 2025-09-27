@@ -5,6 +5,7 @@ import io.jsonwebtoken.*;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 // 토큰 생성/검증 유틸
@@ -20,7 +21,7 @@ public class JwtUtil {
   public String generateAccessToken(UserDto user) {
 //    System.out.println("엑세스 토큰 발급");
     // 엑세스 토큰 활성화 시간
-    long ACCESS_TOKEN_EXPIRATION = 1000L * 60 * 15; // 15분
+    long ACCESS_TOKEN_EXPIRATION = 1000L * 60 * 2; // 15분
     
     return Jwts.builder()
         // 토큰에 추가하고 싶은 정보
@@ -39,9 +40,10 @@ public class JwtUtil {
   public String generateRefreshToken(UserDto user) {
 //    System.out.println("리프레시 토큰 발급");
     // 리프레시 토큰 활성화 시간
-    long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 60 * 12; // 12시간
+    long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 10; // 12시간
     
     return Jwts.builder()
+        .setId(UUID.randomUUID().toString())
         // 토큰에 추가하고 싶은 정보
         .setSubject(user.getUserEmail())
         .claim("role", user.getUserRole())
@@ -76,5 +78,15 @@ public class JwtUtil {
         .build()
         .parseClaimsJws(token)
         .getBody();
+  }
+  
+  // jti - UUID 추출 (없으면 null)
+  public String extractJti(String refreshToken) {
+    try {
+      Claims c = validateRefreshToken(refreshToken);
+      return c.getId(); // jti
+    } catch (JwtException e) {
+      return null;
+    }
   }
 }

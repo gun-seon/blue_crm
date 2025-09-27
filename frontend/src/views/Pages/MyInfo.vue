@@ -532,7 +532,7 @@
               <!-- 조회 결과 카드 -->
               <template v-if="delegateEditing && candidate">
                 <div class="col-span-2"></div>
-                <div class="col-start-2 w-full rounded-lg border border-gray-200 dark:border-gray-800 p-4">
+                <div ref="delegateCardRef" class="col-start-2 w-full rounded-lg border border-gray-200 dark:border-gray-800 p-4">
                   <div class="flex items-center justify-between">
                     <div>
                       <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -1199,6 +1199,20 @@ const lookingUp = ref(false)
 const delegating = ref(false)
 const delegateLookupError = ref('')
 
+// 스크롤 smooth
+const delegateCardRef = ref(null)
+function smoothScrollTo(el, offset = 80) {
+  const rect = el.getBoundingClientRect()
+  const scrollTopNow =
+      (typeof window.scrollY === 'number' ? window.scrollY : null) ??
+      document.scrollingElement?.scrollTop ??
+      document.documentElement.scrollTop ??
+      document.body.scrollTop ?? 0
+
+  const top = Math.max(0, scrollTopNow + rect.top - offset)
+  window.scrollTo({ top, behavior: 'smooth' })
+}
+
 // 슈퍼계정 위임 편집 토글
 const delegateEditing = ref(false)
 function onDelegateEdit() { delegateEditing.value = true }
@@ -1246,6 +1260,9 @@ async function lookupDelegate() {
   } finally {
     lookingUp.value = false
   }
+
+  await nextTick()
+  if (delegateCardRef.value) smoothScrollTo(delegateCardRef.value, 80)
 }
 
 async function delegateNow() {

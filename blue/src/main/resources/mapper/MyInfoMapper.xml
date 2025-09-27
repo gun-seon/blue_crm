@@ -95,7 +95,7 @@
         FROM login_logs
         WHERE login_at BETWEEN CONCAT(#{fromYmd}, ' 00:00:00')
                   AND     CONCAT(#{toYmd},   ' 23:59:59')
-        ORDER BY login_at DESC
+        ORDER BY login_at ASC
         LIMIT #{limit}
     </select>
 
@@ -111,8 +111,11 @@
         UPDATE users
         SET user_role = #{role},
             is_super  = CASE WHEN #{role} = 'SUPERADMIN' THEN 'Y' ELSE is_super END,
-            center_id = CASE WHEN #{role} = 'SUPERADMIN' THEN 1 ELSE center_id END
+            center_id = CASE WHEN #{role} = 'SUPERADMIN' THEN 1 ELSE center_id END,
+            manager_phone_access = CASE WHEN #{role} = 'SUPERADMIN' THEN 'Y' ELSE manager_phone_access END,
+            user_approved = CASE WHEN #{role} = 'SUPERADMIN' THEN 'Y' ELSE user_approved END
         WHERE user_id = #{userId}
+          AND user_approved = 'Y'
     </update>
 
     <!-- 위임 대상 요약 -->
@@ -123,11 +126,31 @@
             u.user_email   AS userEmail,
             u.user_role    AS userRole,
             c.center_name  AS centerName,
+            u.user_phone  AS userPhone,
             u.is_super     AS super,
+            CASE WHEN u.is_super = 'Y' THEN TRUE ELSE FALSE END AS isSuper,
             ''             AS userPassword
         FROM users u
                  LEFT JOIN centers c ON c.center_id = u.center_id
         WHERE u.user_id = #{userId}
+          AND u.user_approved = 'Y'
+        LIMIT 1
+    </select>
+
+    <select id="findUserBriefByEmail" resultType="com.blue.auth.dto.MyInfoResponse">
+        SELECT
+            u.user_id     AS userId,
+            u.user_name   AS userName,
+            u.user_email  AS userEmail,
+            u.user_role   AS userRole,
+            c.center_name AS centerName,
+            u.user_phone  AS userPhone,
+            '' AS userPassword,
+            CASE WHEN u.is_super = 'Y' THEN TRUE ELSE FALSE END AS isSuper
+        FROM users u
+                 LEFT JOIN centers c ON c.center_id = u.center_id
+        WHERE u.user_email = #{email}
+          AND u.user_approved = 'Y'
         LIMIT 1
     </select>
 

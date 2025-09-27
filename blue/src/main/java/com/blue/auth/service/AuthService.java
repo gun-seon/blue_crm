@@ -13,8 +13,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,11 +72,13 @@ public class AuthService {
     
     // 로그인 로그 기록
     try {
-      loginLogMapper.insertLoginLog(
+      String sessionKey = jwtUtil.extractJti(refreshToken);
+      loginLogMapper.insertLoginLogWithSession(
           user.getUserId(),
           user.getUserName(),
           user.getUserPhone(),
-          user.getUserRole()
+          user.getUserRole(),
+          sessionKey
       );
     } catch (Exception e) {
       log.warn("로그인 로그 기록 실패: {}", e.getMessage(), e);
@@ -130,23 +130,36 @@ public class AuthService {
   // 로그인 수동 연장 (리프레시 토큰의 재발급)
   public AuthResponse extend(String refreshToken, HttpServletResponse response) {
     try {
+      // 1) 기존 토큰 검증 + oldJti 추출
       var claims = jwtUtil.validateRefreshToken(refreshToken);
+      String oldJti = jwtUtil.extractJti(refreshToken);
       
-      // 과거 데이터 백업
+      // 2) 과거 데이터 백업
       UserDto user = new UserDto();
       user.setUserEmail(claims.getSubject());
       user.setUserRole(claims.get("role", String.class));
       user.setUserName(claims.get("name", String.class));
       user.setSuper(Boolean.TRUE.equals(claims.get("isSuper", Boolean.class)));
       
-      // 새 Access Token + 새 Refresh Token 발급
+      // 3) 새 토큰 발급
       String newAccessToken = jwtUtil.generateAccessToken(user);
       String newRefreshToken = jwtUtil.generateRefreshToken(user);
       
-      // 새 Refresh Token을 쿠키에 덮어쓰기
+      // 4) jti 회전 (열린 행만 대상)
+      String newJti = jwtUtil.extractJti(newRefreshToken);
+      if (oldJti != null && newJti != null && !oldJti.equals(newJti)) {
+        try {
+          loginLogMapper.rotateSessionKey(oldJti, newJti);
+        } catch (Exception e) {
+          // 회전 실패해도 세션 연장은 진행 (로그만 영향)
+          log.warn("rotateSessionKey 실패 oldJti={} newJti={} : {}", oldJti, newJti, e.getMessage());
+        }
+      }
+      
+      // 5) 쿠키 교체
       addRefreshTokenCookie(response, newRefreshToken);
       
-      // 새 Refresh Token의 만료시간
+      // 6) 응답
       var newClaims = jwtUtil.validateRefreshToken(newRefreshToken);
       long refreshExp = newClaims.getExpiration().getTime();
       
@@ -183,8 +196,8 @@ public class AuthService {
   }
   
   // 로그아웃
-  public void logout(String email, HttpServletResponse response) {
-    // 쿠키 제거
+  public void logout(HttpServletResponse response, HttpServletRequest request) {
+    // 1) refreshToken 쿠키 제거
     Cookie cookie = new Cookie("refreshToken", "");
     cookie.setMaxAge(0); // 즉시 만료
     cookie.setPath("/api/auth/token");
@@ -192,12 +205,32 @@ public class AuthService {
     cookie.setSecure(cookieSecure);
     response.addCookie(cookie);
     
-    // 로그아웃 성공 직후 기록
-//    System.out.println(email);
-    if (email != null) {
-      loginLogMapper.updateLogoutLog(email);
-    } else {
-      log.warn("로그아웃 시 인증정보가 없습니다.");
+    // 2) 세션키로 닫기 (쿠키에서 값 읽고 jti 추출)
+    try {
+      String refreshToken = null;
+      if (request.getCookies() != null) {
+        for (Cookie c : request.getCookies()) {
+          if ("refreshToken".equals(c.getName())) {
+            refreshToken = c.getValue();
+            break;
+          }
+        }
+      }
+      if (refreshToken != null && !refreshToken.isBlank()) {
+        String sessionKey = jwtUtil.extractJti(refreshToken);
+        if (sessionKey != null) {
+          int n = loginLogMapper.updateLogoutLogBySession(sessionKey);
+          if (n == 0) {
+            log.info("닫을 세션 로그가 없음 (이미 로그아웃 되었을 수 있음). sessionKey={}", sessionKey);
+          }
+        } else {
+          log.info("refreshToken에서 jti를 추출할 수 없음 (만료/위조 가능). 이메일 기반 닫기는 생략.");
+        }
+      } else {
+        log.info("refreshToken 쿠키 없음. 이메일 기반 닫기는 생략.");
+      }
+    } catch (Exception e) {
+      log.warn("로그아웃 로그 기록 실패: {}", e.getMessage(), e);
     }
   }
   

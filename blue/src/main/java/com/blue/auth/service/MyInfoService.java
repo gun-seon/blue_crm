@@ -125,8 +125,6 @@ public class MyInfoService {
   public ResponseEntity<byte[]> exportLoginLogsExcel(String callerEmail, String fromYmd, String toYmd) {
     ensureSuper(callerEmail);
     
-    System.out.println(callerEmail);
-    
     LocalDate from = LocalDate.parse(fromYmd);
     LocalDate to   = LocalDate.parse(toYmd);
     if (from.isAfter(to)) throw new AuthException("시작일이 종료일보다 늦을 수 없습니다.", HttpStatus.BAD_REQUEST);
@@ -181,9 +179,7 @@ public class MyInfoService {
   public MyInfoResponse lookupDelegateTargetByEmail(String callerEmail, String targetEmail) {
     ensureSuper(callerEmail);
     
-    System.out.println(callerEmail);
-    
-    MyInfoResponse dto = myInfoMapper.findByEmail(targetEmail);  // 이미 존재하는 매퍼 메서드
+    var dto = myInfoMapper.findUserBriefByEmail(targetEmail);
     if (dto == null) throw new AuthException("대상 사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
     dto.setUserPassword(""); // 안전
     return dto;
@@ -193,8 +189,6 @@ public class MyInfoService {
   @Transactional
   public void delegateSuper(String callerEmail, long targetUserId) {
     ensureSuper(callerEmail);
-    
-    System.out.println(callerEmail);
     
     MyInfoResponse me = myInfoMapper.findByEmail(callerEmail);
     if (me == null) throw new AuthException("사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
