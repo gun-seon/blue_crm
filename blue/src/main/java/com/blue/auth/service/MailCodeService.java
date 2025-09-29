@@ -6,7 +6,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -20,6 +19,7 @@ public class MailCodeService {
   // 인증코드 유효기간
   private static final long CODE_TTL = 60 * 10; // 10분
   private static final String BRAND = "#2563EB"; // 브랜드 컬러
+  private static final java.security.SecureRandom SECURE_RANDOM = new java.security.SecureRandom();
   
   // 인증코드 생성 및 이메일 발송
   public long sendCode(String email) {
@@ -29,7 +29,7 @@ public class MailCodeService {
     
     try {
       // 6자리 난수 생성
-      String code = String.format("%06d", new Random().nextInt(999999));
+      String code = String.format("%06d", SECURE_RANDOM.nextInt(900_000) + 100_000);
       
       // Redis에 "auth:code:이메일" / "code:연장여부" / TTL 형태로 저장 (TTL 후 자동 삭제)
       redisTemplate.opsForValue().set("auth:code:" + email, code + ":0", CODE_TTL, TimeUnit.SECONDS);
@@ -42,7 +42,7 @@ public class MailCodeService {
       var nowStr = now.format(java.time.format.DateTimeFormatter.ofPattern("yyyy.MM.dd (E) HH:mm"));
       html = html.replace("{{REQUEST_DATETIME}}", nowStr);
       
-      String text = "인증코드: " + code + "\n3분 안에 입력해주세요.";
+      String text = "인증코드: " + code + "\n10분 안에 입력해주세요.";
       
       // 인라인 로고 포함 버전으로 전송
       asyncMailService.sendHtmlWithLogo(email, subject, html, text);
@@ -184,7 +184,7 @@ public class MailCodeService {
       throw new AuthException("이미 연장하였습니다.", HttpStatus.BAD_REQUEST);
     }
     
-    // 연장 처리 (남은 시간과 무관하게 3분으로 리셋)
+    // 연장 처리 (남은 시간과 무관하게 리셋)
     redisTemplate.opsForValue().set(key, code + ":1", CODE_TTL, TimeUnit.SECONDS);
     return CODE_TTL;
   }
