@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class CustomerUpsertDto {
+  private Long customerId;
   private LocalDateTime customerCreatedAt;  // A열
   private String customerName;              // C열
   private String customerPhone;             // D열

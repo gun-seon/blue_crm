@@ -417,7 +417,22 @@ public class SheetsSyncService {
         row.setCustomerDivision(existed ? "유효" : "최초");
         row.setCustomerStatus("없음");
         row.setCustomerCategory("주식");
-        mapper.insertCustomerMinimal(row);
+        mapper.insertCustomerMinimal(row); // customer_id 자동 생성됨
+        
+        // === phone_lookup 동시 반영 ===
+        Long customerId = row.getCustomerId(); // useGeneratedKeys 로 채워진 값
+        String mid   = phoneDigits.length() >= 7 ? phoneDigits.substring(3, 7) : "";
+        String last4 = phoneDigits.length() >= 4 ? phoneDigits.substring(phoneDigits.length() - 4) : "";
+        
+        Map<String, Object> pl = new HashMap<>();
+        pl.put("customerId", customerId);
+        pl.put("phoneDigits", phoneDigits);
+        pl.put("phoneMid", mid);
+        pl.put("phoneLast4", last4);
+        pl.put("createdAt", createdAt);
+        
+        mapper.insertPhoneLookup(pl);
+        
         n++;
       }
     }

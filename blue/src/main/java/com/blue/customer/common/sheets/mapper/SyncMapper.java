@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface SyncMapper {
@@ -40,4 +41,7 @@ public interface SyncMapper {
                                @Param("name") String name,
                                @Param("memo") String memo,
                                @Param("content") String content);
+  
+  // phone_lookup 추가
+  void insertPhoneLookup(Map<String, Object> param);
 }
