@@ -17,7 +17,7 @@
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
         <!-- 데이터 있을 때 -->
         <tr v-for="(row, rowIndex) in data"
-            key="getRowKey(row, rowIndex)"
+            :key="getRowKey(row, rowIndex)"
             class="border-t border-gray-100 dark:border-gray-800">
           <!-- 체크박스 -->
           <td v-if="showCheckbox" class="px-5 py-4 sm:px-6">
@@ -147,43 +147,47 @@
 
     <!-- 페이지네이션 -->
     <div class="grid grid-cols-3 items-center px-4 py-3 gap-x-35">
+      <!-- « first -->
       <div class="flex justify-end">
         <button
             class="w-8 h-7 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md disabled:opacity-40"
             :disabled="page === 1"
-            @click="page > 1 && $emit('changePage', page - 1)"
+            @click="$emit('changePage','first')"
         >
           <ChevronLeftIcon class="w-4 h-4" />
         </button>
       </div>
 
       <div class="flex justify-center space-x-1">
+
         <button
             v-for="n in visiblePages"
             :key="n"
             :disabled="n === '...'"
             @click="n !== '...' && $emit('changePage', n)"
             :class="[
-            'px-3 py-1 text-sm transition',
-            n === '...' ? 'text-gray-400 cursor-default'
-            : page === n ? 'bg-blue-500 text-white rounded-md'
-            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md'
-          ]"
+        'px-3 py-1 text-sm transition',
+        n === '...' ? 'text-gray-400 cursor-default'
+        : page === n ? 'bg-blue-500 text-white rounded-md'
+        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md'
+      ]"
         >
           {{ n }}
         </button>
       </div>
 
+      <!-- › (일반 next, 필요시 유지) -->
       <div class="flex justify-start">
         <button
             class="w-8 h-7 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md disabled:opacity-40"
-            :disabled="page === totalPages"
-            @click="page < totalPages && $emit('changePage', page + 1)"
+            :disabled="Number.isFinite(totalPages) ? page >= totalPages : !hasNext"
+            @click="$emit('changePage','next')"
         >
           <ChevronRightIcon class="w-4 h-4" />
         </button>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -207,6 +211,9 @@ const props = defineProps({
   showCheckbox: { type: Boolean, default: false },
   page: { type: Number, default: 1 },
   totalPages: { type: Number, default: 1 },
+  hasNext: { type: Boolean, default: false },
+  anchorWindow: { type: Number, default: 100 },
+  windowPages: { type: Number, default: 100 },
   rowSelectable: { type: Function, default: null },
   rowKey: { type: [String, Function], default: 'id' }
 })
@@ -535,17 +542,82 @@ const badgeClass = (value) => {
 }
 
 /* 페이지네이션 */
+// const visiblePages = computed(() => {
+//   const total = props.totalPages
+//   const current = props.page
+//   const delta = 2
+//   const pages = []
+//   if (total <= 7) { for (let i=1;i<=total;i++) pages.push(i); return pages }
+//   if (current <= 3) { pages.push(1,2,3,4,5,'...',total) }
+//   else if (current >= total - 2) { pages.push(1,'...',total-4,total-3,total-2,total-1,total) }
+//   else { pages.push(1,'...',current-delta,current-1,current,current+1,current+delta,'...',total) }
+//   return pages
+// })
+
+// 숫자 리스트는 "끝 숫자"를 쓰지 않고, 현재 주변만 보여준다.
+/**
+ * 이벤트: 부모에서 changePage(payload) 처리
+ *  - 'first' | 'next' | 숫자(n) | {type:'anchorWindow', windowPages}
+ */
+
+/**
+ * 숫자 페이지 목록
+ * - Keyset 특성상 totalPages가 없으니 "현재 중심 5개"만 노출
+ * - 형태: 1 … (current-2)..(current+2) … (hasNext면 끝에 '...')
+ * - 예) page=100 → [1, '...', 98, 99, 100, 101, 102, '...']
+ */
 const visiblePages = computed(() => {
-  const total = props.totalPages
-  const current = props.page
+  const cur = props.page
   const delta = 2
-  const pages = []
-  if (total <= 7) { for (let i=1;i<=total;i++) pages.push(i); return pages }
-  if (current <= 3) { pages.push(1,2,3,4,5,'...',total) }
-  else if (current >= total - 2) { pages.push(1,'...',total-4,total-3,total-2,total-1,total) }
-  else { pages.push(1,'...',current-delta,current-1,current,current+1,current+delta,'...',total) }
+
+  // totalPages를 아는 경우: 끝 숫자를 신뢰하고 그 범위 안에서만 표시
+  if (Number.isFinite(props.totalPages) && props.totalPages > 0) {
+    const total = Math.max(1, props.totalPages)
+    const pages = [1]
+
+    if (total === 1) return pages
+    // 중앙 구간은 2 ~ (total-1) 사이로 클램프
+    const start = Math.max(2, Math.min(total - 1, cur - delta))
+    const end   = Math.max(2, Math.min(total - 1, cur + delta))
+
+    if (start > 2) pages.push('...')
+    for (let i = start; i <= end; i++) pages.push(i)
+    if (end < total - 1) pages.push('...')
+
+    pages.push(total)
+    return pages
+  }
+
+  // totalPages를 모르는 경우: hasNext 기반으로 현재 주변만 노출
+  const pages = [1]
+  if (cur - delta > 2) pages.push('...')
+  const start = Math.max(2, cur - delta)
+  const end   = cur + delta
+  for (let i = start; i <= end; i++) if (i >= 2) pages.push(i)
+  if (props.hasNext) pages.push('...')
   return pages
 })
+
+/**
+ * 앵커 라벨: "100+" / "200+" …
+ * - 현재 페이지가 속한 블록의 '다음 블록 시작번호'를 표시
+ * - 예) windowPages=100, page=87 → (floor((87-1)/100)+1)*100 = 100 → "100+"
+ * - hasNext=false면 표시 안 함
+ */
+const anchorLabel = computed(() => {
+  if (!props.hasNext) return null
+  const w = props.windowPages || props.anchorWindow || 100
+  const nextBucketEnd = (Math.floor((props.page - 1) / w) + 1) * w
+  return `${nextBucketEnd}+`
+})
+
+/**
+ * 클릭 핸들러는 템플릿에서 emit만 씀:
+ * - « : emit('changePage','first')
+ * - 숫자 : emit('changePage', n)
+ * - 100+: emit('changePage', { type: 'anchorWindow', windowPages: props.windowPages || props.anchorWindow || 100 })
+ * - › : emit('changePage','next')
+ */
 
 // 선택 해제 메서드
 const selectedRowIds = ref(new Set());

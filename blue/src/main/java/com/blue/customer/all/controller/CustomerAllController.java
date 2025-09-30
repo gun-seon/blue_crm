@@ -1,9 +1,6 @@
 package com.blue.customer.all.controller;
 
-import com.blue.customer.all.dto.AllDbRowDto;
-import com.blue.customer.all.dto.PagedResponse;
-import com.blue.customer.all.dto.UpdateFieldDto;
-import com.blue.customer.all.dto.IdsDto;
+import com.blue.customer.all.dto.*;
 import com.blue.customer.all.service.CustomerAllService;
 import com.blue.customer.common.memo.dto.MemoUpdateDto;
 import com.blue.customer.common.memo.service.MemoService;
@@ -18,24 +15,99 @@ import org.springframework.web.bind.annotation.*;
 public class CustomerAllController {
   
   private final CustomerAllService service;
-  private final MemoService memoService;
   
-  // 전체 DB 조회 (역할별 범위는 서비스에서 적용)
-  @GetMapping("/work/db")
-  public PagedResponse<AllDbRowDto> getAll(
+  /** 키셋 페이지네이션 (프론트 훅이 사용) */
+  @GetMapping("/work/db/keyset")
+  public KeysetResponse<AllDbRowDto> getAllKeyset(
       Authentication auth,
-      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "10") int size,        // 프론트 기본과 맞춤
+      @RequestParam(required = false) String cursorCreatedAt, // "yyyy-MM-dd HH:mm:ss"
+      @RequestParam(required = false) Long cursorId,
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) String dateFrom,
+      @RequestParam(required = false) String dateTo,
+      @RequestParam(required = false) String category,
+      @RequestParam(required = false) String division,
+      @RequestParam(required = false) String sort,  // 예: "division,status"
+      @RequestParam(required = false) String mine,   // MANAGER: "Y"면 내 DB만
+      @RequestParam(required=false) String divisionSort, // "on" | "off" | null
+      @RequestParam(required=false) String statusSort    // "on" | "off" | null
+  ) {
+    return service.getAllKeyset(
+        auth.getName(), size, cursorCreatedAt, cursorId,
+        keyword, dateFrom, dateTo, category, division, sort, mine,
+        divisionSort, statusSort
+    );
+  }
+  
+  /**
+   * 대규모 점프(예: 2000+ 버튼)용 앵커 커서 계산.
+   * windowIndex=0  → 1~2000 페이지 윈도우 (초기)
+   * windowIndex=1  → 2001~4000 페이지 윈도우 시작 커서 반환
+   */
+  @GetMapping("/work/db/keyset/anchor")
+  public CursorAnchor getKeysetAnchor(
+      Authentication auth,
+      @RequestParam int windowIndex,                     // 0,1,2,...
+      @RequestParam(defaultValue = "10") int size,       // 페이지 크기(프론트와 동일)
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) String dateFrom,
+      @RequestParam(required = false) String dateTo,
+      @RequestParam(required = false) String category,
+      @RequestParam(required = false) String division,
+      @RequestParam(required = false) String sort,       // "division,status"
+      @RequestParam(required = false) String mine,   // MANAGER: "Y"면 내 DB만
+      @RequestParam(required=false) String divisionSort, // "on" | "off" | null
+      @RequestParam(required=false) String statusSort    // "on" | "off" | null
+  ) {
+    return service.getKeysetAnchor(
+        auth.getName(), windowIndex, size,
+        keyword, dateFrom, dateTo, category, division, sort, mine,
+        divisionSort, statusSort
+    );
+  }
+  
+  @GetMapping("/work/db/keyset/anchor-page")
+  public CursorAnchor getKeysetAnchorByPage(
+      Authentication auth,
+      @RequestParam int pageNo,                       // 1-based 타겟 페이지
+      @RequestParam(defaultValue = "10") int size,    // 페이지 크기
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) String dateFrom,
+      @RequestParam(required = false) String dateTo,
+      @RequestParam(required = false) String category,
+      @RequestParam(required = false) String division,
+      @RequestParam(required = false) String sort,    // "division,status" 플래그 문자열
+      @RequestParam(required = false) String mine,   // MANAGER: "Y"면 내 DB만
+      @RequestParam(required=false) String divisionSort, // "on" | "off" | null
+      @RequestParam(required=false) String statusSort    // "on" | "off" | null
+  ) {
+    return service.getKeysetAnchorByPage(
+        auth.getName(), pageNo, size,
+        keyword, dateFrom, dateTo, category, division, sort, mine,
+        divisionSort, statusSort
+    );
+  }
+  
+  @GetMapping("/work/db/keyset/anchor-last")
+  public CursorAnchorLast getKeysetAnchorLast(
+      Authentication auth,
       @RequestParam(defaultValue = "10") int size,
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) String dateFrom,
       @RequestParam(required = false) String dateTo,
       @RequestParam(required = false) String category,
-      @RequestParam(required = false) String division, // SUPERADMIN만 의미: 최초/유효/중복
-      @RequestParam(required = false) String sort,     // status | division | null
-      @RequestParam(required = false) String mine,     // "Y"면 내 DB만 (MANAGER 토글용)
-      @RequestParam(required = false) Long staffUserId // (보안상 서비스에서 무시/강제)
+      @RequestParam(required = false) String division,
+      @RequestParam(required = false) String sort,    // "division,status" 등
+      @RequestParam(required = false) String mine,   // MANAGER: "Y"면 내 DB만
+      @RequestParam(required=false) String divisionSort, // "on" | "off" | null
+      @RequestParam(required=false) String statusSort    // "on" | "off" | null
   ) {
-    return service.getAll(auth.getName(), page, size, keyword, dateFrom, dateTo, category, division, sort, mine, staffUserId);
+    return service.getKeysetAnchorLast(
+        auth.getName(), size,
+        keyword, dateFrom, dateTo, category, division, sort, mine,
+        divisionSort, statusSort
+    );
   }
   
   // 인라인 업데이트(배지 status / 예약 reservation) — customers만 수정 가능

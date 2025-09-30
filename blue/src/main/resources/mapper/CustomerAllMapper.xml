@@ -17,104 +17,10 @@
         LIMIT 1
     </select>
 
-    <!-- Admin 공통 필터/정렬 -->
-    <sql id="ADMIN_FILTERS">
-        <if test="keyword != null and keyword != ''">
-            <choose>
-                <!-- 가시권한 N: 전화번호 검색은 앞3/뒤4 "정확일치"만 허용 + 이름 검색-->
-                <when test='visible == "N"'>
-                    AND (
-                    t.name LIKE CONCAT('%', #{keyword}, '%')
-                    OR t.staff LIKE CONCAT('%', #{keyword}, '%')
-                    OR RIGHT(
-                    /* MySQL 8+: 비숫자 제거 */
-                    REGEXP_REPLACE(t.phone, '[^0-9]', ''),
-                    4
-                    ) = REGEXP_REPLACE(#{keyword}, '[^0-9]', '')
-                    OR SUBSTRING(
-                    REGEXP_REPLACE(t.phone, '[^0-9]', ''),
-                    1, 3
-                    ) = REGEXP_REPLACE(#{keyword}, '[^0-9]', '')
-                    OR SUBSTRING(
-                    REGEXP_REPLACE(t.phone, '[^0-9]', ''),
-                    1, 2
-                    ) = REGEXP_REPLACE(#{keyword}, '[^0-9]', '')  <!-- '02' 지역번호 대응 -->
-                    )
-                </when>
-                <!-- 기본: 이름/전화 전체 LIKE -->
-                <otherwise>
-                    AND (
-                    t.name  LIKE CONCAT('%', #{keyword}, '%')
-                    OR t.staff LIKE CONCAT('%', #{keyword}, '%')
-                    OR t.phone LIKE CONCAT('%', #{keyword}, '%')
-                    )
-                </otherwise>
-            </choose>
-        </if>
-        <if test="dateFrom != null and dateFrom != ''">
-            AND t.createdAt &gt;= #{dateFrom}
-        </if>
-        <if test="dateTo != null and dateTo != ''">
-            AND t.createdAt &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
-        </if>
-        <if test="category != null and category != ''">
-            AND t.category = #{category}
-        </if>
-        <if test="division != null and division != ''">
-            AND t.division = #{division}
-        </if>
-    </sql>
-
-    <sql id="ADMIN_ORDER">
-        <bind name="hasStatus"   value="sort != null and sort.contains('status')" />
-        <bind name="hasDivision" value="sort != null and sort.contains('division')" />
-
-        <choose>
-            <!-- 구분 + 상태: 1) 구분 2) 상태 3) (재콜:예약↑ / 그외:생성일↓) -->
-            <when test="hasDivision and hasStatus">
-                ORDER BY
-                FIELD(t.division, '최초','유효','중복'),
-                FIELD(t.status,
-                '부재1','부재2','부재3','부재4','부재5',
-                '재콜','신규','회수','가망','완료','거절','없음'),
-                /* 재콜 묶음 내부: 예약 없는 것 뒤로, 예약 빠른 순 */
-                CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,
-                CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,
-                /* 재콜 이외: 최신 생성일 우선 */
-                CASE WHEN t.status&lt;&gt;'재콜' THEN t.createdAt END DESC
-            </when>
-
-            <!-- 상태만: 1) 상태 2) (재콜:예약↑ / 그외:생성일↓) -->
-            <when test="hasStatus">
-                ORDER BY
-                FIELD(t.status,
-                '부재1','부재2','부재3','부재4','부재5',
-                '재콜','신규','회수','가망','완료','거절','없음'),
-                CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,
-                CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,
-                CASE WHEN t.status&lt;&gt;'재콜' THEN t.createdAt END DESC
-            </when>
-
-            <!-- 구분만: 1) 구분 2) 생성일 최신 -->
-            <when test="hasDivision">
-                ORDER BY
-                FIELD(t.division, '최초','유효','중복'),
-                t.createdAt DESC
-            </when>
-
-            <!-- 아무 것도 안 켜짐: 최신순 -->
-            <otherwise>
-                ORDER BY t.createdAt DESC
-            </otherwise>
-        </choose>
-    </sql>
-
-    <!-- SUPERADMIN: customers + customers_duplicate(display=1) -->
-    <select id="findAllForAdmin" resultType="com.blue.customer.all.dto.AllDbRowDto">
-        SELECT
-        t.id, t.origin, t.createdAt, t.staff, t.division, t.category,
-        t.name, t.phone, t.source, t.content, t.memo, t.status, t.reservation
-        FROM (
+    <!-- ===================== 합본(UNION) + 필터 푸시다운 ===================== -->
+    <!-- ⚠ 이 블록에서만 필터링; 바깥 SELECT에서는 재필터링 안 함 -->
+    <sql id="ADMIN_UNION_FILTERED">
+        /* customers */
         SELECT
         c.customer_id           AS id,
         'CUSTOMER'              AS origin,
@@ -129,12 +35,51 @@
         c.customer_memo         AS memo,
         c.customer_status       AS status,
         c.customer_promise_time AS promiseAt,
-        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
+        c.division_rank         AS division_rank,
+        c.status_rank           AS status_rank
         FROM customers c
         LEFT JOIN users u ON u.user_id = c.user_id
+        WHERE 1=1
+        <!-- 날짜/카테고리/디비전 -->
+        <if test="dateFrom != null and dateFrom != ''">
+            AND c.customer_created_at &gt;= #{dateFrom}
+        </if>
+        <if test="dateTo != null and dateTo != ''">
+            AND c.customer_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
+        </if>
+        <if test="category != null and category != ''">
+            AND c.customer_category = #{category}
+        </if>
+        <if test="division != null and division != ''">
+            AND c.customer_division = #{division}
+        </if>
+        <!-- 키워드(가시권한 Y/N별 전화검색 분기 포함) -->
+        <if test="keyword != null and keyword != ''">
+            AND (
+            c.customer_name LIKE CONCAT('%', #{keyword}, '%')
+            OR u.user_name   LIKE CONCAT('%', #{keyword}, '%')
+            <choose>
+                <when test="keywordDigits != null and keywordDigits != ''">
+                    OR EXISTS (
+                    SELECT 1 FROM phone_lookup pl
+                    WHERE pl.customer_id = c.customer_id
+                    AND (
+                    pl.phone_digits LIKE CONCAT('%', #{keywordDigits}, '%')
+                    OR pl.phone_mid = #{keywordDigits}
+                    OR pl.phone_last4 = #{keywordDigits}
+                    )
+                    )
+                </when>
+                <otherwise>
+                    OR c.customer_phone LIKE CONCAT('%', #{keyword}, '%')
+                </otherwise>
+            </choose>
+            )
+        </if>
 
         UNION ALL
 
+        /* duplicates */
         SELECT
         d.duplicate_id          AS id,
         'DUPLICATE'             AS origin,
@@ -149,104 +94,406 @@
         d.duplicate_memo        AS memo,
         '없음'                  AS status,
         NULL                    AS promiseAt,
-        NULL                    AS reservation
+        d.division_rank         AS division_rank,
+        d.status_rank           AS status_rank
         FROM customers_duplicate d
         JOIN customers c2 ON c2.customer_id = d.customer_id
         LEFT JOIN users u2 ON u2.user_id = c2.user_id
         WHERE d.duplicate_display = 1
-        ) t
-        WHERE 1=1
-        <include refid="ADMIN_FILTERS"/>
-        <include refid="ADMIN_ORDER"/>
-        LIMIT #{size} OFFSET #{offset}
-    </select>
-
-    <select id="countAllForAdmin" resultType="int">
-        SELECT COUNT(*) FROM (
-        SELECT
-        c.customer_id AS id,
-        'CUSTOMER'    AS origin,
-        c.customer_created_at AS createdAt,
-        u.user_name   AS staff,
-        c.customer_division  AS division,
-        c.customer_category  AS category,
-        c.customer_name      AS name,
-        c.customer_phone     AS phone,
-        c.customer_source    AS source,
-        c.customer_content   AS content,
-        c.customer_memo      AS memo,
-        c.customer_status    AS status,
-        c.customer_promise_time AS promiseAt,
-        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
-        FROM customers c
-        LEFT JOIN users u ON u.user_id = c.user_id
-
-        UNION ALL
-
-        SELECT
-        d.duplicate_id AS id,
-        'DUPLICATE'    AS origin,
-        d.duplicate_created_at AS createdAt,
-        u2.user_name   AS staff,
-        '중복'         AS division,
-        d.duplicate_category AS category,
-        d.duplicate_name     AS name,
-        c2.customer_phone    AS phone,
-        d.duplicate_source   AS source,
-        d.duplicate_content  AS content,
-        d.duplicate_memo     AS memo,
-        '없음'               AS status,
-        NULL                   AS promiseAt,
-        CAST(NULL AS CHAR(20)) AS reservation
-        FROM customers_duplicate d
-        JOIN customers c2 ON c2.customer_id = d.customer_id
-        LEFT JOIN users u2 ON u2.user_id = c2.user_id
-        WHERE d.duplicate_display = 1
-        ) t
-        WHERE 1=1
-        <include refid="ADMIN_FILTERS"/>
-    </select>
-
-    <!-- 고객 전용 공통 필터/정렬 (MANAGER/STAFF) -->
-    <sql id="CUSTOMER_ONLY_FILTERS">
-        <if test="keyword != null and keyword != ''">
-            AND (c.customer_name LIKE CONCAT('%', #{keyword}, '%')
-            OR u.user_name LIKE CONCAT('%', #{keyword}, '%')
-            OR  c.customer_phone LIKE CONCAT('%', #{keyword}, '%'))
-        </if>
+        <!-- 날짜/카테고리 -->
         <if test="dateFrom != null and dateFrom != ''">
-            AND c.customer_created_at &gt;= #{dateFrom}
+            AND d.duplicate_created_at &gt;= #{dateFrom}
         </if>
         <if test="dateTo != null and dateTo != ''">
-            AND c.customer_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
+            AND d.duplicate_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
         </if>
         <if test="category != null and category != ''">
-            AND c.customer_category = #{category}
+            AND d.duplicate_category = #{category}
         </if>
-        <if test="division != null and division != ''">
-            AND c.customer_division = #{division}  <!-- '최초','유효' -->
+        <!-- 키워드(가시권한 Y/N별 전화검색 분기) -->
+        <if test="keyword != null and keyword != ''">
+            <choose>
+                <when test='visible == "N"'>
+                    AND (
+                    d.duplicate_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR u2.user_name  LIKE CONCAT('%', #{keyword}, '%')
+                    <if test="keywordDigits != null and keywordDigits != ''">
+                        OR EXISTS (
+                        SELECT 1
+                        FROM phone_lookup pl
+                        WHERE pl.customer_id = c2.customer_id
+                        AND pl.phone_last4 = #{keywordDigits}
+                        )
+                    </if>
+                    )
+                </when>
+                <otherwise>
+                    AND (
+                    d.duplicate_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR u2.user_name  LIKE CONCAT('%', #{keyword}, '%')
+                    <choose>
+                        <when test="keywordDigits != null and keywordDigits != ''">
+                            OR EXISTS (
+                            SELECT 1
+                            FROM phone_lookup pl
+                            WHERE pl.customer_id = c2.customer_id
+                            AND (
+                            pl.phone_digits LIKE CONCAT('%', #{keywordDigits}, '%')
+                            OR pl.phone_mid = #{keywordDigits}
+                            OR pl.phone_last4 = #{keywordDigits}
+                            )
+                            )
+                        </when>
+                        <otherwise>
+                            OR c2.customer_phone LIKE CONCAT('%', #{keyword}, '%')
+                        </otherwise>
+                    </choose>
+                    )
+                </otherwise>
+            </choose>
         </if>
     </sql>
 
-    <sql id="CUSTOMER_ONLY_ORDER">
+    <!-- ===================== Admin 정렬 (최종 SELECT 전용) ===================== -->
+    <sql id="ADMIN_ORDER">
         <choose>
-            <when test="sort == 'status'">
+            <when test="sortDivision and sortStatus">
                 ORDER BY
-                    FIELD(c.customer_status,
-                    '부재1','부재2','부재3','부재4','부재5',
-                    '재콜','신규','회수','가망','완료','거절','없음'),
-                    CASE WHEN c.customer_status='재콜' THEN (c.customer_promise_time IS NULL) END ASC,
-                    CASE WHEN c.customer_status='재콜' THEN c.customer_promise_time END ASC,
-                    CASE WHEN c.customer_status&lt;&gt;'재콜' THEN c.customer_created_at END DESC
+                t.division_rank ASC,
+                t.status_rank   ASC,
+                CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,
+                CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,
+                t.createdAt DESC,
+                t.id DESC
+            </when>
+            <when test="sortStatus">
+                ORDER BY
+                t.status_rank   ASC,
+                CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,
+                CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,
+                t.createdAt DESC,
+                t.id DESC
+            </when>
+            <when test="sortDivision">
+                ORDER BY
+                t.division_rank ASC,
+                t.createdAt DESC,
+                t.id DESC
             </when>
             <otherwise>
-                ORDER BY c.customer_created_at DESC
+                ORDER BY t.createdAt DESC, t.id DESC
             </otherwise>
         </choose>
     </sql>
 
-    <!-- MANAGER: 자기 센터 소속 직원 담당 고객 -->
-    <select id="findAllForManager" resultType="com.blue.customer.all.dto.AllDbRowDto">
+    <!-- ===================== 커서(키셋) 조건: DESC ===================== -->
+    <sql id="ADMIN_CURSOR_DESC">
+        <choose>
+            <!-- 분류 + 상태 동시 정렬 -->
+            <when test="sortDivision and sortStatus">
+                <if test="cursorId != null">
+                    AND (
+                    t.division_rank &gt; #{cursorDivisionRank}
+                    OR (t.division_rank = #{cursorDivisionRank} AND t.status_rank &gt; #{cursorStatusRank})
+                    OR (
+                    t.division_rank = #{cursorDivisionRank}
+                    AND t.status_rank = #{cursorStatusRank}
+                    AND (
+                    (t.status_rank = 20 AND
+                    IFNULL(t.promiseAt, '9999-12-31 23:59:59')
+                    &gt; IFNULL(#{cursorPromiseAt}, '9999-12-31 23:59:59')
+                    )
+                    OR (t.status_rank &lt;&gt; 20 AND
+                    (t.createdAt &lt; #{cursorAt}
+                    OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))
+                    )
+                    )
+                    )
+                    )
+                </if>
+            </when>
+
+            <!-- 상태만 정렬 -->
+            <when test="sortStatus">
+                <if test="cursorId != null">
+                    AND (
+                    t.status_rank &gt; #{cursorStatusRank}
+                    OR (
+                    t.status_rank = #{cursorStatusRank}
+                    AND (
+                    (t.status_rank = 20 AND
+                    IFNULL(t.promiseAt, '9999-12-31 23:59:59')
+                    &gt; IFNULL(#{cursorPromiseAt}, '9999-12-31 23:59:59')
+                    )
+                    OR (t.status_rank &lt;&gt; 20 AND
+                    (t.createdAt &lt; #{cursorAt}
+                    OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))
+                    )
+                    )
+                    )
+                    )
+                </if>
+            </when>
+
+            <!-- 분류만 정렬 -->
+            <when test="sortDivision">
+                <if test="cursorId != null">
+                    AND (
+                    t.division_rank &gt; #{cursorDivisionRank}
+                    OR (
+                    t.division_rank = #{cursorDivisionRank}
+                    AND (t.createdAt &lt; #{cursorAt}
+                    OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))
+                    )
+                    )
+                </if>
+            </when>
+
+            <!-- 기본 최신순(createdAt DESC, id DESC) -->
+            <otherwise>
+                <if test="cursorId != null">
+                    AND (t.createdAt &lt; #{cursorAt}
+                    OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))
+                </if>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- ===================== 커서(키셋) 조건: ASC ===================== -->
+    <sql id="ADMIN_CURSOR_ASC">
+        <choose>
+            <!-- 분류 + 상태 동시 정렬 -->
+            <when test="sortDivision and sortStatus">
+                <if test="cursorId != null">
+                    AND (
+                    t.division_rank &lt; #{cursorDivisionRank}
+                    OR (t.division_rank = #{cursorDivisionRank} AND t.status_rank &lt; #{cursorStatusRank})
+                    OR (
+                    t.division_rank = #{cursorDivisionRank}
+                    AND t.status_rank = #{cursorStatusRank}
+                    AND (
+                    (t.status_rank = 20 AND
+                    IFNULL(t.promiseAt, '0000-01-01 00:00:00')
+                    &lt; IFNULL(#{cursorPromiseAt}, '0000-01-01 00:00:00')
+                    )
+                    OR (t.status_rank &lt;&gt; 20 AND
+                    (t.createdAt &gt; #{cursorAt}
+                    OR (t.createdAt = #{cursorAt} AND t.id &gt; #{cursorId}))
+                    )
+                    )
+                    )
+                    )
+                </if>
+            </when>
+
+            <!-- 상태만 정렬 -->
+            <when test="sortStatus">
+                <if test="cursorId != null">
+                    AND (
+                    t.status_rank &lt; #{cursorStatusRank}
+                    OR (
+                    t.status_rank = #{cursorStatusRank}
+                    AND (
+                    (t.status_rank = 20 AND
+                    IFNULL(t.promiseAt, '0000-01-01 00:00:00')
+                    &lt; IFNULL(#{cursorPromiseAt}, '0000-01-01 00:00:00')
+                    )
+                    OR (t.status_rank &lt;&gt; 20 AND
+                    (t.createdAt &gt; #{cursorAt}
+                    OR (t.createdAt = #{cursorAt} AND t.id &gt; #{cursorId}))
+                    )
+                    )
+                    )
+                    )
+                </if>
+            </when>
+
+            <!-- 분류만 정렬 -->
+            <when test="sortDivision">
+                <if test="cursorId != null">
+                    AND (
+                    t.division_rank &lt; #{cursorDivisionRank}
+                    OR (
+                    t.division_rank = #{cursorDivisionRank}
+                    AND (t.createdAt &gt; #{cursorAt}
+                    OR (t.createdAt = #{cursorAt} AND t.id &gt; #{cursorId}))
+                    )
+                    )
+                </if>
+            </when>
+
+            <!-- 기본 오래순(createdAt ASC, id ASC) -->
+            <otherwise>
+                <if test="cursorId != null">
+                    AND (t.createdAt &gt; #{cursorAt}
+                    OR (t.createdAt = #{cursorAt} AND t.id &gt; #{cursorId}))
+                </if>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- ===================== Admin 리스트 ===================== -->
+    <!-- 1) 정방향 키셋 (DESC) -->
+    <select id="findAllKeysetForAdmin" resultType="com.blue.customer.all.dto.AllDbRowDto">
+        SELECT
+        t.id, t.origin, t.createdAt, t.staff, t.division, t.category,
+        t.name, t.phone, t.source, t.content, t.memo, t.status,
+        DATE_FORMAT(t.promiseAt, '%c월 %e일 %H:%i') AS reservation
+        FROM (
+        <include refid="ADMIN_UNION_FILTERED"/>
+        ) t
+        WHERE 1=1
+        <include refid="ADMIN_CURSOR_DESC"/>
+        <include refid="ADMIN_ORDER"/>
+        LIMIT #{limit}
+    </select>
+
+    <!-- 2) 역방향 키셋 (ASC) -->
+    <select id="findAllKeysetForAdminAsc" resultType="com.blue.customer.all.dto.AllDbRowDto">
+        SELECT
+        t.id, t.origin, t.createdAt, t.staff, t.division, t.category,
+        t.name, t.phone, t.source, t.content, t.memo, t.status,
+        DATE_FORMAT(t.promiseAt, '%c월 %e일 %H:%i') AS reservation
+        FROM (
+        <include refid="ADMIN_UNION_FILTERED"/>
+        ) t
+        WHERE 1=1
+        <include refid="ADMIN_CURSOR_ASC"/>
+        <choose>
+            <when test="sortDivision and sortStatus">
+                ORDER BY
+                t.division_rank ASC,
+                t.status_rank   ASC,
+                CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,
+                CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,
+                t.createdAt ASC, t.id ASC
+            </when>
+            <when test="sortStatus">
+                ORDER BY
+                t.status_rank   ASC,
+                CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,
+                CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,
+                t.createdAt ASC, t.id ASC
+            </when>
+            <when test="sortDivision">
+                ORDER BY
+                t.division_rank ASC,
+                t.createdAt ASC, t.id ASC
+            </when>
+            <otherwise>
+                ORDER BY t.createdAt ASC, t.id ASC
+            </otherwise>
+        </choose>
+        LIMIT #{limit}
+    </select>
+
+    <!-- 3) 마지막 페이지 전용 (ASC LIMIT N) -->
+    <select id="findTailForAdmin" resultType="com.blue.customer.all.dto.AllDbRowDto">
+        SELECT
+        t.id, t.origin, t.createdAt, t.staff, t.division, t.category,
+        t.name, t.phone, t.source, t.content, t.memo, t.status,
+        DATE_FORMAT(t.promiseAt, '%c월 %e일 %H:%i') AS reservation
+        FROM (
+        <include refid="ADMIN_UNION_FILTERED"/>
+        ) t
+        WHERE 1=1
+        ORDER BY t.createdAt ASC, t.id ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 4) 앵커 1건 (OFFSET 기반) -->
+    <select id="findAnchorForAdmin" resultType="com.blue.customer.all.dto.AllDbRowDto">
+        SELECT
+        t.id, t.origin, t.createdAt, t.staff, t.division, t.category,
+        t.name, t.phone, t.source, t.content, t.memo, t.status,
+        DATE_FORMAT(t.promiseAt, '%c월 %e일 %H:%i') AS reservation
+        FROM (
+        <include refid="ADMIN_UNION_FILTERED"/>
+        ) t
+        WHERE 1=1
+        <include refid="ADMIN_ORDER"/>
+        LIMIT 1 OFFSET #{offset}
+    </select>
+
+    <!-- 카운트 (필터는 UNION 내부에서 모두 처리) -->
+    <select id="countAllForAdmin" resultType="int">
+        SELECT COUNT(*) FROM (
+        <include refid="ADMIN_UNION_FILTERED"/>
+        ) t
+    </select>
+
+    <!-- ===================== MANAGER / STAFF ===================== -->
+
+    <sql id="CUSTOMER_ONLY_FILTERS">
+        <if test="keyword != null &amp;&amp; keyword != ''">
+            AND (
+            c.customer_name LIKE CONCAT('%', #{keyword}, '%')
+            OR u.user_name   LIKE CONCAT('%', #{keyword}, '%')
+            <choose>
+                <when test="keywordDigits != null &amp;&amp; keywordDigits != ''">
+                    OR EXISTS (
+                    SELECT 1
+                    FROM phone_lookup pl
+                    WHERE pl.customer_id = c.customer_id
+                    AND (
+                    pl.phone_digits LIKE CONCAT('%', #{keywordDigits}, '%')
+                    OR pl.phone_mid    = #{keywordDigits}
+                    OR pl.phone_last4  = #{keywordDigits}
+                    )
+                    )
+                </when>
+                <otherwise>
+                    OR c.customer_phone LIKE CONCAT('%', #{keyword}, '%')
+                </otherwise>
+            </choose>
+            )
+        </if>
+        <if test="dateFrom != null &amp;&amp; dateFrom != ''">
+            AND c.customer_created_at &gt;= #{dateFrom}
+        </if>
+        <if test="dateTo != null &amp;&amp; dateTo != ''">
+            AND c.customer_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
+        </if>
+        <if test="category != null &amp;&amp; category != ''">
+            AND c.customer_category = #{category}
+        </if>
+        <if test="division != null &amp;&amp; division != ''">
+            AND c.customer_division = #{division}
+        </if>
+    </sql>
+
+    <sql id="CUSTOMER_ONLY_ORDER_KEYSET">
+        <choose>
+            <when test="sortDivision and sortStatus">
+                ORDER BY
+                c.division_rank ASC,
+                c.status_rank   ASC,
+                CASE WHEN c.customer_status='재콜' THEN (c.customer_promise_time IS NULL) END ASC,
+                CASE WHEN c.customer_status='재콜' THEN c.customer_promise_time END ASC,
+                CASE WHEN c.customer_status&lt;&gt;'재콜' THEN c.customer_created_at END DESC,
+                c.customer_id DESC
+            </when>
+            <when test="sortStatus">
+                ORDER BY
+                c.status_rank   ASC,
+                CASE WHEN c.customer_status='재콜' THEN (c.customer_promise_time IS NULL) END ASC,
+                CASE WHEN c.customer_status='재콜' THEN c.customer_promise_time END ASC,
+                CASE WHEN c.customer_status&lt;&gt;'재콜' THEN c.customer_created_at END DESC,
+                c.customer_id DESC
+            </when>
+            <when test="sortDivision">
+                ORDER BY
+                c.division_rank ASC,
+                c.customer_created_at DESC,
+                c.customer_id DESC
+            </when>
+            <otherwise>
+                ORDER BY c.customer_created_at DESC, c.customer_id DESC
+            </otherwise>
+        </choose>
+    </sql>
+
+    <select id="findAllKeysetForManager" resultType="com.blue.customer.all.dto.AllDbRowDto">
         SELECT
         c.customer_id           AS id,
         'CUSTOMER'              AS origin,
@@ -265,8 +512,85 @@
         JOIN users u ON u.user_id = c.user_id
         WHERE c.user_id IN (SELECT user_id FROM users WHERE center_id = #{centerId})
         <include refid="CUSTOMER_ONLY_FILTERS"/>
-        <include refid="CUSTOMER_ONLY_ORDER"/>
-        LIMIT #{size} OFFSET #{offset}
+        <if test="cursorAt != null">
+            AND (c.customer_created_at &lt; #{cursorAt}
+            OR (c.customer_created_at = #{cursorAt} AND c.customer_id &lt; #{cursorId}))
+        </if>
+        <include refid="CUSTOMER_ONLY_ORDER_KEYSET"/>
+        LIMIT #{limit}
+    </select>
+
+    <select id="findAllKeysetForStaff" resultType="com.blue.customer.all.dto.AllDbRowDto">
+        SELECT
+        c.customer_id           AS id,
+        'CUSTOMER'              AS origin,
+        c.customer_created_at   AS createdAt,
+        u.user_name             AS staff,
+        c.customer_division     AS division,
+        c.customer_category     AS category,
+        c.customer_name         AS name,
+        c.customer_phone        AS phone,
+        c.customer_source       AS source,
+        c.customer_content      AS content,
+        c.customer_memo         AS memo,
+        c.customer_status       AS status,
+        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
+        FROM customers c
+        LEFT JOIN users u ON u.user_id = c.user_id
+        WHERE c.user_id = #{userId}
+        <include refid="CUSTOMER_ONLY_FILTERS"/>
+        <if test="cursorAt != null">
+            AND (c.customer_created_at &lt; #{cursorAt}
+            OR (c.customer_created_at = #{cursorAt} AND c.customer_id &lt; #{cursorId}))
+        </if>
+        <include refid="CUSTOMER_ONLY_ORDER_KEYSET"/>
+        LIMIT #{limit}
+    </select>
+
+    <select id="findAnchorForManager" resultType="com.blue.customer.all.dto.AllDbRowDto">
+        SELECT
+        c.customer_id           AS id,
+        'CUSTOMER'              AS origin,
+        c.customer_created_at   AS createdAt,
+        u.user_name             AS staff,
+        c.customer_division     AS division,
+        c.customer_category     AS category,
+        c.customer_name         AS name,
+        c.customer_phone        AS phone,
+        c.customer_source       AS source,
+        c.customer_content      AS content,
+        c.customer_memo         AS memo,
+        c.customer_status       AS status,
+        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
+        FROM customers c
+        JOIN users u ON u.user_id = c.user_id
+        WHERE c.user_id IN (SELECT user_id FROM users WHERE center_id = #{centerId})
+        <include refid="CUSTOMER_ONLY_FILTERS"/>
+        <include refid="CUSTOMER_ONLY_ORDER_KEYSET"/>
+        LIMIT 1 OFFSET #{offset}
+    </select>
+
+    <select id="findAnchorForStaff" resultType="com.blue.customer.all.dto.AllDbRowDto">
+        SELECT
+        c.customer_id           AS id,
+        'CUSTOMER'              AS origin,
+        c.customer_created_at   AS createdAt,
+        u.user_name             AS staff,
+        c.customer_division     AS division,
+        c.customer_category     AS category,
+        c.customer_name         AS name,
+        c.customer_phone        AS phone,
+        c.customer_source       AS source,
+        c.customer_content      AS content,
+        c.customer_memo         AS memo,
+        c.customer_status       AS status,
+        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
+        FROM customers c
+        LEFT JOIN users u ON u.user_id = c.user_id
+        WHERE c.user_id = #{userId}
+        <include refid="CUSTOMER_ONLY_FILTERS"/>
+        <include refid="CUSTOMER_ONLY_ORDER_KEYSET"/>
+        LIMIT 1 OFFSET #{offset}
     </select>
 
     <select id="countAllForManager" resultType="int">
@@ -277,30 +601,6 @@
         <include refid="CUSTOMER_ONLY_FILTERS"/>
     </select>
 
-    <!-- STAFF: 본인 담당 고객 -->
-    <select id="findAllForStaff" resultType="com.blue.customer.all.dto.AllDbRowDto">
-        SELECT
-        c.customer_id           AS id,
-        'CUSTOMER'              AS origin,
-        c.customer_created_at   AS createdAt,
-        u.user_name             AS staff,
-        c.customer_division     AS division,
-        c.customer_category     AS category,
-        c.customer_name         AS name,
-        c.customer_phone        AS phone,
-        c.customer_source       AS source,
-        c.customer_content      AS content,
-        c.customer_memo         AS memo,
-        c.customer_status       AS status,
-        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
-        FROM customers c
-        LEFT JOIN users u ON u.user_id = c.user_id
-        WHERE c.user_id = #{userId}
-        <include refid="CUSTOMER_ONLY_FILTERS"/>
-        <include refid="CUSTOMER_ONLY_ORDER"/>
-        LIMIT #{size} OFFSET #{offset}
-    </select>
-
     <select id="countAllForStaff" resultType="int">
         SELECT COUNT(*)
         FROM customers c
@@ -308,7 +608,7 @@
         <include refid="CUSTOMER_ONLY_FILTERS"/>
     </select>
 
-    <!-- 검사/권한 -->
+    <!-- ===================== 검사/권한/수정 ===================== -->
     <select id="existsCustomerById" resultType="int">
         SELECT COUNT(*) FROM customers WHERE customer_id = #{customerId}
     </select>
@@ -328,7 +628,6 @@
           AND user_id = #{userId}
     </select>
 
-    <!-- 수정 -->
     <update id="updateCustomerReservation">
         UPDATE customers
         SET customer_promise_time = #{when}
@@ -341,7 +640,6 @@
         WHERE customer_id = #{customerId}
     </update>
 
-    <!-- 중복 숨김 -->
     <update id="hideDuplicates">
         UPDATE customers_duplicate
         SET duplicate_display = 0
@@ -352,3 +650,916 @@
     </update>
 
 </mapper>
+
+
+        <!--<?xml version="1.0" encoding="UTF-8" ?>-->
+<!--<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"-->
+<!--        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">-->
+
+<!--<mapper namespace="com.blue.customer.all.mapper.CustomerAllMapper">-->
+
+<!--    &lt;!&ndash; 로그인 사용자 컨텍스트 &ndash;&gt;-->
+<!--    <select id="findUserContextByEmail" resultType="com.blue.customer.all.dto.UserContextDto">-->
+<!--        SELECT-->
+<!--            u.user_id    AS userId,-->
+<!--            u.user_role  AS role,-->
+<!--            u.center_id  AS centerId,-->
+<!--            u.user_email AS email,-->
+<!--            u.manager_phone_access AS visible-->
+<!--        FROM users u-->
+<!--        WHERE u.user_email = #{email}-->
+<!--        LIMIT 1-->
+<!--    </select>-->
+
+<!--    &lt;!&ndash; ============ 공통: 합본(UNION) 베이스 ============ &ndash;&gt;-->
+<!--    &lt;!&ndash; prelimit 제거: 키셋/카운트/마지막페이지 모두 일관되게 동일 집합을 기준으로 &ndash;&gt;-->
+<!--    <sql id="C_CUSTOMER_WHERE">-->
+<!--        <if test="keyword != null and keyword != ''">-->
+<!--            AND (-->
+<!--            c.customer_name LIKE CONCAT('%', #{keyword}, '%')-->
+<!--            OR u.user_name   LIKE CONCAT('%', #{keyword}, '%')-->
+<!--            <choose>-->
+<!--                <when test="keywordDigits != null and keywordDigits != ''">-->
+<!--                    OR EXISTS (-->
+<!--                    SELECT 1-->
+<!--                    FROM phone_lookup pl-->
+<!--                    WHERE pl.customer_id = c.customer_id-->
+<!--                    AND ( pl.phone_digits LIKE CONCAT('%', #{keywordDigits}, '%')-->
+<!--                    OR pl.phone_mid = #{keywordDigits}-->
+<!--                    OR pl.phone_last4 = #{keywordDigits} )-->
+<!--                    )-->
+<!--                </when>-->
+<!--                <otherwise>-->
+<!--                    OR c.customer_phone LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                </otherwise>-->
+<!--            </choose>-->
+<!--            )-->
+<!--        </if>-->
+
+<!--        <if test="dateFrom != null and dateFrom != ''">-->
+<!--            AND c.customer_created_at &gt;= #{dateFrom}-->
+<!--        </if>-->
+<!--        <if test="dateTo != null and dateTo != ''">-->
+<!--            AND c.customer_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)-->
+<!--        </if>-->
+<!--        <if test="category != null and category != ''">-->
+<!--            AND c.customer_category = #{category}-->
+<!--        </if>-->
+<!--        <if test="division != null and division != ''">-->
+<!--            AND c.customer_division = #{division}-->
+<!--        </if>-->
+<!--    </sql>-->
+
+<!--    &lt;!&ndash; SUPERADMIN 가시권한에 맞춘 '중복' 브랜치 WHERE &ndash;&gt;-->
+<!--    <sql id="D_DUP_WHERE">-->
+<!--        AND d.duplicate_display = 1-->
+<!--        <if test="keyword != null and keyword != ''">-->
+<!--            <choose>-->
+<!--                &lt;!&ndash; visible=N: 이름/직원명 + 끝4자리만 &ndash;&gt;-->
+<!--                <when test='visible == "N"'>-->
+<!--                    AND (-->
+<!--                    d.duplicate_name LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                    OR u2.user_name  LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                    <if test="keywordDigits != null and keywordDigits != ''">-->
+<!--                        OR EXISTS (-->
+<!--                        SELECT 1-->
+<!--                        FROM phone_lookup pl-->
+<!--                        WHERE pl.customer_id = c2.customer_id-->
+<!--                        AND pl.phone_last4 = #{keywordDigits}-->
+<!--                        )-->
+<!--                    </if>-->
+<!--                    )-->
+<!--                </when>-->
+<!--                &lt;!&ndash; visible=Y &ndash;&gt;-->
+<!--                <otherwise>-->
+<!--                    AND (-->
+<!--                    d.duplicate_name LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                    OR u2.user_name  LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                    <choose>-->
+<!--                        <when test="keywordDigits != null and keywordDigits != ''">-->
+<!--                            OR EXISTS (-->
+<!--                            SELECT 1-->
+<!--                            FROM phone_lookup pl-->
+<!--                            WHERE pl.customer_id = c2.customer_id-->
+<!--                            AND ( pl.phone_digits LIKE CONCAT('%', #{keywordDigits}, '%')-->
+<!--                            OR pl.phone_mid = #{keywordDigits}-->
+<!--                            OR pl.phone_last4 = #{keywordDigits} )-->
+<!--                            )-->
+<!--                        </when>-->
+<!--                        <otherwise>-->
+<!--                            OR c2.customer_phone LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                        </otherwise>-->
+<!--                    </choose>-->
+<!--                    )-->
+<!--                </otherwise>-->
+<!--            </choose>-->
+<!--        </if>-->
+
+<!--        <if test="dateFrom != null and dateFrom != ''">-->
+<!--            AND d.duplicate_created_at &gt;= #{dateFrom}-->
+<!--        </if>-->
+<!--        <if test="dateTo != null and dateTo != ''">-->
+<!--            AND d.duplicate_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)-->
+<!--        </if>-->
+<!--        <if test="category != null and category != ''">-->
+<!--            AND d.duplicate_category = #{category}-->
+<!--        </if>-->
+<!--        &lt;!&ndash; 중복은 division 고정 '중복' &ndash;&gt;-->
+<!--    </sql>-->
+
+<!--    &lt;!&ndash; ② 정렬: FIELD() 금지, rank 컬럼 사용 &ndash;&gt;-->
+<!--    <sql id="ORDER_BY_DESC_RANK">-->
+<!--        <choose>-->
+<!--            <when test="sortDivision and sortStatus">-->
+<!--                ORDER BY-->
+<!--                t.division_rank ASC,-->
+<!--                t.status_rank   ASC,-->
+<!--                /* 재콜 우선 로직 */-->
+<!--                CASE WHEN t.status_rank = 20 THEN (t.promiseAt IS NULL) END ASC,-->
+<!--                CASE WHEN t.status_rank = 20 THEN t.promiseAt END ASC,-->
+<!--                CASE WHEN t.status_rank &lt;&gt; 20 THEN t.createdAt END DESC,-->
+<!--                t.id DESC-->
+<!--            </when>-->
+<!--            <when test="sortStatus">-->
+<!--                ORDER BY-->
+<!--                t.status_rank   ASC,-->
+<!--                CASE WHEN t.status_rank = 20 THEN (t.promiseAt IS NULL) END ASC,-->
+<!--                CASE WHEN t.status_rank = 20 THEN t.promiseAt END ASC,-->
+<!--                CASE WHEN t.status_rank &lt;&gt; 20 THEN t.createdAt END DESC,-->
+<!--                t.id DESC-->
+<!--            </when>-->
+<!--            <when test="sortDivision">-->
+<!--                ORDER BY-->
+<!--                t.division_rank ASC,-->
+<!--                t.createdAt DESC,-->
+<!--                t.id DESC-->
+<!--            </when>-->
+<!--            <otherwise>-->
+<!--                ORDER BY t.createdAt DESC, t.id DESC-->
+<!--            </otherwise>-->
+<!--        </choose>-->
+<!--    </sql>-->
+
+<!--    <sql id="ORDER_BY_ASC_RANK">-->
+<!--        <choose>-->
+<!--            <when test="sortDivision and sortStatus">-->
+<!--                ORDER BY-->
+<!--                t.division_rank ASC,-->
+<!--                t.status_rank   ASC,-->
+<!--                t.promiseAt ASC,-->
+<!--                t.createdAt ASC,-->
+<!--                t.id ASC-->
+<!--            </when>-->
+<!--            <when test="sortStatus">-->
+<!--                ORDER BY-->
+<!--                t.status_rank ASC,-->
+<!--                t.promiseAt ASC,-->
+<!--                t.createdAt ASC,-->
+<!--                t.id ASC-->
+<!--            </when>-->
+<!--            <when test="sortDivision">-->
+<!--                ORDER BY-->
+<!--                t.division_rank ASC,-->
+<!--                t.createdAt ASC,-->
+<!--                t.id ASC-->
+<!--            </when>-->
+<!--            <otherwise>-->
+<!--                ORDER BY t.createdAt ASC, t.id ASC-->
+<!--            </otherwise>-->
+<!--        </choose>-->
+<!--    </sql>-->
+
+<!--    <sql id="ADMIN_UNION_BASE">-->
+<!--        /* customers */-->
+<!--        SELECT-->
+<!--            c.customer_id           AS id,-->
+<!--            'CUSTOMER'              AS origin,-->
+<!--            c.customer_created_at   AS createdAt,-->
+<!--            u.user_name             AS staff,-->
+<!--            c.customer_division     AS division,-->
+<!--            c.customer_category     AS category,-->
+<!--            c.customer_name         AS name,-->
+<!--            c.customer_phone        AS phone,-->
+<!--            c.customer_source       AS source,-->
+<!--            c.customer_content      AS content,-->
+<!--            c.customer_memo         AS memo,-->
+<!--            c.customer_status       AS status,-->
+<!--            c.customer_promise_time AS promiseAt,-->
+<!--            c.division_rank         AS division_rank,-->
+<!--            c.status_rank           AS status_rank-->
+<!--        FROM customers c-->
+<!--                 LEFT JOIN users u ON u.user_id = c.user_id-->
+
+<!--        UNION ALL-->
+
+<!--        /* duplicates */-->
+<!--        SELECT-->
+<!--            d.duplicate_id          AS id,-->
+<!--            'DUPLICATE'             AS origin,-->
+<!--            d.duplicate_created_at  AS createdAt,-->
+<!--            u2.user_name            AS staff,-->
+<!--            '중복'                  AS division,-->
+<!--            d.duplicate_category    AS category,-->
+<!--            d.duplicate_name        AS name,-->
+<!--            c2.customer_phone       AS phone,-->
+<!--            d.duplicate_source      AS source,-->
+<!--            d.duplicate_content     AS content,-->
+<!--            d.duplicate_memo        AS memo,-->
+<!--            '없음'                  AS status,-->
+<!--            NULL                    AS promiseAt,-->
+<!--            d.division_rank         AS division_rank,-->
+<!--            d.status_rank           AS status_rank-->
+<!--        FROM customers_duplicate d-->
+<!--                 JOIN customers c2 ON c2.customer_id = d.customer_id-->
+<!--                 LEFT JOIN users u2 ON u2.user_id = c2.user_id-->
+<!--        WHERE d.duplicate_display = 1-->
+<!--    </sql>-->
+
+<!--    &lt;!&ndash; Admin 공통 필터 &ndash;&gt;-->
+<!--    <sql id="ADMIN_FILTERS">-->
+<!--        <if test="keyword != null and keyword != ''">-->
+<!--            <choose>-->
+<!--                &lt;!&ndash; 가시권한 N: 이름/직원명 + 전화는 끝4자리 정확일치만 &ndash;&gt;-->
+<!--                <when test='visible == "N"'>-->
+<!--                    AND (-->
+<!--                    t.name  LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                    OR t.staff LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                    <if test="keywordDigits != null and keywordDigits != ''">-->
+<!--                        OR (-->
+<!--                        (t.origin = 'CUSTOMER' AND EXISTS (-->
+<!--                        SELECT 1-->
+<!--                        FROM phone_lookup pl-->
+<!--                        WHERE pl.customer_id = t.id-->
+<!--                        AND pl.phone_last4 = #{keywordDigits}-->
+<!--                        ))-->
+<!--                        OR-->
+<!--                        (t.origin = 'DUPLICATE' AND EXISTS (-->
+<!--                        SELECT 1-->
+<!--                        FROM customers_duplicate d-->
+<!--                        JOIN phone_lookup pl ON pl.customer_id = d.customer_id-->
+<!--                        WHERE d.duplicate_id = t.id-->
+<!--                        AND pl.phone_last4 = #{keywordDigits}-->
+<!--                        ))-->
+<!--                        )-->
+<!--                    </if>-->
+<!--                    )-->
+<!--                </when>-->
+<!--                &lt;!&ndash; 가시권한 Y: 기존 로직(전체/중간/끝) &ndash;&gt;-->
+<!--                <otherwise>-->
+<!--                    AND (-->
+<!--                    t.name  LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                    OR t.staff LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                    <choose>-->
+<!--                        <when test="keywordDigits != null and keywordDigits != ''">-->
+<!--                            OR (-->
+<!--                            (t.origin = 'CUSTOMER' AND EXISTS (-->
+<!--                            SELECT 1 FROM phone_lookup pl-->
+<!--                            WHERE pl.customer_id = t.id-->
+<!--                            AND ( pl.phone_digits LIKE CONCAT('%', #{keywordDigits}, '%')-->
+<!--                            OR pl.phone_mid   = #{keywordDigits}-->
+<!--                            OR pl.phone_last4 = #{keywordDigits} )-->
+<!--                            ))-->
+<!--                            OR-->
+<!--                            (t.origin = 'DUPLICATE' AND EXISTS (-->
+<!--                            SELECT 1-->
+<!--                            FROM customers_duplicate d-->
+<!--                            JOIN phone_lookup pl ON pl.customer_id = d.customer_id-->
+<!--                            WHERE d.duplicate_id = t.id-->
+<!--                            AND ( pl.phone_digits LIKE CONCAT('%', #{keywordDigits}, '%')-->
+<!--                            OR pl.phone_mid   = #{keywordDigits}-->
+<!--                            OR pl.phone_last4 = #{keywordDigits} )-->
+<!--                            ))-->
+<!--                            )-->
+<!--                        </when>-->
+<!--                        <otherwise>-->
+<!--                            OR t.phone LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                        </otherwise>-->
+<!--                    </choose>-->
+<!--                    )-->
+<!--                </otherwise>-->
+<!--            </choose>-->
+<!--        </if>-->
+
+<!--        <if test="dateFrom != null and dateFrom != ''">-->
+<!--            AND t.createdAt &gt;= #{dateFrom}-->
+<!--        </if>-->
+<!--        <if test="dateTo != null and dateTo != ''">-->
+<!--            AND t.createdAt &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)-->
+<!--        </if>-->
+<!--        <if test="category != null and category != ''">-->
+<!--            AND t.category = #{category}-->
+<!--        </if>-->
+<!--        <if test="division != null and division != ''">-->
+<!--            AND t.division = #{division}-->
+<!--        </if>-->
+<!--    </sql>-->
+
+<!--    &lt;!&ndash; Admin 정렬 &ndash;&gt;-->
+<!--    <sql id="ADMIN_ORDER">-->
+<!--        <choose>-->
+<!--            <when test="sortDivision and sortStatus">-->
+<!--                ORDER BY-->
+<!--                t.division_rank ASC,-->
+<!--                t.status_rank   ASC,-->
+<!--                CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,-->
+<!--                CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,-->
+<!--                t.createdAt DESC,-->
+<!--                t.id DESC-->
+<!--            </when>-->
+<!--            <when test="sortStatus">-->
+<!--                ORDER BY-->
+<!--                t.status_rank ASC,-->
+<!--                CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,-->
+<!--                CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,-->
+<!--                t.createdAt DESC, t.id DESC-->
+<!--            </when>-->
+<!--            <when test="sortDivision">-->
+<!--                ORDER BY-->
+<!--                t.division_rank ASC,-->
+<!--                t.createdAt DESC, t.id DESC-->
+<!--            </when>-->
+<!--            <otherwise>-->
+<!--                ORDER BY t.createdAt DESC, t.id DESC-->
+<!--            </otherwise>-->
+<!--        </choose>-->
+<!--    </sql>-->
+
+<!--    &lt;!&ndash; ============ 1) 정방향 키셋 (DESC) — 첫 페이지/중간 이동 ============ &ndash;&gt;-->
+<!--    <select id="findAllKeysetForAdmin" resultType="com.blue.customer.all.dto.AllDbRowDto">-->
+<!--        SELECT-->
+<!--        t.id, t.origin, t.createdAt, t.staff, t.division, t.category,-->
+<!--        t.name, t.phone, t.source, t.content, t.memo, t.status,-->
+<!--        DATE_FORMAT(t.promiseAt, '%c월 %e일 %H:%i') AS reservation-->
+<!--        FROM (-->
+<!--        <include refid="ADMIN_UNION_FILTERED"/>-->
+<!--        ) t-->
+<!--        WHERE 1=1-->
+
+<!--        &lt;!&ndash; 커서 &ndash;&gt;-->
+<!--        <include refid="ADMIN_CURSOR_DESC"/>-->
+
+<!--        <include refid="ADMIN_ORDER"/>-->
+<!--        LIMIT #{limit}-->
+<!--    </select>-->
+
+<!--    &lt;!&ndash; ============ 2) 역방향 키셋 (ASC) — 마지막 페이지/끝 근처 ============ &ndash;&gt;-->
+<!--    <select id="findAllKeysetForAdminAsc" resultType="com.blue.customer.all.dto.AllDbRowDto">-->
+<!--        SELECT-->
+<!--        t.id, t.origin, t.createdAt, t.staff, t.division, t.category,-->
+<!--        t.name, t.phone, t.source, t.content, t.memo, t.status,-->
+<!--        DATE_FORMAT(t.promiseAt, '%c월 %e일 %H:%i') AS reservation-->
+<!--        FROM (-->
+<!--        <include refid="ADMIN_UNION_FILTERED"/>-->
+<!--        ) t-->
+<!--        WHERE 1=1-->
+
+<!--        &lt;!&ndash; 커서 &ndash;&gt;-->
+<!--        <include refid="ADMIN_CURSOR_ASC"/>-->
+
+<!--        &lt;!&ndash; ASC 정렬 &ndash;&gt;-->
+<!--        <choose>-->
+<!--            <when test="sortDivision and sortStatus">-->
+<!--                ORDER BY-->
+<!--                t.division_rank ASC,-->
+<!--                t.status_rank ASC,-->
+<!--                CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,-->
+<!--                CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,-->
+<!--                t.createdAt ASC, t.id ASC-->
+<!--            </when>-->
+<!--            <when test="sortStatus">-->
+<!--                ORDER BY-->
+<!--                t.status_rank ASC,-->
+<!--                CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,-->
+<!--                CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,-->
+<!--                t.createdAt ASC, t.id ASC-->
+<!--            </when>-->
+<!--            <when test="sortDivision">-->
+<!--                ORDER BY-->
+<!--                t.division_rank ASC,-->
+<!--                t.createdAt ASC, t.id ASC-->
+<!--            </when>-->
+<!--            <otherwise>-->
+<!--                ORDER BY t.createdAt ASC, t.id ASC-->
+<!--            </otherwise>-->
+<!--        </choose>-->
+<!--        LIMIT #{limit}-->
+<!--    </select>-->
+
+
+<!--    &lt;!&ndash; ============ 3) 마지막 페이지 전용(ASC LIMIT size) — OFFSET 없이 가장 오래된 N개 ============ &ndash;&gt;-->
+<!--    <select id="findTailForAdmin" resultType="com.blue.customer.all.dto.AllDbRowDto">-->
+<!--        SELECT-->
+<!--        t.id, t.origin, t.createdAt, t.staff, t.division, t.category,-->
+<!--        t.name, t.phone, t.source, t.content, t.memo, t.status,-->
+<!--        DATE_FORMAT(t.promiseAt, '%c월 %e일 %H:%i') AS reservation-->
+<!--        FROM (-->
+<!--        <include refid="ADMIN_UNION_FILTERED"/>-->
+<!--        ) t-->
+<!--        WHERE 1=1-->
+
+<!--        ORDER BY t.createdAt ASC, t.id ASC-->
+<!--        LIMIT #{limit}-->
+<!--    </select>-->
+
+<!--    &lt;!&ndash; ============ 카운트/앵커 (필터/정렬 동일 적용) ============ &ndash;&gt;-->
+<!--    <select id="findAnchorForAdmin" resultType="com.blue.customer.all.dto.AllDbRowDto">-->
+<!--        SELECT-->
+<!--        t.id, t.origin, t.createdAt, t.staff, t.division, t.category,-->
+<!--        t.name, t.phone, t.source, t.content, t.memo, t.status,-->
+<!--        DATE_FORMAT(t.promiseAt, '%c월 %e일 %H:%i') AS reservation-->
+<!--        FROM (-->
+<!--        <include refid="ADMIN_UNION_FILTERED"/>-->
+<!--        ) t-->
+<!--        WHERE 1=1-->
+
+<!--        <include refid="ADMIN_ORDER"/>-->
+<!--        LIMIT 1 OFFSET #{offset}-->
+<!--    </select>-->
+
+<!--    <select id="countAllForAdmin" resultType="int">-->
+<!--        SELECT COUNT(*)-->
+<!--        FROM (-->
+<!--        <include refid="ADMIN_UNION_FILTERED"/>-->
+<!--        ) t-->
+<!--        WHERE 1=1-->
+<!--        <include refid="ADMIN_FILTERS"/>-->
+<!--    </select>-->
+
+<!--    &lt;!&ndash; ============ MANAGER/STAFF 기존 키셋/카운트 (필터/정렬 유지) ============ &ndash;&gt;-->
+<!--    <select id="findAllKeysetForManager" resultType="com.blue.customer.all.dto.AllDbRowDto">-->
+<!--        SELECT-->
+<!--        c.customer_id           AS id,-->
+<!--        'CUSTOMER'              AS origin,-->
+<!--        c.customer_created_at   AS createdAt,-->
+<!--        u.user_name             AS staff,-->
+<!--        c.customer_division     AS division,-->
+<!--        c.customer_category     AS category,-->
+<!--        c.customer_name         AS name,-->
+<!--        c.customer_phone        AS phone,-->
+<!--        c.customer_source       AS source,-->
+<!--        c.customer_content      AS content,-->
+<!--        c.customer_memo         AS memo,-->
+<!--        c.customer_status       AS status,-->
+<!--        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation-->
+<!--        FROM customers c-->
+<!--        JOIN users u ON u.user_id = c.user_id-->
+<!--        WHERE c.user_id IN (SELECT user_id FROM users WHERE center_id = #{centerId})-->
+<!--        <include refid="CUSTOMER_ONLY_FILTERS"/>-->
+<!--        <if test="cursorAt != null">-->
+<!--            AND (c.customer_created_at &lt; #{cursorAt}-->
+<!--            OR (c.customer_created_at = #{cursorAt} AND c.customer_id &lt; #{cursorId}))-->
+<!--        </if>-->
+<!--        <include refid="CUSTOMER_ONLY_ORDER_KEYSET"/>-->
+<!--        LIMIT #{limit}-->
+<!--    </select>-->
+
+<!--    <select id="findAllKeysetForStaff" resultType="com.blue.customer.all.dto.AllDbRowDto">-->
+<!--        SELECT-->
+<!--        c.customer_id           AS id,-->
+<!--        'CUSTOMER'              AS origin,-->
+<!--        c.customer_created_at   AS createdAt,-->
+<!--        u.user_name             AS staff,-->
+<!--        c.customer_division     AS division,-->
+<!--        c.customer_category     AS category,-->
+<!--        c.customer_name         AS name,-->
+<!--        c.customer_phone        AS phone,-->
+<!--        c.customer_source       AS source,-->
+<!--        c.customer_content      AS content,-->
+<!--        c.customer_memo         AS memo,-->
+<!--        c.customer_status       AS status,-->
+<!--        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation-->
+<!--        FROM customers c-->
+<!--        LEFT JOIN users u ON u.user_id = c.user_id-->
+<!--        WHERE c.user_id = #{userId}-->
+<!--        <include refid="CUSTOMER_ONLY_FILTERS"/>-->
+<!--        <if test="cursorAt != null">-->
+<!--            AND (c.customer_created_at &lt; #{cursorAt}-->
+<!--            OR (c.customer_created_at = #{cursorAt} AND c.customer_id &lt; #{cursorId}))-->
+<!--        </if>-->
+<!--        <include refid="CUSTOMER_ONLY_ORDER_KEYSET"/>-->
+<!--        LIMIT #{limit}-->
+<!--    </select>-->
+
+<!--    <select id="findAnchorForManager" resultType="com.blue.customer.all.dto.AllDbRowDto">-->
+<!--        SELECT-->
+<!--        c.customer_id           AS id,-->
+<!--        'CUSTOMER'              AS origin,-->
+<!--        c.customer_created_at   AS createdAt,-->
+<!--        u.user_name             AS staff,-->
+<!--        c.customer_division     AS division,-->
+<!--        c.customer_category     AS category,-->
+<!--        c.customer_name         AS name,-->
+<!--        c.customer_phone        AS phone,-->
+<!--        c.customer_source       AS source,-->
+<!--        c.customer_content      AS content,-->
+<!--        c.customer_memo         AS memo,-->
+<!--        c.customer_status       AS status,-->
+<!--        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation-->
+<!--        FROM customers c-->
+<!--        JOIN users u ON u.user_id = c.user_id-->
+<!--        WHERE c.user_id IN (SELECT user_id FROM users WHERE center_id = #{centerId})-->
+<!--        <include refid="CUSTOMER_ONLY_FILTERS"/>-->
+<!--        <include refid="CUSTOMER_ONLY_ORDER_KEYSET"/>-->
+<!--        LIMIT 1 OFFSET #{offset}-->
+<!--    </select>-->
+
+<!--    <select id="findAnchorForStaff" resultType="com.blue.customer.all.dto.AllDbRowDto">-->
+<!--        SELECT-->
+<!--        c.customer_id           AS id,-->
+<!--        'CUSTOMER'              AS origin,-->
+<!--        c.customer_created_at   AS createdAt,-->
+<!--        u.user_name             AS staff,-->
+<!--        c.customer_division     AS division,-->
+<!--        c.customer_category     AS category,-->
+<!--        c.customer_name         AS name,-->
+<!--        c.customer_phone        AS phone,-->
+<!--        c.customer_source       AS source,-->
+<!--        c.customer_content      AS content,-->
+<!--        c.customer_memo         AS memo,-->
+<!--        c.customer_status       AS status,-->
+<!--        DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation-->
+<!--        FROM customers c-->
+<!--        LEFT JOIN users u ON u.user_id = c.user_id-->
+<!--        WHERE c.user_id = #{userId}-->
+<!--        <include refid="CUSTOMER_ONLY_FILTERS"/>-->
+<!--        <include refid="CUSTOMER_ONLY_ORDER_KEYSET"/>-->
+<!--        LIMIT 1 OFFSET #{offset}-->
+<!--    </select>-->
+
+<!--    <select id="countAllForManager" resultType="int">-->
+<!--        SELECT COUNT(*)-->
+<!--        FROM customers c-->
+<!--        JOIN users u ON u.user_id = c.user_id-->
+<!--        WHERE c.user_id IN (SELECT user_id FROM users WHERE center_id = #{centerId})-->
+<!--        <include refid="CUSTOMER_ONLY_FILTERS"/>-->
+<!--    </select>-->
+
+<!--    <select id="countAllForStaff" resultType="int">-->
+<!--        SELECT COUNT(*)-->
+<!--        FROM customers c-->
+<!--        WHERE c.user_id = #{userId}-->
+<!--        <include refid="CUSTOMER_ONLY_FILTERS"/>-->
+<!--    </select>-->
+
+<!--    &lt;!&ndash; 고객 전용 공통 필터/정렬 (MANAGER/STAFF) &ndash;&gt;-->
+<!--    <sql id="CUSTOMER_ONLY_FILTERS">-->
+<!--        <if test="keyword != null &amp;&amp; keyword != ''">-->
+<!--            AND (-->
+<!--            c.customer_name LIKE CONCAT('%', #{keyword}, '%')-->
+<!--            OR u.user_name   LIKE CONCAT('%', #{keyword}, '%')-->
+<!--            <choose>-->
+<!--                <when test="keywordDigits != null &amp;&amp; keywordDigits != ''">-->
+<!--                    OR EXISTS (-->
+<!--                    SELECT 1-->
+<!--                    FROM phone_lookup pl-->
+<!--                    WHERE pl.customer_id = c.customer_id-->
+<!--                    AND ( pl.phone_digits LIKE CONCAT('%', #{keywordDigits}, '%')-->
+<!--                    OR pl.phone_mid    = #{keywordDigits}-->
+<!--                    OR pl.phone_last4  = #{keywordDigits} )-->
+<!--                    )-->
+<!--                </when>-->
+<!--                <otherwise>-->
+<!--                    OR c.customer_phone LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                </otherwise>-->
+<!--            </choose>-->
+<!--            )-->
+<!--        </if>-->
+<!--        <if test="dateFrom != null &amp;&amp; dateFrom != ''">-->
+<!--            AND c.customer_created_at &gt;= #{dateFrom}-->
+<!--        </if>-->
+<!--        <if test="dateTo != null &amp;&amp; dateTo != ''">-->
+<!--            AND c.customer_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)-->
+<!--        </if>-->
+<!--        <if test="category != null &amp;&amp; category != ''">-->
+<!--            AND c.customer_category = #{category}-->
+<!--        </if>-->
+<!--        <if test="division != null &amp;&amp; division != ''">-->
+<!--            AND c.customer_division = #{division}-->
+<!--        </if>-->
+<!--    </sql>-->
+
+<!--    <sql id="CUSTOMER_ONLY_ORDER_KEYSET">-->
+<!--        <choose>-->
+<!--            &lt;!&ndash; 분류 + 상태 동시 정렬 &ndash;&gt;-->
+<!--            <when test="sortDivision and sortStatus">-->
+<!--                ORDER BY-->
+<!--                c.division_rank ASC,-->
+<!--                c.status_rank   ASC,-->
+<!--                CASE WHEN c.customer_status='재콜' THEN (c.customer_promise_time IS NULL) END ASC,-->
+<!--                CASE WHEN c.customer_status='재콜' THEN c.customer_promise_time END ASC,-->
+<!--                CASE WHEN c.customer_status&lt;&gt;'재콜' THEN c.customer_created_at END DESC,-->
+<!--                c.customer_id DESC-->
+<!--            </when>-->
+
+<!--            &lt;!&ndash; 상태 정렬 &ndash;&gt;-->
+<!--            <when test="sortStatus">-->
+<!--                ORDER BY-->
+<!--                c.status_rank   ASC,-->
+<!--                CASE WHEN c.customer_status='재콜' THEN (c.customer_promise_time IS NULL) END ASC,-->
+<!--                CASE WHEN c.customer_status='재콜' THEN c.customer_promise_time END ASC,-->
+<!--                CASE WHEN c.customer_status&lt;&gt;'재콜' THEN c.customer_created_at END DESC,-->
+<!--                c.customer_id DESC-->
+<!--            </when>-->
+
+<!--            &lt;!&ndash; 분류 정렬 (created_at DESC 추가!) &ndash;&gt;-->
+<!--            <when test="sortDivision">-->
+<!--                ORDER BY-->
+<!--                c.division_rank ASC,-->
+<!--                c.customer_created_at DESC,-->
+<!--                c.customer_id DESC-->
+<!--            </when>-->
+
+<!--            &lt;!&ndash; 기본 최신순 &ndash;&gt;-->
+<!--            <otherwise>-->
+<!--                ORDER BY-->
+<!--                c.customer_created_at DESC,-->
+<!--                c.customer_id DESC-->
+<!--            </otherwise>-->
+<!--        </choose>-->
+<!--    </sql>-->
+
+<!--    &lt;!&ndash; 검사/권한 &ndash;&gt;-->
+<!--    <select id="existsCustomerById" resultType="int">-->
+<!--        SELECT COUNT(*) FROM customers WHERE customer_id = #{customerId}-->
+<!--    </select>-->
+
+<!--    <select id="customerOwnedByCenter" resultType="int">-->
+<!--        SELECT COUNT(*)-->
+<!--        FROM customers c-->
+<!--                 JOIN users u ON u.user_id = c.user_id-->
+<!--        WHERE c.customer_id = #{customerId}-->
+<!--          AND u.center_id = #{centerId}-->
+<!--    </select>-->
+
+<!--    <select id="customerOwnedByUser" resultType="int">-->
+<!--        SELECT COUNT(*)-->
+<!--        FROM customers-->
+<!--        WHERE customer_id = #{customerId}-->
+<!--          AND user_id = #{userId}-->
+<!--    </select>-->
+
+<!--    &lt;!&ndash; 수정 &ndash;&gt;-->
+<!--    <update id="updateCustomerReservation">-->
+<!--        UPDATE customers-->
+<!--        SET customer_promise_time = #{when}-->
+<!--        WHERE customer_id = #{customerId}-->
+<!--    </update>-->
+
+<!--    <update id="updateCustomerStatus">-->
+<!--        UPDATE customers-->
+<!--        SET customer_status = #{status}-->
+<!--        WHERE customer_id = #{customerId}-->
+<!--    </update>-->
+
+<!--    &lt;!&ndash; 중복 숨김 &ndash;&gt;-->
+<!--    <update id="hideDuplicates">-->
+<!--        UPDATE customers_duplicate-->
+<!--        SET duplicate_display = 0-->
+<!--        WHERE duplicate_id IN-->
+<!--        <foreach collection="ids" item="id" open="(" separator="," close=")">-->
+<!--            #{id}-->
+<!--        </foreach>-->
+<!--    </update>-->
+
+<!--    <sql id="ADMIN_UNION_FILTERED">-->
+<!--        /* customers */-->
+<!--        SELECT-->
+<!--        c.customer_id          AS id,-->
+<!--        'CUSTOMER'             AS origin,-->
+<!--        c.customer_created_at  AS createdAt,-->
+<!--        u.user_name            AS staff,-->
+<!--        c.customer_division    AS division,-->
+<!--        c.customer_category    AS category,-->
+<!--        c.customer_name        AS name,-->
+<!--        c.customer_phone       AS phone,-->
+<!--        c.customer_source      AS source,-->
+<!--        c.customer_content     AS content,-->
+<!--        c.customer_memo        AS memo,-->
+<!--        c.customer_status      AS status,-->
+<!--        c.customer_promise_time AS promiseAt,-->
+<!--        /* ⚠ 여기서는 reservation 만들지 말기 (DATE_FORMAT 제거) */-->
+<!--        c.division_rank        AS division_rank,-->
+<!--        c.status_rank          AS status_rank-->
+<!--        FROM customers c-->
+<!--        LEFT JOIN users u ON u.user_id = c.user_id-->
+<!--        WHERE 1=1-->
+<!--        &lt;!&ndash; 날짜/카테고리/디비전 필터 푸시다운 &ndash;&gt;-->
+<!--        <if test="dateFrom != null and dateFrom != ''">-->
+<!--            AND c.customer_created_at &gt;= #{dateFrom}-->
+<!--        </if>-->
+<!--        <if test="dateTo != null and dateTo != ''">-->
+<!--            AND c.customer_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)-->
+<!--        </if>-->
+<!--        <if test="category != null and category != ''">-->
+<!--            AND c.customer_category = #{category}-->
+<!--        </if>-->
+<!--        <if test="division != null and division != ''">-->
+<!--            AND c.customer_division = #{division}-->
+<!--        </if>-->
+<!--        &lt;!&ndash; 키워드/가시권한별 전화 검색 푸시다운 &ndash;&gt;-->
+<!--        <if test="keyword != null and keyword != ''">-->
+<!--            AND (-->
+<!--            c.customer_name LIKE CONCAT('%', #{keyword}, '%')-->
+<!--            OR u.user_name   LIKE CONCAT('%', #{keyword}, '%')-->
+<!--            <choose>-->
+<!--                <when test="keywordDigits != null and keywordDigits != ''">-->
+<!--                    OR EXISTS (-->
+<!--                    SELECT 1 FROM phone_lookup pl-->
+<!--                    WHERE pl.customer_id = c.customer_id-->
+<!--                    AND (-->
+<!--                    pl.phone_digits LIKE CONCAT('%', #{keywordDigits}, '%')-->
+<!--                    OR pl.phone_mid = #{keywordDigits}-->
+<!--                    OR pl.phone_last4 = #{keywordDigits}-->
+<!--                    )-->
+<!--                    )-->
+<!--                </when>-->
+<!--                <otherwise>-->
+<!--                    OR c.customer_phone LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                </otherwise>-->
+<!--            </choose>-->
+<!--            )-->
+<!--        </if>-->
+
+<!--        UNION ALL-->
+
+<!--        /* duplicates */-->
+<!--        SELECT-->
+<!--        d.duplicate_id         AS id,-->
+<!--        'DUPLICATE'            AS origin,-->
+<!--        d.duplicate_created_at AS createdAt,-->
+<!--        u2.user_name           AS staff,-->
+<!--        '중복'                 AS division,-->
+<!--        d.duplicate_category   AS category,-->
+<!--        d.duplicate_name       AS name,-->
+<!--        c2.customer_phone      AS phone,-->
+<!--        d.duplicate_source     AS source,-->
+<!--        d.duplicate_content    AS content,-->
+<!--        d.duplicate_memo       AS memo,-->
+<!--        '없음'                 AS status,-->
+<!--        NULL                   AS promiseAt,-->
+<!--        d.division_rank        AS division_rank,-->
+<!--        d.status_rank          AS status_rank-->
+<!--        FROM customers_duplicate d-->
+<!--        JOIN customers c2 ON c2.customer_id = d.customer_id-->
+<!--        LEFT JOIN users u2 ON u2.user_id = c2.user_id-->
+<!--        WHERE d.duplicate_display = 1-->
+<!--        &lt;!&ndash; 날짜/카테고리 필터 푸시다운 &ndash;&gt;-->
+<!--        <if test="dateFrom != null and dateFrom != ''">-->
+<!--            AND d.duplicate_created_at &gt;= #{dateFrom}-->
+<!--        </if>-->
+<!--        <if test="dateTo != null and dateTo != ''">-->
+<!--            AND d.duplicate_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)-->
+<!--        </if>-->
+<!--        <if test="category != null and category != ''">-->
+<!--            AND d.duplicate_category = #{category}-->
+<!--        </if>-->
+<!--        &lt;!&ndash; 키워드/가시권한별 전화 검색 푸시다운 &ndash;&gt;-->
+<!--        <if test="keyword != null and keyword != ''">-->
+<!--            <choose>-->
+<!--                <when test='visible == "N"'>-->
+<!--                    AND (-->
+<!--                    d.duplicate_name LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                    OR u2.user_name  LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                    <if test="keywordDigits != null and keywordDigits != ''">-->
+<!--                        OR EXISTS (-->
+<!--                        SELECT 1-->
+<!--                        FROM phone_lookup pl-->
+<!--                        WHERE pl.customer_id = c2.customer_id-->
+<!--                        AND pl.phone_last4 = #{keywordDigits}-->
+<!--                        )-->
+<!--                    </if>-->
+<!--                    )-->
+<!--                </when>-->
+<!--                <otherwise>-->
+<!--                    AND (-->
+<!--                    d.duplicate_name LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                    OR u2.user_name  LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                    <choose>-->
+<!--                        <when test="keywordDigits != null and keywordDigits != ''">-->
+<!--                            OR EXISTS (-->
+<!--                            SELECT 1-->
+<!--                            FROM phone_lookup pl-->
+<!--                            WHERE pl.customer_id = c2.customer_id-->
+<!--                            AND (-->
+<!--                            pl.phone_digits LIKE CONCAT('%', #{keywordDigits}, '%')-->
+<!--                            OR pl.phone_mid = #{keywordDigits}-->
+<!--                            OR pl.phone_last4 = #{keywordDigits}-->
+<!--                            )-->
+<!--                            )-->
+<!--                        </when>-->
+<!--                        <otherwise>-->
+<!--                            OR c2.customer_phone LIKE CONCAT('%', #{keyword}, '%')-->
+<!--                        </otherwise>-->
+<!--                    </choose>-->
+<!--                    )-->
+<!--                </otherwise>-->
+<!--            </choose>-->
+<!--        </if>-->
+<!--    </sql>-->
+
+<!--    <sql id="ADMIN_CURSOR_DESC">-->
+<!--        <choose>-->
+<!--            <when test="sortDivision and sortStatus">-->
+<!--                <if test="cursorId != null">-->
+<!--                    AND (-->
+<!--                    t.division_rank &gt; #{cursorDivisionRank}-->
+<!--                    OR (t.division_rank = #{cursorDivisionRank} AND t.status_rank &gt; #{cursorStatusRank})-->
+<!--                    OR (-->
+<!--                    t.division_rank = #{cursorDivisionRank}-->
+<!--                    AND t.status_rank = #{cursorStatusRank}-->
+<!--                    AND (-->
+<!--                    (t.status_rank = 20 AND-->
+<!--                    IFNULL(t.promiseAt, '9999-12-31 23:59:59') &gt; IFNULL(#{cursorPromiseAt}, '9999-12-31 23:59:59')-->
+<!--                    )-->
+<!--                    OR (t.status_rank &lt;&gt; 20 AND-->
+<!--                    (t.createdAt &lt; #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))-->
+<!--                    )-->
+<!--                    )-->
+<!--                    )-->
+<!--                    )-->
+<!--                </if>-->
+<!--            </when>-->
+
+<!--            <when test="sortStatus">-->
+<!--                <if test="cursorId != null">-->
+<!--                    AND (-->
+<!--                    t.status_rank &gt; #{cursorStatusRank}-->
+<!--                    OR (-->
+<!--                    t.status_rank = #{cursorStatusRank}-->
+<!--                    AND (-->
+<!--                    (t.status_rank = 20 AND-->
+<!--                    IFNULL(t.promiseAt, '9999-12-31 23:59:59') &gt; IFNULL(#{cursorPromiseAt}, '9999-12-31 23:59:59')-->
+<!--                    )-->
+<!--                    OR (t.status_rank &lt;&gt; 20 AND-->
+<!--                    (t.createdAt &lt; #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))-->
+<!--                    )-->
+<!--                    )-->
+<!--                    )-->
+<!--                    )-->
+<!--                </if>-->
+<!--            </when>-->
+<!--        </choose>-->
+<!--    </sql>-->
+
+<!--    <sql id="ADMIN_CURSOR_ASC">-->
+<!--        <choose>-->
+<!--            <when test="sortDivision and sortStatus">-->
+<!--                <if test="cursorId != null">-->
+<!--                    AND (-->
+<!--                    t.division_rank &lt; #{cursorDivisionRank}-->
+<!--                    OR (t.division_rank = #{cursorDivisionRank} AND t.status_rank &lt; #{cursorStatusRank})-->
+<!--                    OR (-->
+<!--                    t.division_rank = #{cursorDivisionRank}-->
+<!--                    AND t.status_rank = #{cursorStatusRank}-->
+<!--                    AND (-->
+<!--                    (t.status_rank = 20 AND-->
+<!--                    IFNULL(t.promiseAt, '0000-01-01 00:00:00') &lt; IFNULL(#{cursorPromiseAt}, '0000-01-01 00:00:00')-->
+<!--                    )-->
+<!--                    OR (t.status_rank &lt;&gt; 20 AND-->
+<!--                    (t.createdAt > #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &gt; #{cursorId}))-->
+<!--                    )-->
+<!--                    )-->
+<!--                    )-->
+<!--                    )-->
+<!--                </if>-->
+<!--            </when>-->
+
+<!--            <when test="sortStatus">-->
+<!--                <if test="cursorId != null">-->
+<!--                    AND (-->
+<!--                    t.status_rank &lt; #{cursorStatusRank}-->
+<!--                    OR (-->
+<!--                    t.status_rank = #{cursorStatusRank}-->
+<!--                    AND (-->
+<!--                    (t.status_rank = 20 AND-->
+<!--                    IFNULL(t.promiseAt, '0000-01-01 00:00:00') &lt; IFNULL(#{cursorPromiseAt}, '0000-01-01 00:00:00')-->
+<!--                    )-->
+<!--                    OR (t.status_rank &lt;&gt; 20 AND-->
+<!--                    (t.createdAt > #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &gt; #{cursorId}))-->
+<!--                    )-->
+<!--                    )-->
+<!--                    )-->
+<!--                    )-->
+<!--                </if>-->
+<!--            </when>-->
+
+<!--            <when test="sortDivision">-->
+<!--                <if test="cursorId != null">-->
+<!--                    AND (-->
+<!--                    t.division_rank &lt; #{cursorDivisionRank}-->
+<!--                    OR (t.division_rank = #{cursorDivisionRank}-->
+<!--                    AND (t.createdAt &gt; #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &gt; #{cursorId}))-->
+<!--                    )-->
+<!--                    )-->
+<!--                </if>-->
+<!--            </when>-->
+
+<!--            <otherwise>-->
+<!--                <if test="cursorId != null">-->
+<!--                    AND (t.createdAt &gt; #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &gt; #{cursorId}))-->
+<!--                </if>-->
+<!--            </otherwise>-->
+<!--        </choose>-->
+<!--    </sql>-->
+
+<!--</mapper>-->
