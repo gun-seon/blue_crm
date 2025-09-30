@@ -160,6 +160,14 @@
     <!-- ===================== Admin 정렬 (최종 SELECT 전용) ===================== -->
     <sql id="ADMIN_ORDER">
         <choose>
+            <!-- 상태 필터가 '재콜'이면 예약 오름차순 고정 -->
+            <when test='status != null and status != "" and status == "재콜"'>
+                ORDER BY
+                (t.promiseAt IS NULL) ASC,  -- 예약 없는 거 뒤로
+                t.promiseAt ASC,
+                t.createdAt DESC,
+                t.id DESC
+            </when>
             <when test="sortDivision and sortStatus">
                 ORDER BY
                 t.division_rank ASC,
@@ -470,6 +478,14 @@
 
     <sql id="CUSTOMER_ONLY_ORDER_KEYSET">
         <choose>
+            <!-- 상태 필터가 '재콜'이면 예약 오름차순 고정 -->
+            <when test='status != null and status != "" and status == "재콜"'>
+                ORDER BY
+                (c.customer_promise_time IS NULL) ASC,
+                c.customer_promise_time ASC,
+                c.customer_created_at DESC,
+                c.customer_id DESC
+            </when>
             <when test="sortDivision and sortStatus">
                 ORDER BY
                 c.division_rank ASC,
