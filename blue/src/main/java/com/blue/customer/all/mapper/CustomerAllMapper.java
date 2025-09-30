@@ -26,6 +26,7 @@ public interface CustomerAllMapper {
       @Param("dateTo") String dateTo,
       @Param("category") String category,
       @Param("division") String division,
+      @Param("status") String status,
       @Param("sortDivision") boolean sortDivision,
       @Param("sortStatus") boolean sortStatus,
       @Param("visible") String visible
@@ -43,6 +44,7 @@ public interface CustomerAllMapper {
       @Param("dateTo") String dateTo,
       @Param("category") String category,
       @Param("division") String division,
+      @Param("status") String status,
       @Param("sortDivision") boolean sortDivision,
       @Param("sortStatus") boolean sortStatus,
       @Param("centerId") Long centerId
@@ -60,6 +62,7 @@ public interface CustomerAllMapper {
       @Param("dateTo") String dateTo,
       @Param("category") String category,
       @Param("division") String division,
+      @Param("status") String status,
       @Param("sortDivision") boolean sortDivision,
       @Param("sortStatus") boolean sortStatus,
       @Param("userId") Long userId
@@ -74,6 +77,7 @@ public interface CustomerAllMapper {
       @Param("dateTo") String dateTo,
       @Param("category") String category,
       @Param("division") String division,
+      @Param("status") String status,
       @Param("sortDivision") boolean sortDivision,
       @Param("sortStatus") boolean sortStatus,
       @Param("visible") String visible
@@ -88,6 +92,7 @@ public interface CustomerAllMapper {
       @Param("dateTo") String dateTo,
       @Param("category") String category,
       @Param("division") String division,
+      @Param("status") String status,
       @Param("sortDivision") boolean sortDivision,
       @Param("sortStatus") boolean sortStatus,
       @Param("centerId") Long centerId
@@ -102,6 +107,7 @@ public interface CustomerAllMapper {
       @Param("dateTo") String dateTo,
       @Param("category") String category,
       @Param("division") String division,
+      @Param("status") String status,
       @Param("sortDivision") boolean sortDivision,
       @Param("sortStatus") boolean sortStatus,
       @Param("userId") Long userId
@@ -113,6 +119,7 @@ public interface CustomerAllMapper {
                        @Param("dateTo") String dateTo,
                        @Param("category") String category,
                        @Param("division") String division,
+                       @Param("status") String status,
                        @Param("visible") String visible,
                        @Param("keywordDigits") String keywordDigits);
   
@@ -122,6 +129,7 @@ public interface CustomerAllMapper {
                          @Param("dateTo") String dateTo,
                          @Param("category") String category,
                          @Param("division") String division,
+                         @Param("status") String status,
                          @Param("centerId") Long centerId,
                          @Param("keywordDigits") String keywordDigits);
   
@@ -131,6 +139,7 @@ public interface CustomerAllMapper {
                        @Param("dateTo") String dateTo,
                        @Param("category") String category,
                        @Param("division") String division,
+                       @Param("status") String status,
                        @Param("userId") Long userId,
                        @Param("keywordDigits") String keywordDigits);
   

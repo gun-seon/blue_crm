@@ -2,8 +2,6 @@ package com.blue.customer.all.controller;
 
 import com.blue.customer.all.dto.*;
 import com.blue.customer.all.service.CustomerAllService;
-import com.blue.customer.common.memo.dto.MemoUpdateDto;
-import com.blue.customer.common.memo.service.MemoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -28,6 +26,7 @@ public class CustomerAllController {
       @RequestParam(required = false) String dateTo,
       @RequestParam(required = false) String category,
       @RequestParam(required = false) String division,
+      @RequestParam(required = false) String status,
       @RequestParam(required = false) String sort,  // 예: "division,status"
       @RequestParam(required = false) String mine,   // MANAGER: "Y"면 내 DB만
       @RequestParam(required=false) String divisionSort, // "on" | "off" | null
@@ -35,7 +34,7 @@ public class CustomerAllController {
   ) {
     return service.getAllKeyset(
         auth.getName(), size, cursorCreatedAt, cursorId,
-        keyword, dateFrom, dateTo, category, division, sort, mine,
+        keyword, dateFrom, dateTo, category, division, status, sort, mine,
         divisionSort, statusSort
     );
   }
@@ -55,6 +54,7 @@ public class CustomerAllController {
       @RequestParam(required = false) String dateTo,
       @RequestParam(required = false) String category,
       @RequestParam(required = false) String division,
+      @RequestParam(required = false) String status,
       @RequestParam(required = false) String sort,       // "division,status"
       @RequestParam(required = false) String mine,   // MANAGER: "Y"면 내 DB만
       @RequestParam(required=false) String divisionSort, // "on" | "off" | null
@@ -62,7 +62,7 @@ public class CustomerAllController {
   ) {
     return service.getKeysetAnchor(
         auth.getName(), windowIndex, size,
-        keyword, dateFrom, dateTo, category, division, sort, mine,
+        keyword, dateFrom, dateTo, category, division, status, sort, mine,
         divisionSort, statusSort
     );
   }
@@ -77,6 +77,7 @@ public class CustomerAllController {
       @RequestParam(required = false) String dateTo,
       @RequestParam(required = false) String category,
       @RequestParam(required = false) String division,
+      @RequestParam(required = false) String status,
       @RequestParam(required = false) String sort,    // "division,status" 플래그 문자열
       @RequestParam(required = false) String mine,   // MANAGER: "Y"면 내 DB만
       @RequestParam(required=false) String divisionSort, // "on" | "off" | null
@@ -84,7 +85,7 @@ public class CustomerAllController {
   ) {
     return service.getKeysetAnchorByPage(
         auth.getName(), pageNo, size,
-        keyword, dateFrom, dateTo, category, division, sort, mine,
+        keyword, dateFrom, dateTo, category, division, status, sort, mine,
         divisionSort, statusSort
     );
   }
@@ -98,6 +99,7 @@ public class CustomerAllController {
       @RequestParam(required = false) String dateTo,
       @RequestParam(required = false) String category,
       @RequestParam(required = false) String division,
+      @RequestParam(required = false) String status,
       @RequestParam(required = false) String sort,    // "division,status" 등
       @RequestParam(required = false) String mine,   // MANAGER: "Y"면 내 DB만
       @RequestParam(required=false) String divisionSort, // "on" | "off" | null
@@ -105,7 +107,7 @@ public class CustomerAllController {
   ) {
     return service.getKeysetAnchorLast(
         auth.getName(), size,
-        keyword, dateFrom, dateTo, category, division, sort, mine,
+        keyword, dateFrom, dateTo, category, division, status, sort, mine,
         divisionSort, statusSort
     );
   }

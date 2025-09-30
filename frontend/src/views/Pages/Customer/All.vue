@@ -7,14 +7,17 @@
         <!-- SUPERADMIN (본사) -->
         <ComponentCard
             v-if="role === 'SUPERADMIN'"
-            :selects="[ ['전체', '최초', '중복', '유효'] ]"
+            :selects="[
+                ['전체', '최초', '유효', '중복'],
+                ['전체', '부재1', '부재2', '부재3', '부재4', '부재5',
+                  '재콜', '신규', '가망', '자연풀', '카피', '거절', '없음', '회수'] ]"
             :buttons="['구분별 보기', '상태별 보기', '중복DB로 이동']"
             :active="adminActiveLabels"
             :showRefresh="true"
             :refreshing="isRefreshing"
             @refresh="onRefresh"
-            @changeSize="setSize"
-            @selectChange="onDivisionSelect"
+            @changeSize="onChangeSize"
+            @selectChange="onSelectChange"
             @buttonClick="onAdminButtonClick"
         >
           <PsnsTable
@@ -38,11 +41,13 @@
         <!-- MANAGER / STAFF -->
         <ComponentCard
             v-else
-            :buttons=managerButtons
+            :selects="[['전체', '부재1', '부재2', '부재3', '부재4', '부재5', '재콜', '신규', '가망', '자연풀', '카피', '거절']]"
+            :buttons="managerButtons"
             :showRefresh="true"
             :refreshing="isRefreshing"
             @refresh="onRefresh"
-            @changeSize="setSize"
+            @changeSize="onChangeSize"
+            @selectChange="onSelectChange"
             @buttonClick="onCommonButtonClick"
         >
           <PsnsTable
@@ -120,7 +125,7 @@ watch(
         keyword:  f.keyword  ?? '',
       })
       // 페이지네이션 초기화
-      await loadLastPageNo()
+      await reloadAfterFilterChange()
 
       // 선택 초기화(있으면)
       selectedRows.value = []
@@ -139,7 +144,7 @@ const {
   items, hasNext, loading, pageIndex,
   fetchData, prefetchForward, jumpByAnchor,
   goFirst, goPrev, goMinus2, goNext, goPlus2,
-  jumpWindow, setPageSize,
+  jumpWindow, setPageSize, setSize: _setSize,
   setFilters, patchFilters,
   cursors, currentFilters,
   pageDisplay, lastPageNo, goToPageAbsolute, goLast, loadLastPageNo
@@ -153,6 +158,8 @@ const {
     category: globalFilters.category ?? '',
     keyword:  globalFilters.keyword  ?? '',
     // 초기 정렬은 최신순. 토글 시 아래 버튼 핸들러에서 set/patch 한다.
+    division: null,   // selects[0]
+    status: null,     // selects[1]
     divisionSort: 'off',
     statusSort: 'off',
     sort: null,
@@ -166,9 +173,16 @@ const page = computed(() => pageIndex.value + 1);
 // totalPages 개념이 없으므로 null/0 처리(컴포넌트가 hasNext 기반으로 버튼 제어해야 함)
 const totalPages = computed(() => null);
 
-function setSize(n) {
-  setPageSize?.(n);   // 훅에 setPageSize가 없다면, 훅에서 setSize를 export하고 여기선 그걸 그대로 바인딩
-  fetchData();
+// function setSize(n) {
+//   setPageSize?.(Number(n));   // 훅에 setPageSize가 없다면, 훅에서 setSize를 export하고 여기선 그걸 그대로 바인딩
+//   reloadAfterFilterChange();
+// }
+
+async function onChangeSize(n) {
+  const s = Number(n)
+  if (!Number.isFinite(s) || s <= 0) return
+  await setPageSize(s)
+  await reloadAfterFilterChange()
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -213,7 +227,7 @@ const adminColumns = [
   { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon, disabled: (row)=> row.origin==='DUPLICATE' },
   { key: "status", label: "상태", type: "badge",
     editable: notDuplicate,
-    options: ["부재1","부재2","부재3","부재4","부재5","재콜","가망","완료","거절"] },
+    options: ["부재1","부재2","부재3","부재4","부재5","재콜","가망","자연풀","카피","거절"] },
   { key: "reservation", label: "예약", type: "date", editable: notDuplicate }
 ];
 
@@ -229,7 +243,7 @@ const commonColumns = [
   { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon, disabled: (row)=> row.origin==='DUPLICATE' },
   { key: "status", label: "상태", type: "badge",
     editable: notDuplicate,
-    options: ["부재1","부재2","부재3","부재4","부재5","재콜","가망","완료","거절"] },
+    options: ["부재1","부재2","부재3","부재4","부재5","재콜","가망","자연풀","카피","거절"] },
   { key: "reservation", label: "예약", type: "date", editable: notDuplicate }
 ];
 
@@ -290,10 +304,26 @@ function onMemoSaved(patch) {
 }
 
 // 구분 필터 셀렉트
-function onDivisionSelect({ value }) {
-  // "전체" → null
-  const division = (value === "전체") ? null : value;
-  patchFilters({ division });
+async function onSelectChange({ idx, value }) {
+  const v = (value === '전체') ? null : value;
+
+  if (role === 'SUPERADMIN') {
+    // SUPERADMIN: 0=구분, 1=상태 (필요 시 2=카테고리 등 확장)
+    if (idx === 0) await patchFilters({ division: v });
+    else if (idx === 1) await patchFilters({ status: v });
+    else return;
+  } else {
+    // MANAGER/STAFF: 0=상태
+    if (idx === 0) await patchFilters({ status: v });
+    else return;
+  }
+
+  await reloadAfterFilterChange();
+}
+
+async function reloadAfterFilterChange() {
+  await loadLastPageNo();
+  await refetchAndClamp();
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -350,7 +380,7 @@ async function onAdminButtonClick(btn) {
     statusSort,
     sort: (divisionSort === 'off' && statusSort === 'off') ? null : 'custom'
   });
-  await loadLastPageNo()
+  await reloadAfterFilterChange()
 
   // 선택 초기화
   selectedRows.value = [];
@@ -383,6 +413,7 @@ async function onCommonButtonClick(btn) {
       mine: mineOnly.value ? 'Y' : null,
       staffUserId: mineOnly.value ? auth.userId : null
     });
+    await reloadAfterFilterChange()
 
     // 선택 초기화
     selectedRows.value = [];
@@ -394,6 +425,7 @@ async function onCommonButtonClick(btn) {
   if (btn === "내 DB만 보기" && isManager.value) {
     mineOnly.value = true;
     await patchFilters({ mine: 'Y', staffUserId: auth.userId, sort: (sortMode.value === 'status') ? 'custom' : null });
+    await reloadAfterFilterChange()
     selectedRows.value = [];
     tableRef.value?.clearSelection?.();
     tableKey.value++;
@@ -403,6 +435,7 @@ async function onCommonButtonClick(btn) {
   if (btn === "전체 보기" && isManager.value) {
     mineOnly.value = false;
     await patchFilters({ mine: null, staffUserId: null, sort: (sortMode.value === 'status') ? 'custom' : null });
+    await reloadAfterFilterChange()
     selectedRows.value = [];
     tableRef.value?.clearSelection?.();
     tableKey.value++;

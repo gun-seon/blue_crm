@@ -21,11 +21,12 @@ import axios from '@/plugins/axios.js'
  */
 export function useKeysetQuery({
                                    baseUrl = '/api/work/db/keyset',
-                                   pageSize = 50,
+                                   pageSize: initialPageSize = 10,
                                    filters = {}
                                } = /** @type {UseKeysetOptions} */({})) {
 
     // 렌더 데이터/상태
+    const pageSize = ref(initialPageSize)
     const items = ref([])
     const hasNext = ref(true)
     const loading = ref(false)
@@ -47,7 +48,7 @@ export function useKeysetQuery({
         const mySeq = ++reqSeq;
 
         const params = {
-            size: pageSize,
+            size: pageSize.value,
             ...toRaw(currentFilters),
         };
 
@@ -115,7 +116,9 @@ export function useKeysetQuery({
         const curWindowIndex = Math.floor((currentPage - 1) / windowPages);
         const nextWindowIndex = curWindowIndex + 1; // 다음 블록 시작점
 
-        const params = { windowIndex: nextWindowIndex, size, ...toRaw(currentFilters) };
+        const effSize = Number(size) || pageSize.value;
+        const params  = { windowIndex: nextWindowIndex, size: effSize, ...toRaw(currentFilters) };
+
         const { data } = await axios.get(anchorUrl, { params });
         return { anchorCreatedAt: data.cursorCreatedAt, anchorId: data.cursorId };
     }
@@ -198,17 +201,28 @@ export function useKeysetQuery({
      * @returns {Promise<{anchorCreatedAt: string, anchorId: number}>}
      */
     async function fetchAnchor({ window = 200, size = pageSize, anchorParams = {}, anchorUrl = '/api/work/db/keyset/anchor' } = {}) {
-        const params = {
-            window, size,
-            ...toRaw(currentFilters),   // 현재와 동일한 WHERE/ORDER 조건 유지
-            ...anchorParams,
-        }
+        const effSize = Number(size) || pageSize.value;
+        const params  = { window, size: effSize, ...toRaw(currentFilters), ...anchorParams }
+
         const { data } = await axios.get(anchorUrl, { params })
         // 응답: { anchorCreatedAt, anchorId }
         return data
     }
 
     // ===== 필터/정렬 변경 =====
+
+    // 페이지 사이즈 변경
+    async function setPageSize(next) {
+        const n = Number(next)
+        if (!Number.isFinite(n) || n <= 0) return
+        if (pageSize.value === n) return
+        pageSize.value = n
+        // 키셋 포인터 초기화 후 첫 페이지 재조회
+        cursors.value = [{ at: null, id: null }]
+        pageIndex.value = 0
+        pageOffset.value = 0
+        await fetchData()
+    }
 
     /**
      * 필터 교체(텍스트 → 백엔드에서 불린/우선순위로 해석)
@@ -240,15 +254,19 @@ export function useKeysetQuery({
 
     // 마지막 페이지 메타 가져오기(점프하지 않고 lastPageNo만 갱신)
     async function loadLastPageNo({ size = pageSize, anchorUrl = '/api/work/db/keyset/anchor-last' } = {}) {
-        const params = { size, ...toRaw(currentFilters) }
+        const effSize = Number(size) || pageSize.value;
+        const params  = { size: effSize, ...toRaw(currentFilters) }
+
         const { data } = await axios.get(anchorUrl, { params })
         lastPageNo.value = data?.lastPageNo ?? null
         return lastPageNo.value
     }
 
-// 마지막 페이지로 이동
+    // 마지막 페이지로 이동
     async function goLast({ size = pageSize, anchorUrl = '/api/work/db/keyset/anchor-last' } = {}) {
-        const params = { size, ...toRaw(currentFilters) }
+        const effSize = Number(size) || pageSize.value;
+        const params  = { size: effSize, ...toRaw(currentFilters) }
+
         const { data } = await axios.get(anchorUrl, { params })
         lastPageNo.value = data?.lastPageNo ?? null
         await jumpByAnchor({
@@ -258,10 +276,12 @@ export function useKeysetQuery({
         })
     }
 
-// 절대 페이지로 이동
+    // 절대 페이지로 이동
     async function goToPageAbsolute(pageNo, { size = pageSize, anchorUrl = '/api/work/db/keyset/anchor-page' } = {}) {
         if (!pageNo || pageNo < 1) return
-        const params = { pageNo, size, ...toRaw(currentFilters) }
+        const effSize = Number(size) || pageSize.value;
+        const params  = { pageNo, size: effSize, ...toRaw(currentFilters) }
+
         const { data } = await axios.get(anchorUrl, { params })
         await jumpByAnchor({
             cursorCreatedAt: data.cursorCreatedAt,
@@ -280,6 +300,6 @@ export function useKeysetQuery({
         // anchors
         fetchAnchor, fetchAnchorWindow, jumpWindow,
         // filters
-        setFilters, patchFilters,
+        setFilters, patchFilters, setPageSize,
     }
 }

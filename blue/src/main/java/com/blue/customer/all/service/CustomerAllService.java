@@ -5,7 +5,6 @@ import com.blue.customer.all.mapper.CustomerAllMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -62,7 +61,7 @@ public class CustomerAllService {
   }
   
   private int calcPrelimit(int size) {
-    // size * 200, 최대 20,000
+    // size * 200, 최대 1,000
     int k = Math.max(1, size);
     long pre = (long) k * 200L;
     return (int) Math.min(pre, 1000L);
@@ -74,7 +73,7 @@ public class CustomerAllService {
       String callerEmail, int size,
       String cursorCreatedAt, Long cursorId,
       String keyword, String dateFrom, String dateTo,
-      String category, String division, String sort, String mine,
+      String category, String division, String status, String sort, String mine,
       String divisionSort, String statusSort
       ) {
     if (size <= 0) size = 10;
@@ -102,7 +101,7 @@ public class CustomerAllService {
         rows = mapper.findAllKeysetForAdmin(
             fetch, prelimit, cursorAt, cursorId,
             keyword, keywordDigits,
-            dateFrom, dateTo, category, division,
+            dateFrom, dateTo, category, division, status,
             /* 정렬 불린 */ flags.division, flags.status,
             /* 가시권한 */ me.getVisible()
         );
@@ -113,7 +112,7 @@ public class CustomerAllService {
           rows = mapper.findAllKeysetForStaff(
               fetch, prelimit, cursorAt, cursorId,
               keyword, keywordDigits,
-              dateFrom, dateTo, category, division,
+              dateFrom, dateTo, category, division, status,
               flags.division, flags.status,
               /* 본인 */ me.getUserId()
           );
@@ -121,7 +120,7 @@ public class CustomerAllService {
           rows = mapper.findAllKeysetForManager(
               fetch, prelimit, cursorAt, cursorId,
               keyword, keywordDigits,
-              dateFrom, dateTo, category, division,
+              dateFrom, dateTo, category, division, status,
               flags.division, flags.status,
               /* 센터 */ me.getCenterId()
           );
@@ -131,7 +130,7 @@ public class CustomerAllService {
         rows = mapper.findAllKeysetForStaff(
             fetch, prelimit, cursorAt, cursorId,
             keyword, keywordDigits,
-            dateFrom, dateTo, category, division,
+            dateFrom, dateTo, category, division, status,
             flags.division, flags.status,
             /* 본인 */ me.getUserId()
         );
@@ -172,7 +171,7 @@ public class CustomerAllService {
       int windowIndex,
       int size,
       String keyword, String dateFrom, String dateTo,
-      String category, String division, String sort, String mine,
+      String category, String division, String status, String sort, String mine,
       String divisionSort, String statusSort
   ) {
     if (windowIndex < 0) throw new IllegalArgumentException("windowIndex는 0 이상이어야 합니다.");
@@ -200,7 +199,7 @@ public class CustomerAllService {
     switch (me.getRole()) {
       case "SUPERADMIN" -> anchorRow = mapper.findAnchorForAdmin(
           prevIndex, // LIMIT 1 OFFSET prevIndex
-          keyword, keywordDigits, dateFrom, dateTo, category, division,
+          keyword, keywordDigits, dateFrom, dateTo, category, division, status,
           flags.division, flags.status, me.getVisible()
       );
       case "MANAGER" -> {
@@ -208,20 +207,20 @@ public class CustomerAllService {
         if (mineOnly) {
           anchorRow = mapper.findAnchorForStaff(
               prevIndex,
-              keyword, keywordDigits, dateFrom, dateTo, category, division,
+              keyword, keywordDigits, dateFrom, dateTo, category, division, status,
               flags.division, flags.status, me.getUserId()
           );
         } else {
           anchorRow = mapper.findAnchorForManager(
               prevIndex,
-              keyword, keywordDigits, dateFrom, dateTo, category, division,
+              keyword, keywordDigits, dateFrom, dateTo, category, division, status,
               flags.division, flags.status, me.getCenterId()
           );
         }
       }
       case "STAFF" -> anchorRow = mapper.findAnchorForStaff(
           prevIndex,
-          keyword, keywordDigits, dateFrom, dateTo, category, division,
+          keyword, keywordDigits, dateFrom, dateTo, category, division, status,
           flags.division, flags.status, me.getUserId()
       );
       default -> throw new IllegalStateException("Unknown role: " + me.getRole());
@@ -244,7 +243,7 @@ public class CustomerAllService {
       int pageNo,
       int size,
       String keyword, String dateFrom, String dateTo,
-      String category, String division, String sort, String mine,
+      String category, String division, String status, String sort, String mine,
       String divisionSort, String statusSort
   ) {
     if (pageNo < 1) throw new IllegalArgumentException("pageNo는 1 이상이어야 합니다.");
@@ -269,7 +268,7 @@ public class CustomerAllService {
     switch (me.getRole()) {
       case "SUPERADMIN" -> anchorRow = mapper.findAnchorForAdmin(
           prevIndex,
-          keyword, keywordDigits, dateFrom, dateTo, category, division,
+          keyword, keywordDigits, dateFrom, dateTo, category, division, status,
           flags.division, flags.status, me.getVisible()
       );
       case "MANAGER" -> {
@@ -277,20 +276,20 @@ public class CustomerAllService {
         if (mineOnly) {
           anchorRow = mapper.findAnchorForStaff(
               prevIndex,
-              keyword, keywordDigits, dateFrom, dateTo, category, division,
+              keyword, keywordDigits, dateFrom, dateTo, category, division, status,
               flags.division, flags.status, me.getUserId()
           );
         } else {
           anchorRow = mapper.findAnchorForManager(
               prevIndex,
-              keyword, keywordDigits, dateFrom, dateTo, category, division,
+              keyword, keywordDigits, dateFrom, dateTo, category, division, status,
               flags.division, flags.status, me.getCenterId()
           );
         }
       }
       case "STAFF" -> anchorRow = mapper.findAnchorForStaff(
           prevIndex,
-          keyword, keywordDigits, dateFrom, dateTo, category, division,
+          keyword, keywordDigits, dateFrom, dateTo, category, division, status,
           flags.division, flags.status, me.getUserId()
       );
       default -> throw new IllegalStateException("Unknown role: " + me.getRole());
@@ -311,7 +310,7 @@ public class CustomerAllService {
   public CursorAnchorLast getKeysetAnchorLast(
       String callerEmail, int size,
       String keyword, String dateFrom, String dateTo,
-      String category, String division, String sort, String mine,
+      String category, String division, String status, String sort, String mine,
       String divisionSort, String statusSort
   ) {
     if (size <= 0) size = 10;
@@ -327,7 +326,7 @@ public class CustomerAllService {
     switch (me.getRole()) {
       case "SUPERADMIN" -> {
         total = mapper.countAllForAdmin(
-            keyword, dateFrom, dateTo, category, division,
+            keyword, dateFrom, dateTo, category, division, status,
             me.getVisible(), keywordDigits
         );
       }
@@ -335,19 +334,19 @@ public class CustomerAllService {
         boolean mineOnly = "Y".equalsIgnoreCase(mine);
         if (mineOnly) {
           total = mapper.countAllForStaff(
-              keyword, dateFrom, dateTo, category, division,
+              keyword, dateFrom, dateTo, category, division, status,
               me.getUserId(), keywordDigits
           );
         } else {
           total = mapper.countAllForManager(
-              keyword, dateFrom, dateTo, category, division,
+              keyword, dateFrom, dateTo, category, division, status,
               me.getCenterId(), keywordDigits
           );
         }
       }
       case "STAFF" -> {
         total = mapper.countAllForStaff(
-            keyword, dateFrom, dateTo, category, division,
+            keyword, dateFrom, dateTo, category, division, status,
             me.getUserId(), keywordDigits
         );
       }
@@ -373,7 +372,7 @@ public class CustomerAllService {
     switch (me.getRole()) {
       case "SUPERADMIN" -> anchorRow = mapper.findAnchorForAdmin(
           prevIndex,
-          keyword, keywordDigits, dateFrom, dateTo, category, division,
+          keyword, keywordDigits, dateFrom, dateTo, category, division, status,
           flags.division, flags.status, me.getVisible()
       );
       case "MANAGER" -> {
@@ -381,20 +380,20 @@ public class CustomerAllService {
         if (mineOnly) {
           anchorRow = mapper.findAnchorForStaff(
               prevIndex,
-              keyword, keywordDigits, dateFrom, dateTo, category, division,
+              keyword, keywordDigits, dateFrom, dateTo, category, division, status,
               flags.division, flags.status, me.getUserId()
           );
         } else {
           anchorRow = mapper.findAnchorForManager(
               prevIndex,
-              keyword, keywordDigits, dateFrom, dateTo, category, division,
+              keyword, keywordDigits, dateFrom, dateTo, category, division, status,
               flags.division, flags.status, me.getCenterId()
           );
         }
       }
       case "STAFF" -> anchorRow = mapper.findAnchorForStaff(
           prevIndex,
-          keyword, keywordDigits, dateFrom, dateTo, category, division,
+          keyword, keywordDigits, dateFrom, dateTo, category, division, status,
           flags.division, flags.status, me.getUserId()
       );
       default -> throw new IllegalStateException("Unknown role: " + me.getRole());
