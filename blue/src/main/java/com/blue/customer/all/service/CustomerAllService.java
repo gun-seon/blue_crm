@@ -91,6 +91,19 @@ public class CustomerAllService {
     LocalDateTime cursorAt = parseCursor(cursorCreatedAt);
     String keywordDigits = extractDigits(keyword);
     
+    // 구분/상태 정렬 시 필요한 커서 메타 (rank/예약)
+    Integer cursorDivisionRank = null;
+    Integer cursorStatusRank   = null;
+    LocalDateTime cursorPromiseAt = null;
+    if ((flags.division || flags.status) && cursorId != null && cursorAt != null) {
+      CursorMeta meta = mapper.findCursorMeta(cursorId, cursorAt);
+      if (meta != null) {
+        cursorDivisionRank = meta.getDivisionRank();
+        cursorStatusRank   = meta.getStatusRank();
+        cursorPromiseAt    = meta.getPromiseAt(); // 재콜일 때만 의미
+      }
+    }
+    
     // UNION prelimit 크게
     int prelimit = calcPrelimit(size);
     
@@ -103,7 +116,8 @@ public class CustomerAllService {
             keyword, keywordDigits,
             dateFrom, dateTo, category, division, status,
             /* 정렬 불린 */ flags.division, flags.status,
-            /* 가시권한 */ me.getVisible()
+            /* 가시권한 */ me.getVisible(),
+            /* 커서 메타 */ cursorDivisionRank, cursorStatusRank, cursorPromiseAt
         );
       }
       case "MANAGER" -> {
@@ -114,7 +128,8 @@ public class CustomerAllService {
               keyword, keywordDigits,
               dateFrom, dateTo, category, division, status,
               flags.division, flags.status,
-              /* 본인 */ me.getUserId()
+              /* 본인 */ me.getUserId(),
+              /* 커서 메타 */ cursorDivisionRank, cursorStatusRank, cursorPromiseAt
           );
         } else {
           rows = mapper.findAllKeysetForManager(
@@ -122,7 +137,8 @@ public class CustomerAllService {
               keyword, keywordDigits,
               dateFrom, dateTo, category, division, status,
               flags.division, flags.status,
-              /* 센터 */ me.getCenterId()
+              /* 센터 */ me.getCenterId(),
+              /* 커서 메타 */ cursorDivisionRank, cursorStatusRank, cursorPromiseAt
           );
         }
       }
@@ -132,7 +148,8 @@ public class CustomerAllService {
             keyword, keywordDigits,
             dateFrom, dateTo, category, division, status,
             flags.division, flags.status,
-            /* 본인 */ me.getUserId()
+            /* 본인 */ me.getUserId(),
+            /* 커서 메타 */ cursorDivisionRank, cursorStatusRank, cursorPromiseAt
         );
       }
       default -> throw new IllegalStateException("Unknown role: " + me.getRole());

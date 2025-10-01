@@ -210,10 +210,12 @@
                     t.division_rank = #{cursorDivisionRank}
                     AND t.status_rank = #{cursorStatusRank}
                     AND (
-                    (t.status_rank = 20 AND
-                    IFNULL(t.promiseAt, '9999-12-31 23:59:59')
-                    &gt; IFNULL(#{cursorPromiseAt}, '9999-12-31 23:59:59')
-                    )
+                            (t.status_rank = 20 AND (
+                                (t.promiseAt IS NULL AND #{cursorPromiseAt} IS NOT NULL)
+                                OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NULL)
+                                OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NOT NULL AND t.promiseAt > #{cursorPromiseAt})
+                            )
+                        )
                     OR (t.status_rank &lt;&gt; 20 AND
                     (t.createdAt &lt; #{cursorAt}
                     OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))
@@ -232,9 +234,11 @@
                     OR (
                     t.status_rank = #{cursorStatusRank}
                     AND (
-                    (t.status_rank = 20 AND
-                    IFNULL(t.promiseAt, '9999-12-31 23:59:59')
-                    &gt; IFNULL(#{cursorPromiseAt}, '9999-12-31 23:59:59')
+                        t.status_rank = 20 AND (
+                            (t.promiseAt IS NULL AND #{cursorPromiseAt} IS NOT NULL)
+                            OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NULL)
+                            OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NOT NULL AND t.promiseAt &gt; #{cursorPromiseAt})
+                        )
                     )
                     OR (t.status_rank &lt;&gt; 20 AND
                     (t.createdAt &lt; #{cursorAt}
@@ -283,9 +287,11 @@
                     t.division_rank = #{cursorDivisionRank}
                     AND t.status_rank = #{cursorStatusRank}
                     AND (
-                    (t.status_rank = 20 AND
-                    IFNULL(t.promiseAt, '0000-01-01 00:00:00')
-                    &lt; IFNULL(#{cursorPromiseAt}, '0000-01-01 00:00:00')
+                        t.status_rank = 20 AND (
+                            (t.promiseAt IS NULL AND #{cursorPromiseAt} IS NOT NULL)
+                            OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NULL)
+                            OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NOT NULL AND t.promiseAt &lt; #{cursorPromiseAt})
+                        )
                     )
                     OR (t.status_rank &lt;&gt; 20 AND
                     (t.createdAt &gt; #{cursorAt}
@@ -305,9 +311,11 @@
                     OR (
                     t.status_rank = #{cursorStatusRank}
                     AND (
-                    (t.status_rank = 20 AND
-                    IFNULL(t.promiseAt, '0000-01-01 00:00:00')
-                    &lt; IFNULL(#{cursorPromiseAt}, '0000-01-01 00:00:00')
+                        t.status_rank = 20 AND (
+                            (t.promiseAt IS NULL AND #{cursorPromiseAt} IS NOT NULL)
+                            OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NULL)
+                            OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NOT NULL AND t.promiseAt &lt; #{cursorPromiseAt})
+                        )
                     )
                     OR (t.status_rank &lt;&gt; 20 AND
                     (t.createdAt &gt; #{cursorAt}
@@ -534,10 +542,39 @@
         JOIN users u ON u.user_id = c.user_id
         WHERE c.user_id IN (SELECT user_id FROM users WHERE center_id = #{centerId})
         <include refid="CUSTOMER_ONLY_FILTERS"/>
-        <if test="cursorAt != null">
-            AND (c.customer_created_at &lt; #{cursorAt}
-            OR (c.customer_created_at = #{cursorAt} AND c.customer_id &lt; #{cursorId}))
-        </if>
+        <choose>
+
+            <!-- 상태만 정렬 -->
+            <when test="sortStatus">
+                <if test="cursorId != null">
+                    AND (
+                    c.status_rank &gt; #{cursorStatusRank}
+                    OR (
+                    c.status_rank = #{cursorStatusRank}
+                    AND (
+                    (c.status_rank = 20 AND (
+                    (c.customer_promise_time IS NULL AND #{cursorPromiseAt} IS NOT NULL)
+                    OR (c.customer_promise_time IS NOT NULL AND #{cursorPromiseAt} IS NULL)
+                    OR (c.customer_promise_time IS NOT NULL AND #{cursorPromiseAt} IS NOT NULL AND c.customer_promise_time &gt; #{cursorPromiseAt})
+                    ))
+                    OR (c.status_rank &lt;&gt; 20 AND
+                    (c.customer_created_at &lt; #{cursorAt}
+                    OR (c.customer_created_at = #{cursorAt} AND c.customer_id &lt; #{cursorId}))
+                    )
+                    )
+                    )
+                    )
+                </if>
+            </when>
+
+            <!-- 기본 최신순(createdAt DESC, id DESC) -->
+            <otherwise>
+                <if test="cursorId != null">
+                    AND (c.customer_created_at &lt; #{cursorAt}
+                    OR (c.customer_created_at = #{cursorAt} AND c.customer_id &lt; #{cursorId}))
+                </if>
+            </otherwise>
+        </choose>
         <include refid="CUSTOMER_ONLY_ORDER_KEYSET"/>
         LIMIT #{limit}
     </select>
@@ -561,10 +598,39 @@
         LEFT JOIN users u ON u.user_id = c.user_id
         WHERE c.user_id = #{userId}
         <include refid="CUSTOMER_ONLY_FILTERS"/>
-        <if test="cursorAt != null">
-            AND (c.customer_created_at &lt; #{cursorAt}
-            OR (c.customer_created_at = #{cursorAt} AND c.customer_id &lt; #{cursorId}))
-        </if>
+        <choose>
+
+            <!-- 상태만 정렬 -->
+            <when test="sortStatus">
+                <if test="cursorId != null">
+                    AND (
+                    c.status_rank &gt; #{cursorStatusRank}
+                    OR (
+                    c.status_rank = #{cursorStatusRank}
+                    AND (
+                    (c.status_rank = 20 AND (
+                    (c.customer_promise_time IS NULL AND #{cursorPromiseAt} IS NOT NULL)
+                    OR (c.customer_promise_time IS NOT NULL AND #{cursorPromiseAt} IS NULL)
+                    OR (c.customer_promise_time IS NOT NULL AND #{cursorPromiseAt} IS NOT NULL AND c.customer_promise_time &gt; #{cursorPromiseAt})
+                    ))
+                    OR (c.status_rank &lt;&gt; 20 AND
+                    (c.customer_created_at &lt; #{cursorAt}
+                    OR (c.customer_created_at = #{cursorAt} AND c.customer_id &lt; #{cursorId}))
+                    )
+                    )
+                    )
+                    )
+                </if>
+            </when>
+
+            <!-- 기본 최신순(createdAt DESC, id DESC) -->
+            <otherwise>
+                <if test="cursorId != null">
+                    AND (c.customer_created_at &lt; #{cursorAt}
+                    OR (c.customer_created_at = #{cursorAt} AND c.customer_id &lt; #{cursorId}))
+                </if>
+            </otherwise>
+        </choose>
         <include refid="CUSTOMER_ONLY_ORDER_KEYSET"/>
         LIMIT #{limit}
     </select>
@@ -626,8 +692,34 @@
     <select id="countAllForStaff" resultType="int">
         SELECT COUNT(*)
         FROM customers c
+        LEFT JOIN users u ON u.user_id = c.user_id
         WHERE c.user_id = #{userId}
         <include refid="CUSTOMER_ONLY_FILTERS"/>
+    </select>
+
+    <!-- 커서 메타 -->
+    <select id="findCursorMeta" resultType="com.blue.customer.all.dto.CursorMeta">
+        SELECT t.division_rank    AS divisionRank,
+               t.status_rank      AS statusRank,
+               t.promiseAt        AS promiseAt
+        FROM (
+                 SELECT c.customer_id            AS id,
+                        c.customer_created_at    AS createdAt,
+                        c.division_rank          AS division_rank,
+                        c.status_rank            AS status_rank,
+                        c.customer_promise_time  AS promiseAt
+                 FROM customers c
+                 UNION ALL
+                 SELECT d.duplicate_id           AS id,
+                        d.duplicate_created_at   AS createdAt,
+                        d.division_rank          AS division_rank,
+                        d.status_rank            AS status_rank,
+                        NULL                     AS promiseAt
+                 FROM customers_duplicate d
+             ) t
+        WHERE t.id = #{id}
+          AND t.createdAt = #{cursorAt}
+        LIMIT 1
     </select>
 
     <!-- ===================== 검사/권한/수정 ===================== -->

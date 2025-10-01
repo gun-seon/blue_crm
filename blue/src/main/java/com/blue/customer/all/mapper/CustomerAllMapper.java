@@ -1,6 +1,7 @@
 package com.blue.customer.all.mapper;
 
 import com.blue.customer.all.dto.AllDbRowDto;
+import com.blue.customer.all.dto.CursorMeta;
 import com.blue.customer.all.dto.UserContextDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -29,7 +30,10 @@ public interface CustomerAllMapper {
       @Param("status") String status,
       @Param("sortDivision") boolean sortDivision,
       @Param("sortStatus") boolean sortStatus,
-      @Param("visible") String visible
+      @Param("visible") String visible,
+      @Param("cursorDivisionRank") Integer cursorDivisionRank,
+      @Param("cursorStatusRank") Integer cursorStatusRank,
+      @Param("cursorPromiseAt") LocalDateTime cursorPromiseAt
   );
   
   // MANAGER (센터 범위)
@@ -47,7 +51,10 @@ public interface CustomerAllMapper {
       @Param("status") String status,
       @Param("sortDivision") boolean sortDivision,
       @Param("sortStatus") boolean sortStatus,
-      @Param("centerId") Long centerId
+      @Param("centerId") Long centerId,
+      @Param("cursorDivisionRank") Integer cursorDivisionRank,
+      @Param("cursorStatusRank") Integer cursorStatusRank,
+      @Param("cursorPromiseAt") LocalDateTime cursorPromiseAt
   );
   
   // STAFF (본인 범위)
@@ -65,7 +72,16 @@ public interface CustomerAllMapper {
       @Param("status") String status,
       @Param("sortDivision") boolean sortDivision,
       @Param("sortStatus") boolean sortStatus,
-      @Param("userId") Long userId
+      @Param("userId") Long userId,
+      @Param("cursorDivisionRank") Integer cursorDivisionRank,
+      @Param("cursorStatusRank") Integer cursorStatusRank,
+      @Param("cursorPromiseAt") LocalDateTime cursorPromiseAt
+  );
+  
+  // 커서 메타(division/status rank, promiseAt)
+  CursorMeta findCursorMeta(
+      @Param("id") Long id,
+      @Param("cursorAt") LocalDateTime cursorAt
   );
   
   // SUPERADMIN: 합본(UNION)에서 ORDER 적용 후 LIMIT 1 OFFSET #{offset}

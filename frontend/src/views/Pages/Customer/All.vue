@@ -235,7 +235,6 @@ const adminColumns = [
 const commonColumns = [
   { key: "createdAt", label: "DB생성일", type: "text" },
   { key: "staff", label: "담당자", type: "text" },
-  { key: "category", label: "카테고리", type: "badge", options: ["주식", "코인"] },
   { key: "name", label: "이름", type: "text"},
   { key: "phone", label: "전화번호", type: "text" },
   { key: "source", label: "DB출처", type: "text", ellipsis: { width: 100 } },
