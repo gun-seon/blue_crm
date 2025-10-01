@@ -210,15 +210,26 @@
                     t.division_rank = #{cursorDivisionRank}
                     AND t.status_rank = #{cursorStatusRank}
                     AND (
-                            (t.status_rank = 20 AND (
-                                (t.promiseAt IS NULL AND #{cursorPromiseAt} IS NOT NULL)
-                                OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NULL)
-                                OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NOT NULL AND t.promiseAt > #{cursorPromiseAt})
-                            )
-                        )
-                    OR (t.status_rank &lt;&gt; 20 AND
-                    (t.createdAt &lt; #{cursorAt}
-                    OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))
+                    /* === 재콜(20): promiseAt ASC(NULL LAST) 규칙을 커서에도 1:1 반영 === */
+                    (t.status_rank = 20 AND (
+                    /* 커서가 NOT NULL이면: NOT NULL 우선 → 값 ASC → 동률이면 createdAt DESC,id DESC */
+                    (#{cursorPromiseAt} IS NOT NULL AND (
+                    (t.promiseAt IS NULL) /* NULL LAST: 뒤쪽 버킷 */
+                    OR (t.promiseAt IS NOT NULL AND t.promiseAt &gt; #{cursorPromiseAt})
+                    OR (t.promiseAt = #{cursorPromiseAt} AND
+                    (t.createdAt &lt; #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))
+                    )
+                    ))
+                    OR
+                    /* 커서가 NULL이면: NULL 버킷 내부에서 createdAt DESC,id DESC로 전진 */
+                    (#{cursorPromiseAt} IS NULL AND t.promiseAt IS NULL AND
+                    (t.createdAt &lt; #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))
+                    )
+                    ))
+                    OR
+                    /* 비재콜: createdAt DESC, id DESC */
+                    (t.status_rank &lt;&gt; 20 AND
+                    (t.createdAt &lt; #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))
                     )
                     )
                     )
@@ -228,21 +239,31 @@
 
             <!-- 상태만 정렬 -->
             <when test="sortStatus">
-                <if test="cursorId != null">
+                <if test="cursorId != null and cursorStatusRank != null">
                     AND (
                     t.status_rank &gt; #{cursorStatusRank}
                     OR (
                     t.status_rank = #{cursorStatusRank}
                     AND (
-                        t.status_rank = 20 AND (
-                            (t.promiseAt IS NULL AND #{cursorPromiseAt} IS NOT NULL)
-                            OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NULL)
-                            OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NOT NULL AND t.promiseAt &gt; #{cursorPromiseAt})
-                        )
+                    /* 재콜: NULL 우선 → 값 ASC → 동률이면 createdAt DESC, id DESC */
+                    (t.status_rank = 20 AND (
+                    /* NULL 우선성 */
+                    (t.promiseAt IS NULL AND #{cursorPromiseAt} IS NOT NULL)
+                    OR
+                    ( ( (t.promiseAt IS NULL) = (#{cursorPromiseAt} IS NULL) ) AND (
+                    /* 값 비교(ASC) */
+                    (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NOT NULL AND t.promiseAt &gt; #{cursorPromiseAt})
+                    OR
+                    /* 값까지 동률 ⇒ 최종 타이브레이커 (DESC) */
+                    ( ( (t.promiseAt IS NULL AND #{cursorPromiseAt} IS NULL) OR t.promiseAt = #{cursorPromiseAt} ) AND
+                    (t.createdAt &lt; #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))
                     )
-                    OR (t.status_rank &lt;&gt; 20 AND
-                    (t.createdAt &lt; #{cursorAt}
-                    OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))
+                    ))
+                    ))
+                    OR
+                    /* 비재콜: createdAt DESC, id DESC */
+                    (t.status_rank &lt;&gt; 20 AND
+                    (t.createdAt &lt; #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &lt; #{cursorId}))
                     )
                     )
                     )
@@ -287,15 +308,25 @@
                     t.division_rank = #{cursorDivisionRank}
                     AND t.status_rank = #{cursorStatusRank}
                     AND (
-                        t.status_rank = 20 AND (
-                            (t.promiseAt IS NULL AND #{cursorPromiseAt} IS NOT NULL)
-                            OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NULL)
-                            OR (t.promiseAt IS NOT NULL AND #{cursorPromiseAt} IS NOT NULL AND t.promiseAt &lt; #{cursorPromiseAt})
-                        )
+                    /* 재콜(20): promiseAt ASC(NULL LAST)의 역방향 커서 */
+                    (t.status_rank = 20 AND (
+                    /* 커서가 NOT NULL이면: 값은 역방향, 동률이면 createdAt ASC, id ASC */
+                    (#{cursorPromiseAt} IS NOT NULL AND (
+                    (t.promiseAt IS NOT NULL AND t.promiseAt &lt; #{cursorPromiseAt})
+                    OR (t.promiseAt = #{cursorPromiseAt} AND
+                    (t.createdAt &gt; #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &gt; #{cursorId}))
                     )
-                    OR (t.status_rank &lt;&gt; 20 AND
-                    (t.createdAt &gt; #{cursorAt}
-                    OR (t.createdAt = #{cursorAt} AND t.id &gt; #{cursorId}))
+                    ))
+                    OR
+                    /* 커서가 NULL이면: NULL 버킷 내부에서 createdAt ASC, id ASC 전진 */
+                    (#{cursorPromiseAt} IS NULL AND t.promiseAt IS NULL AND
+                    (t.createdAt &gt; #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &gt; #{cursorId}))
+                    )
+                    ))
+                    OR
+                    /* 비재콜: createdAt ASC, id ASC */
+                    (t.status_rank &lt;&gt; 20 AND
+                    (t.createdAt &gt; #{cursorAt} OR (t.createdAt = #{cursorAt} AND t.id &gt; #{cursorId}))
                     )
                     )
                     )

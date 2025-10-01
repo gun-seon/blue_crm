@@ -542,23 +542,6 @@ const badgeClass = (value) => {
 }
 
 /* 페이지네이션 */
-// const visiblePages = computed(() => {
-//   const total = props.totalPages
-//   const current = props.page
-//   const delta = 2
-//   const pages = []
-//   if (total <= 7) { for (let i=1;i<=total;i++) pages.push(i); return pages }
-//   if (current <= 3) { pages.push(1,2,3,4,5,'...',total) }
-//   else if (current >= total - 2) { pages.push(1,'...',total-4,total-3,total-2,total-1,total) }
-//   else { pages.push(1,'...',current-delta,current-1,current,current+1,current+delta,'...',total) }
-//   return pages
-// })
-
-// 숫자 리스트는 "끝 숫자"를 쓰지 않고, 현재 주변만 보여준다.
-/**
- * 이벤트: 부모에서 changePage(payload) 처리
- *  - 'first' | 'next' | 숫자(n) | {type:'anchorWindow', windowPages}
- */
 
 /**
  * 숫자 페이지 목록
@@ -567,34 +550,37 @@ const badgeClass = (value) => {
  * - 예) page=100 → [1, '...', 98, 99, 100, 101, 102, '...']
  */
 const visiblePages = computed(() => {
-  const cur = props.page
+  const cur   = Math.max(1, props.page)
+  const total = Number.isFinite(props.totalPages) ? Math.max(0, props.totalPages) : null
   const delta = 2
 
-  // totalPages를 아는 경우: 끝 숫자를 신뢰하고 그 범위 안에서만 표시
-  if (Number.isFinite(props.totalPages) && props.totalPages > 0) {
-    const total = Math.max(1, props.totalPages)
-    const pages = [1]
+  // 총 페이지가 0(=미계산/조회실패 등)이면 1만 노출
+  if (total === 0) return [1]
 
-    if (total === 1) return pages
-    // 중앙 구간은 2 ~ (total-1) 사이로 클램프
-    const start = Math.max(2, Math.min(total - 1, cur - delta))
-    const end   = Math.max(2, Math.min(total - 1, cur + delta))
+  // 총 페이지가 1/2/3이면 정확히 1..total만 노출 (초기 문제 해결)
+  if (total && total <= 3) return Array.from({ length: total }, (_, i) => i + 1)
 
-    if (start > 2) pages.push('...')
-    for (let i = start; i <= end; i++) pages.push(i)
-    if (end < total - 1) pages.push('...')
+  // 공통 로직: 1은 항상 표시
+  const pages = [1]
 
-    pages.push(total)
-    return pages
+  // 중앙 구간 계산 (총 페이지를 알면 그 안으로, 모르면 cur 기준 좌우만)
+  const start = Math.max(2, cur - delta)
+  const end   = total ? Math.min(total - 1, cur + delta) : (cur + delta)
+
+  if (start > 2) pages.push('...')
+
+  for (let i = start; i <= end; i++) {
+    if (!total || (i >= 2 && i <= (total - 1))) pages.push(i)
   }
 
-  // totalPages를 모르는 경우: hasNext 기반으로 현재 주변만 노출
-  const pages = [1]
-  if (cur - delta > 2) pages.push('...')
-  const start = Math.max(2, cur - delta)
-  const end   = cur + delta
-  for (let i = start; i <= end; i++) if (i >= 2) pages.push(i)
-  if (props.hasNext) pages.push('...')
+  // 꼬리 쪽 표시: 총 페이지를 알면 total-1보다 뒤에 '...' 추가,
+  // 모르면 hasNext가 true일 때만 '...' 표시
+  const needTailDots = total ? (end < total - 1) : !!props.hasNext
+  if (needTailDots) pages.push('...')
+
+  // 총 페이지를 알 때만 마지막 숫자(total) 붙임
+  if (total) pages.push(total)
+
   return pages
 })
 

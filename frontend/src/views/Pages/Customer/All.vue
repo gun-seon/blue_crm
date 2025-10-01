@@ -194,6 +194,7 @@ async function onRefresh() {
   try {
     // 예시: 수동 새로고침 트리거
     await axios.post('/api/sheets/refresh?sid=1');
+    await loadLastPageNo();
     await refetchAndClamp();
   } catch (err) {
     console.error('수동 새로고침 실패', err);
@@ -304,7 +305,7 @@ function onMemoSaved(patch) {
 
 // 구분 필터 셀렉트
 async function onSelectChange({ idx, value }) {
-  const v = (value === '전체') ? null : value;
+  const v = (value === '전체' || value === '구분 전체' || value === '상태 전체') ? null : value;
 
   if (role === 'SUPERADMIN') {
     // SUPERADMIN: 0=구분, 1=상태 (필요 시 2=카테고리 등 확장)
