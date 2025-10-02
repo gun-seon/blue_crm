@@ -116,19 +116,23 @@
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">기간내 DB 갯수 (중복 포함)</span>
-              <b class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbRangeWithDup.toLocaleString() }}</b>
+              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbRangeWithDup.toLocaleString() }}</b>
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">기간내 DB 갯수 (유효DB만)</span>
-              <b class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbRangeOnly.toLocaleString() }}</b>
+              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbRangeOnly.toLocaleString() }}</b>
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">전체 DB 갯수 (중복 포함)</span>
-              <b class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbAllWithDup.toLocaleString() }}</b>
+              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbAllWithDup.toLocaleString() }}</b>
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">전체 DB 갯수 (유효DB만)</span>
-              <b class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbAllOnly.toLocaleString() }}</b>
+              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbAllOnly.toLocaleString() }}</b>
             </li>
           </ul>
         </div>
@@ -317,10 +321,38 @@
       </div>
     </Teleport>
   </AdminLayout>
+
+  <!-- 전역 로딩 오버레이 (메모 모달과 동일하게 body로 텔레포트) -->
+  <Teleport to="body">
+    <transition name="fade">
+      <div
+          v-if="showTableSpinner"
+          class="fixed inset-0 z-[2147483646]"
+          aria-live="polite" aria-busy="true" role="status"
+      >
+        <!-- 배경 -->
+        <div class="absolute inset-0 bg-black/5 dark:bg-black/60"></div>
+
+        <!-- 스피너 -->
+        <div class="absolute inset-0 z-[2147483647] flex items-center justify-center">
+          <div class="flex flex-col items-center gap-3">
+            <svg class="animate-spin h-8 w-8 text-blue-500" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10"
+                      stroke="currentColor" stroke-width="4" fill="none"/>
+              <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+            </svg>
+            <p class="text-sm text-gray-900 dark:text-white/90">불러오는 중…</p>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </Teleport>
+
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import {ref, computed, onMounted, watch, onUnmounted} from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import KpiCardCompact from '@/components/ui/KpiCardCompact.vue'
 import { globalFilters as gf } from '@/composables/globalFilters'
@@ -345,6 +377,33 @@ const usersFound = ref([]) // 최근 검색 결과(상위 n명)
 const dbsUser = ref([]) // 현재 선택된 "담당자"의 DB
 const dbsCenters = ref([]) // 현재 선택된 "센터들"의 DB 묶음
 const usersForCenters = ref([]) // 선택된 센터들의 직원 목록(본사 제외, STAFF만)
+
+// 로딩 상태
+const userAggLoading   = ref(false)
+const uiLoading = ref(false)
+const busy = computed(() => uiLoading.value)
+const showTableSpinner = ref(false)
+let delayTimer = null
+
+async function runBusy(task) {
+  if (uiLoading.value) return
+  uiLoading.value = true
+  try { await task() } finally { uiLoading.value = false }
+}
+
+watch(busy, (v) => {
+  if (v) {
+    // 짧은 로딩은 스피너 숨김
+    delayTimer = setTimeout(() => { showTableSpinner.value = true }, 200)
+  } else {
+    if (delayTimer) { clearTimeout(delayTimer); delayTimer = null }
+    showTableSpinner.value = false
+  }
+})
+
+onUnmounted(() => {
+  if (delayTimer) { clearTimeout(delayTimer); delayTimer = null }
+})
 
 /* KPI */
 const kpiUsers = ref(0)
@@ -398,11 +457,16 @@ async function confirmCenters() {
   const ids = Array.from(pickedCenters.value)
 
   // 확인을 눌러야 실제로 조회
-  await Promise.all([
-    loadCenterDbs(ids),
-    loadCenterUsers(ids),   // 추가
-  ])
-  openCenterPicker.value = false
+  await runBusy(async () => {
+    try {
+      await Promise.all([
+        loadCenterDbs(ids),
+        loadCenterUsers(ids),
+      ])
+    } finally {
+      openCenterPicker.value = false
+    }
+  })
 }
 
 /* 집계: 센터별 */
@@ -433,7 +497,6 @@ const canSearchUser = computed(() => userQuery.value.trim().length > 0)
 
 async function pickFirstUser() {
   const s = userQuery.value.trim()
-
   if (!s) return
 
   await searchUsersExactByName(s) // 담당자명 정확히 일치해야함
@@ -449,7 +512,18 @@ async function pickFirstUser() {
   }
 
   pickedUserId.value = hit ? hit.id : null
-  if (pickedUserId.value) await loadUserDbs(pickedUserId.value)   // 해당 담당자 DB 로드
+
+  // 해당 담당자 DB 로드
+  userAggLoading.value = true
+  try {
+    if (pickedUserId.value) {
+      await loadUserDbs(pickedUserId.value)
+    } else {
+      dbsUser.value = []
+    }
+  } finally {
+    userAggLoading.value = false
+  }
 }
 
 /* 집계: 담당자별(단일) */
@@ -595,7 +669,10 @@ onMounted(async () => {
       myCenterId.value = me.centerId
       pickedUserId.value = me.id
       userQuery.value = me.name || ''
-      await loadUserDbs(me.id)
+
+      userAggLoading.value = true
+      try { await loadUserDbs(me.id) }
+      finally { userAggLoading.value = false }
     }
 
   }
