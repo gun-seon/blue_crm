@@ -17,7 +17,7 @@
             :refreshing="isRefreshing"
             @refresh="onRefresh"
             @changeSize="setSize"
-            @selectChange="onDivisionSelect"
+            @selectChange="onAdminSelectChange"
             @buttonClick="onAdminButtonClick"
         >
           <PsnsTable
@@ -46,6 +46,7 @@
             :refreshing="isRefreshing"
             @refresh="onRefresh"
             @changeSize="setSize"
+            @selectChange="onManagerStatusSelect"
             @buttonClick="onCommonButtonClick"
         >
           <PsnsTable
@@ -273,13 +274,23 @@ function closeMemo() {
   memoRow.value = null;
 }
 
-function onDivisionSelect({ idx, value }) {
-  // console.log("구분 필터 선택:", value);
-  if (value === "전체") {
-    setFilter("division", null)
-  } else {
-    setFilter("division", value);
+function onAdminSelectChange({ idx, value }) {
+  // idx: 0=구분, 1=상태
+  if (idx === 0) {
+    // '구분 전체'면 해제
+    setFilter("division", value === "구분 전체" ? null : value);
+  } else if (idx === 1) {
+    // '상태 전체'면 해제
+    setFilter("status", value === "상태 전체" ? null : value);
   }
+  changePage(1);
+  fetchData();
+}
+
+function onManagerStatusSelect({ idx, value }) {
+  // 매니저/스태프는 상태 셀렉트만 있음. '전체'면 해제
+  setFilter("status", value === "전체" ? null : value);
+  changePage(1);
   fetchData();
 }
 

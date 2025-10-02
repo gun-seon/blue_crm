@@ -63,13 +63,24 @@
         <if test="division != null and division != ''">
             AND t.division = #{division}
         </if>
+        <if test="status != null and status != ''">
+            AND t.status = #{status}
+        </if>
     </sql>
 
     <sql id="ADMIN_ORDER">
         <bind name="hasStatus"   value="sort != null and sort.contains('status')" />
         <bind name="hasDivision" value="sort != null and sort.contains('division')" />
+        <bind name="isRecall"    value="status != null and status.equals('재콜')" />
 
         <choose>
+            <!-- status=재콜이면 재콜 전용 정렬 강제 -->
+            <when test="isRecall">
+                ORDER BY
+                (t.promiseAt IS NULL) ASC,   -- 예약 있는 것 먼저
+                t.promiseAt ASC              -- 빠른 예약일 먼저
+            </when>
+
             <!-- 구분 + 상태: 1) 구분 2) 상태 3) (재콜:예약↑ / 그외:생성일↓) -->
             <when test="hasDivision and hasStatus">
                 ORDER BY
@@ -226,10 +237,22 @@
         <if test="division != null and division != ''">
             AND c.customer_division = #{division}  <!-- '최초','유효' -->
         </if>
+        <if test="status != null and status != ''">
+            AND c.customer_status = #{status}
+        </if>
     </sql>
 
     <sql id="CUSTOMER_ONLY_ORDER">
+        <bind name="isRecall" value="status != null and status.equals('재콜')" />
+
         <choose>
+            <!-- 재콜 필터면 전용 정렬 -->
+            <when test="isRecall">
+                ORDER BY
+                (c.customer_promise_time IS NULL) ASC,
+                c.customer_promise_time ASC
+            </when>
+
             <when test="sort == 'status'">
                 ORDER BY
                     FIELD(c.customer_status,

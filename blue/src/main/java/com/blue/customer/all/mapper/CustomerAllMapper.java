@@ -23,12 +23,14 @@ public interface CustomerAllMapper {
                                     @Param("category") String category,
                                     @Param("division") String division,
                                     @Param("sort") String sort,
+                                    @Param("status") String status,
                                     @Param("visible") String visible);
   int countAllForAdmin(@Param("keyword") String keyword,
                        @Param("dateFrom") String dateFrom,
                        @Param("dateTo") String dateTo,
                        @Param("category") String category,
                        @Param("division") String division,
+                       @Param("status") String status,
                        @Param("visible") String visible);
   
   // MANAGER — 자기 센터 소속 직원 담당 고객
@@ -40,12 +42,14 @@ public interface CustomerAllMapper {
                                       @Param("category") String category,
                                       @Param("division") String division,
                                       @Param("sort") String sort,
+                                      @Param("status") String status,
                                       @Param("centerId") Long centerId);
   int countAllForManager(@Param("keyword") String keyword,
                          @Param("dateFrom") String dateFrom,
                          @Param("dateTo") String dateTo,
                          @Param("category") String category,
                          @Param("division") String division,
+                         @Param("status") String status,
                          @Param("centerId") Long centerId);
   
   // STAFF — 본인 담당 고객
@@ -57,12 +61,14 @@ public interface CustomerAllMapper {
                                     @Param("category") String category,
                                     @Param("division") String division,
                                     @Param("sort") String sort,
+                                    @Param("status") String status,
                                     @Param("userId") Long userId);
   int countAllForStaff(@Param("keyword") String keyword,
                        @Param("dateFrom") String dateFrom,
                        @Param("dateTo") String dateTo,
                        @Param("category") String category,
                        @Param("division") String division,
+                       @Param("status") String status,
                        @Param("userId") Long userId);
   
   // 검사/권한

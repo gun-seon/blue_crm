@@ -32,10 +32,11 @@ public class CustomerAllController {
       @RequestParam(required = false) String category,
       @RequestParam(required = false) String division, // SUPERADMIN만 의미: 최초/유효/중복
       @RequestParam(required = false) String sort,     // status | division | null
+      @RequestParam(required = false) String status,
       @RequestParam(required = false) String mine,     // "Y"면 내 DB만 (MANAGER 토글용)
       @RequestParam(required = false) Long staffUserId // (보안상 서비스에서 무시/강제)
   ) {
-    return service.getAll(auth.getName(), page, size, keyword, dateFrom, dateTo, category, division, sort, mine, staffUserId);
+    return service.getAll(auth.getName(), page, size, keyword, dateFrom, dateTo, category, division, sort, status, mine, staffUserId);
   }
   
   // 인라인 업데이트(배지 status / 예약 reservation) — customers만 수정 가능

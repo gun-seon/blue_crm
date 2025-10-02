@@ -25,7 +25,7 @@ public class CustomerAllService {
       String callerEmail, int page, int size,
       String keyword, String dateFrom, String dateTo,
       String category, String division, String sort,
-      String mine, Long staffUserId
+      String status, String mine, Long staffUserId
   ) {
     UserContextDto me = mapper.findUserContextByEmail(callerEmail);
     if (me == null) throw new IllegalArgumentException("인증 사용자 정보를 찾을 수 없습니다.");
@@ -38,8 +38,8 @@ public class CustomerAllService {
       case "SUPERADMIN" -> {
 //        System.out.println("datefrom: " + dateFrom);
 //        System.out.println("dateto: " + dateTo);
-        items = mapper.findAllForAdmin(offset, size, keyword, dateFrom, dateTo, category, division, sort, me.getVisible());
-        total = mapper.countAllForAdmin(keyword, dateFrom, dateTo, category, division, me.getVisible());
+        items = mapper.findAllForAdmin(offset, size, keyword, dateFrom, dateTo, category, division, sort, status, me.getVisible());
+        total = mapper.countAllForAdmin(keyword, dateFrom, dateTo, category, division, status, me.getVisible());
       }
       case "MANAGER" -> {
         // mine=Y이면 '내 DB만' → 클라 staffUserId 무시, 토큰의 본인 ID 강제
@@ -47,25 +47,25 @@ public class CustomerAllService {
         if (mineOnly) {
           Long myUserId = me.getUserId();
           items = mapper.findAllForStaff(
-              offset, size, keyword, dateFrom, dateTo, category, division, sort, myUserId
+              offset, size, keyword, dateFrom, dateTo, category, division, sort, status, myUserId
           );
           total = mapper.countAllForStaff(
-              keyword, dateFrom, dateTo, category, division, myUserId
+              keyword, dateFrom, dateTo, category, division, status, myUserId
           );
         } else {
           // 센터 범위
           items = mapper.findAllForManager(
-              offset, size, keyword, dateFrom, dateTo, category, division, sort, me.getCenterId()
+              offset, size, keyword, dateFrom, dateTo, category, division, sort, status, me.getCenterId()
           );
           total = mapper.countAllForManager(
-              keyword, dateFrom, dateTo, category, division, me.getCenterId()
+              keyword, dateFrom, dateTo, category, division, status, me.getCenterId()
           );
         }
       }
       case "STAFF" -> {
         // STAFF는 원래 '내 DB'만
-        items = mapper.findAllForStaff(offset, size, keyword, dateFrom, dateTo, category, division, sort, me.getUserId());
-        total = mapper.countAllForStaff(keyword, dateFrom, dateTo, category, division, me.getUserId());
+        items = mapper.findAllForStaff(offset, size, keyword, dateFrom, dateTo, category, division, sort, status, me.getUserId());
+        total = mapper.countAllForStaff(keyword, dateFrom, dateTo, category, division, status, me.getUserId());
       }
       default -> throw new IllegalStateException("Unknown role: " + me.getRole());
     }
