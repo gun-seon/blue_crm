@@ -18,7 +18,7 @@ const ui = useUiStore()
   </header>
 
   <!-- 메인 화면 -->
-  <main class="bg-gray-50 dark:bg-gray-900 min-w-0">
+  <main class="select-none bg-gray-50 dark:bg-gray-900 min-w-0" oncontextmenu="return false" oncopy="return false">
     <ThemeProvider>
       <SidebarProvider>
         <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-300/70 dark:bg-gray-900/70"

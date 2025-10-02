@@ -470,6 +470,36 @@ const closePickerOnScroll = (e: Event) => {
   if (endFP?.isOpen) endFP.close()
 }
 
+// 초기 날짜 셋팅
+function daysInMonth(year: number, month0: number) {
+  return new Date(year, month0 + 1, 0).getDate()
+}
+function shiftMonthsClamped(date: Date, deltaMonths: number) {
+  const y = date.getFullYear()
+  const m = date.getMonth() // 0-based
+  const d = date.getDate()
+  const total = y * 12 + m + deltaMonths
+  const ty = Math.floor(total / 12)
+  const tm = total % 12
+  const dim = daysInMonth(ty, tm)
+  return new Date(ty, tm, Math.min(d, dim))
+}
+onMounted(() => {
+  // 종료일 = 오늘(로컬 기준, 시분초 제거)
+  const today = new Date()
+  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+
+  // 시작일 = 종료일 기준 3개월 전(말일 보정)
+  const start = shiftMonthsClamped(end, -1)
+
+  // 리액티브 값 주입 → 기존 watch가 flatpickr에 반영
+  endDate.value = end
+  startDate.value = start
+
+  updateTime()
+  timer = window.setInterval(updateTime, 1000)
+})
+
 onMounted(() => {
   // capture:true 로 위쪽에서 먼저 잡아서 확실하게 닫음
   window.addEventListener('wheel',     closePickerOnScroll, { passive: true, capture: true })
