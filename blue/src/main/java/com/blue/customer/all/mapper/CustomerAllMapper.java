@@ -42,14 +42,14 @@ public interface CustomerAllMapper {
                                       @Param("category") String category,
                                       @Param("division") String division,
                                       @Param("sort") String sort,
-                                      @Param("status") String status,
+                                      @Param("pStatus") String status,
                                       @Param("centerId") Long centerId);
   int countAllForManager(@Param("keyword") String keyword,
                          @Param("dateFrom") String dateFrom,
                          @Param("dateTo") String dateTo,
                          @Param("category") String category,
                          @Param("division") String division,
-                         @Param("status") String status,
+                         @Param("pStatus") String status,
                          @Param("centerId") Long centerId);
   
   // STAFF — 본인 담당 고객
@@ -61,14 +61,14 @@ public interface CustomerAllMapper {
                                     @Param("category") String category,
                                     @Param("division") String division,
                                     @Param("sort") String sort,
-                                    @Param("status") String status,
+                                    @Param("pStatus") String status,
                                     @Param("userId") Long userId);
   int countAllForStaff(@Param("keyword") String keyword,
                        @Param("dateFrom") String dateFrom,
                        @Param("dateTo") String dateTo,
                        @Param("category") String category,
                        @Param("division") String division,
-                       @Param("status") String status,
+                       @Param("pStatus") String status,
                        @Param("userId") Long userId);
   
   // 검사/권한

@@ -287,13 +287,13 @@
         <if test="division != null and division != ''">
             AND c.customer_division = #{division}  <!-- '최초','유효' -->
         </if>
-        <if test="status != null and status != ''">
-            AND c.customer_status = #{status}
+        <if test="pStatus != null and pStatus != ''">
+            AND c.customer_status = #{pStatus}
         </if>
     </sql>
 
     <sql id="CUSTOMER_ONLY_ORDER">
-        <bind name="isRecall" value="status != null and status.equals('재콜')" />
+        <bind name="isRecall" value="pStatus != null and pStatus.equals('재콜')" />
 
         <choose>
             <!-- 재콜 필터면 전용 정렬 -->

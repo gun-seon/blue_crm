@@ -180,7 +180,9 @@ const {
     keyword: "keyword",
     sort: "sort",
     mine: "mine",
-    staffUserId: "staffUserId"
+    staffUserId: "staffUserId",
+    status: "status",
+    division: "division"
   },
   mapper: (res) => ({
     items: res.data.items,
@@ -253,10 +255,11 @@ const adminColumns = [
 ============================= */
 const commonColumns = [
   { key: "createdAt", label: "DB생성일", type: "text" },
+  { key: "",  label: "",   type: "text", ellipsis: { width: 5 } },
   { key: "staff", label: "담당자", type: "text" },
-  { key: "category", label: "카테고리", type: "badge", options: ["주식", "코인"] },
+  // { key: "category", label: "카테고리", type: "badge", options: ["주식", "코인"] },
   { key: "name", label: "이름", type: "text"},
-  { key: "phone", label: "전화번호", type: "text" },
+  { key: "phone", label: "전화번호", type: "text", ellipsis: { width: 150 } },
   { key: "source", label: "DB출처", type: "text", ellipsis: { width: 100 } },
   { key: "content", label: "내용", type: "text", ellipsis: { width: 150 } },
   { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon, disabled: (row)=> row.origin==='DUPLICATE' },
@@ -450,7 +453,7 @@ function onCommonButtonClick(btn) {
     setFilter("mine", "Y");
     setFilter("staffUserId", auth.userId);
     // 현재 정렬도 유지해서 함께 적용
-    setFilter("sort", sortMode.value);
+    setFilter("sort", sortMode.value === 'status' ? "status" : null)
 
     // 선택 초기화(내부/외부 모두): 테이블 메서드 + 강제리렌더 + 배열 초기화
     selectedRows.value = [];
@@ -465,7 +468,7 @@ function onCommonButtonClick(btn) {
     setFilter("mine", null);
     setFilter("staffUserId", null);
     // 정렬은 유지
-    setFilter("sort", sortMode.value);
+    setFilter("sort", sortMode.value === 'status' ? "status" : null)
 
     // 선택 초기화(내부/외부 모두): 테이블 메서드 + 강제리렌더 + 배열 초기화
     selectedRows.value = [];
