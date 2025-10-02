@@ -76,17 +76,45 @@
       </div>
     </div>
   </AdminLayout>
+
+  <!-- 전역 로딩 오버레이 (메모 모달과 동일하게 body로 텔레포트) -->
+  <Teleport to="body">
+    <transition name="fade">
+      <div
+          v-if="showTableSpinner"
+          class="fixed inset-0 z-[2147483646]"
+          aria-live="polite" aria-busy="true" role="status"
+      >
+        <!-- 배경 -->
+        <div class="absolute inset-0 bg-black/5 dark:bg-black/60"></div>
+
+        <!-- 스피너 -->
+        <div class="absolute inset-0 z-[2147483647] flex items-center justify-center">
+          <div class="flex flex-col items-center gap-3">
+            <svg class="animate-spin h-8 w-8 text-blue-500" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10"
+                      stroke="currentColor" stroke-width="4" fill="none"/>
+              <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+            </svg>
+            <p class="text-sm text-gray-900 dark:text-white/90">불러오는 중…</p>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </Teleport>
+
 </template>
 
 <script setup>
-import {ref, computed, onMounted} from "vue";
+import {ref, computed, onUnmounted, watch } from "vue";
+import { useAuthStore } from "@/stores/auth.js";
 import PageBreadcrumb from "@/components/common/PageBreadcrumb.vue";
 import AdminLayout from "@/components/layout/AdminLayout.vue";
 import ComponentCard from "@/components/common/ComponentCard.vue";
 import PsnsTable from "@/components/tables/basic-tables/PsnsTable.vue";
 import Memo from "@/components/ui/MEMO.vue";
 import { EyeIcon } from "@heroicons/vue/24/outline";
-import { useAuthStore } from "@/stores/auth.js";
 import { useTableQuery } from "@/composables/useTableQuery.js";
 import { globalFilters } from "@/composables/globalFilters.js";
 import axios from "@/plugins/axios.js"
@@ -136,6 +164,7 @@ const {
   page,
   size,
   totalPages,
+  loading: tableLoading,
   fetchData,
   changePage,
   setSize,
@@ -159,6 +188,32 @@ const {
     totalCount: res.data.totalCount
   })
 });
+
+// 로딩 오버레이 설정
+const uiLoading = ref(false)
+const busy = computed(() => tableLoading.value || isRefreshing.value || uiLoading.value)
+const showTableSpinner = ref(false)
+let delayTimer = null
+
+async function runBusy(task) {
+  if (uiLoading.value) return
+  uiLoading.value = true
+  try { await task() } finally { uiLoading.value = false }
+}
+
+watch(busy, (v) => {
+  if (v) {
+    // 짧은 로딩은 스피너 숨김
+    delayTimer = setTimeout(() => { showTableSpinner.value = true }, 200)
+  } else {
+    if (delayTimer) { clearTimeout(delayTimer); delayTimer = null }
+    showTableSpinner.value = false
+  }
+})
+
+onUnmounted(() => {
+  if (delayTimer) { clearTimeout(delayTimer); delayTimer = null }
+})
 
 /** 체크박스 활성화 조건: '중복'만 선택 가능 (관리자 전용 화면), 유효/최초는 비활성 */
 function isRowSelectable(row) {
@@ -275,23 +330,25 @@ function closeMemo() {
 }
 
 function onAdminSelectChange({ idx, value }) {
-  // idx: 0=구분, 1=상태
-  if (idx === 0) {
-    // '구분 전체'면 해제
-    setFilter("division", value === "구분 전체" ? null : value);
-  } else if (idx === 1) {
-    // '상태 전체'면 해제
-    setFilter("status", value === "상태 전체" ? null : value);
-  }
-  changePage(1);
-  fetchData();
+  return runBusy(async () => {
+    // idx: 0=구분, 1=상태
+    if (idx === 0) {
+      // '구분 전체'면 해제
+      setFilter("division", value === "구분 전체" ? null : value);
+    } else if (idx === 1) {
+      // '상태 전체'면 해제
+      setFilter("status", value === "상태 전체" ? null : value);
+    }
+    changePage(1);
+  })
 }
 
 function onManagerStatusSelect({ idx, value }) {
-  // 매니저/스태프는 상태 셀렉트만 있음. '전체'면 해제
-  setFilter("status", value === "전체" ? null : value);
-  changePage(1);
-  fetchData();
+  return runBusy(async () => {
+    // 매니저/스태프는 상태 셀렉트만 있음. '전체'면 해제
+    setFilter("status", value === "전체" ? null : value);
+    changePage(1);
+  })
 }
 
 // 버튼 토클
@@ -305,53 +362,58 @@ const adminActiveLabels = computed(() => {
 })
 
 async function onAdminButtonClick(btn) {
-  // 1) 먼저 중복 이동을 처리 (조기 return)
-  if (btn === "중복DB로 이동") {
-    const dupIds = selectedRows.value
-        .filter(r => r.origin === 'DUPLICATE')
-        .map(r => r.id);
+  // busy 가드
+  if (uiLoading.value) return;
+  uiLoading.value = true;
 
-    if (dupIds.length === 0) {
-      alert("중복 항목만 선택해서 이동할 수 있습니다.");
-      return;
+  try {
+    // 1) 먼저 중복 이동 처리
+    if (btn === "중복DB로 이동") {
+      const dupIds = selectedRows.value
+          .filter(r => r.origin === 'DUPLICATE')
+          .map(r => r.id);
+
+      if (dupIds.length === 0) {
+        alert("중복 항목만 선택해서 이동할 수 있습니다.");
+        return;
+      }
+
+      try {
+        await axios.post("/api/lead/db/duplicate/hide", { ids: dupIds });
+        alert(`중복 ${dupIds.length}건을 중복DB 메뉴로 이동(숨김)했습니다.`);
+
+        // 선택 초기화
+        selectedRows.value = [];
+        tableRef.value?.clearSelection?.();
+        tableKey.value++;
+
+        // 페이지 검사하며 새로고침
+        await refetchAndClamp();
+      } catch (err) {
+        console.error("중복 이동 실패", err);
+        alert("중복 이동 중 오류가 발생했습니다.");
+      }
+      return; // 조기 종료
     }
 
-    try {
-      await axios.post("/api/lead/db/duplicate/hide", {ids: dupIds});
-      alert(`중복 ${dupIds.length}건을 중복DB 메뉴로 이동(숨김)했습니다.`);
+    // 2) 상태/구분 토글
+    if (btn === "상태별 보기")   adminActive.value.status   = !adminActive.value.status;
+    if (btn === "구분별 보기")   adminActive.value.division = !adminActive.value.division;
 
-      // 선택 초기화(내부/외부 모두): 테이블 메서드 + 강제리렌더 + 배열 초기화
-      selectedRows.value = [];
-      tableRef.value?.clearSelection?.(); // PsnsTable이 메서드 제공 시
-      tableKey.value++; // 강제 리렌더로 selection state 초기화
+    // 3) sort 조합
+    const sortParts = [];
+    if (adminActive.value.status)   sortParts.push('status');
+    if (adminActive.value.division) sortParts.push('division');
+    setFilter("sort", sortParts.length ? sortParts.join(",") : null);
 
-      // 페이지 검사하며 새로고침
-      await refetchAndClamp();
-    } catch (err) {
-      console.error("중복 이동 실패", err);
-      alert("중복 이동 중 오류가 발생했습니다.");
-    }
+    // 선택 초기화
+    selectedRows.value = [];
+    tableRef.value?.clearSelection?.();
+    tableKey.value++;
 
-    return;
+  } finally {
+    uiLoading.value = false;
   }
-
-  // 2) 상태/구분 토글
-  if (btn === "상태별 보기")   adminActive.value.status   = !adminActive.value.status
-  if (btn === "구분별 보기")   adminActive.value.division = !adminActive.value.division
-
-  // 3) sort 조합
-  const sortParts = []
-  if (adminActive.value.status)   sortParts.push('status')
-  if (adminActive.value.division) sortParts.push('division')
-  // 아무 것도 안 눌리면 null → 날짜순 기본
-  setFilter("sort", sortParts.length ? sortParts.join(",") : null)
-
-  // 선택 초기화(내부/외부 모두): 테이블 메서드 + 강제리렌더 + 배열 초기화
-  selectedRows.value = [];
-  tableRef.value?.clearSelection?.(); // PsnsTable이 메서드 제공 시
-  tableKey.value++; // 강제 리렌더로 selection state 초기화
-
-  fetchData();
 }
 
 // 정렬 모드

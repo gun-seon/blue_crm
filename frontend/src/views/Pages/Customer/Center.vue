@@ -9,8 +9,8 @@
             :selects="[centerOptions]"
             :buttons="buttons"
             :showRefresh="true"
-            :refreshing="loading"
-            @refresh="fetchData"
+            :refreshing="isRefreshing"
+            @refresh="onRefresh"
             @changeSize="setSize"
             @selectChange="onSelectChange"
             @buttonClick="onButtonClick"
@@ -29,10 +29,38 @@
       </div>
     </div>
   </AdminLayout>
+
+  <!-- 전역 로딩 오버레이 (메모 모달과 동일하게 body로 텔레포트) -->
+  <Teleport to="body">
+    <transition name="fade">
+      <div
+          v-if="showTableSpinner"
+          class="fixed inset-0 z-[2147483646]"
+          aria-live="polite" aria-busy="true" role="status"
+      >
+        <!-- 배경 -->
+        <div class="absolute inset-0 bg-black/5 dark:bg-black/60"></div>
+
+        <!-- 스피너 -->
+        <div class="absolute inset-0 z-[2147483647] flex items-center justify-center">
+          <div class="flex flex-col items-center gap-3">
+            <svg class="animate-spin h-8 w-8 text-blue-500" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10"
+                      stroke="currentColor" stroke-width="4" fill="none"/>
+              <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+            </svg>
+            <p class="text-sm text-gray-900 dark:text-white/90">불러오는 중…</p>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </Teleport>
+
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import {ref, onMounted, computed, watch, onUnmounted} from "vue";
 import AdminLayout from "@/components/layout/AdminLayout.vue";
 import PageBreadcrumb from "@/components/common/PageBreadcrumb.vue";
 import ComponentCard from "@/components/common/ComponentCard.vue";
@@ -57,8 +85,9 @@ const todayOnly = ref(false)
 const centerOptions = computed(() => ['전체', ...centers.value.map(c => c.centerName)]);
 
 // 테이블 데이터: 공용 훅 사용
+
 const {
-  items, page, size, totalPages, loading,
+  items, page, size, totalPages, loading: tableLoading,
   fetchData, changePage, setSize, setFilter
 } = useTableQuery({
   url: "/api/work/center/db",
@@ -67,7 +96,7 @@ const {
   useExternalKeys: {
     from: "dateFrom",
     to: "dateTo",
-    // category: "category",
+    category: "category",
     keyword: "keyword",
   },
   mapper: (res) => ({
@@ -76,6 +105,32 @@ const {
     totalCount: res.data.totalCount,
   }),
 });
+
+// 로딩 오버레이 설정
+const uiLoading = ref(false)
+const busy = computed(() => tableLoading.value || isRefreshing.value || uiLoading.value)
+const showTableSpinner = ref(false)
+let delayTimer = null
+
+async function runBusy(task) {
+  if (uiLoading.value) return
+  uiLoading.value = true
+  try { await task() } finally { uiLoading.value = false }
+}
+
+watch(busy, (v) => {
+  if (v) {
+    // 짧은 로딩은 스피너 숨김
+    delayTimer = setTimeout(() => { showTableSpinner.value = true }, 200)
+  } else {
+    if (delayTimer) { clearTimeout(delayTimer); delayTimer = null }
+    showTableSpinner.value = false
+  }
+})
+
+onUnmounted(() => {
+  if (delayTimer) { clearTimeout(delayTimer); delayTimer = null }
+})
 
 // 컬럼 고정
 const columns = [
@@ -95,9 +150,7 @@ const columns = [
 
 onMounted(async () => {
   await loadCenters();
-  // 초기: 전체(=centerId null)
-  setFilter("centerId", null);
-  await fetchData();
+  // await fetchData();
 });
 
 async function loadCenters() {
@@ -190,5 +243,20 @@ async function downloadExcel() {
 
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+const isRefreshing = ref(false)
+async function onRefresh() {
+  if (isRefreshing.value) return
+  isRefreshing.value = true
+  try {
+    await api.post('/api/sheets/refresh?sid=1')
+    await fetchData()
+  } catch (e) {
+    console.error(e)
+    alert('새로고침 중 오류가 발생했습니다.')
+  } finally {
+    isRefreshing.value = false
+  }
 }
 </script>
