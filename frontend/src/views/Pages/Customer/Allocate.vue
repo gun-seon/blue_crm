@@ -155,10 +155,9 @@ const onRowSelect = (rows:any[]) => { selectedRows.value = rows }
 // ===== 컬럼 (읽기 전용!) =====
 const baseCols = [
   { key: 'createdAt', label: 'DB생성일', type: 'text' },
-  { key: "",  label: "",   type: "text", ellipsis: { width: 10 } },
   // { key: 'category',  label: '카테고리', type: 'badge', options: ['주식','코인'] },
   { key: 'name',      label: '이름',     type: 'text' },
-  { key: 'phone',     label: '전화번호', type: 'text' },
+  { key: 'phone',     label: '전화번호', type: 'text', ellipsis: { width: 150 } },
   { key: 'source',    label: 'DB출처',   type: 'text' },
   { key: 'content',   label: '내용',     type: 'text', ellipsis: { width: 150 } },
 ]
