@@ -206,7 +206,7 @@ function closeModal(){ modal.value.open = false }
 // ===== 실제 분배 호출 =====
 async function onConfirmAllocate(payload: { centerId?:number|null, userId?:number|null }){
   const ids = needSelection(); if (!ids.length) return
-  try {
+  await runBusy(async () => {
     if (modal.value.mode === 'HQ') {
       await axios.post('/api/work/allocate/hq', {
         customerIds: ids,
@@ -227,10 +227,10 @@ async function onConfirmAllocate(payload: { centerId?:number|null, userId?:numbe
 
     // 페이지 검사하며 새로고침
     await refetchAndClamp()
-  } catch (e:any) {
+  }).catch((e:any) => {
     console.error(e)
     alert(e?.response?.data || '분배 중 오류가 발생했습니다.')
-  }
+  })
 }
 
 // 페이지 검사하며 새로고침

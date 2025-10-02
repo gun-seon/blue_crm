@@ -53,7 +53,7 @@
 </template>
 
 <script setup>
-import {onUnmounted, ref, watch} from 'vue'
+import {computed, onUnmounted, ref, watch} from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
@@ -110,6 +110,7 @@ const {
 })
 
 // 로딩 오버레이 설정
+const isRefreshing = ref(false)
 const uiLoading = ref(false)
 const busy = computed(() => tableLoading.value || isRefreshing.value || uiLoading.value)
 const showTableSpinner = ref(false)
@@ -135,7 +136,6 @@ onUnmounted(() => {
   if (delayTimer) { clearTimeout(delayTimer); delayTimer = null }
 })
 
-const isRefreshing = ref(false)
 async function onRefresh() {
   if (isRefreshing.value) return
   isRefreshing.value = true

@@ -251,31 +251,33 @@ async function onBulkApprove() {
     return
   }
 
-  try {
-    const ids = selectedRows.value.map(r => r.userId)
-    const res = await axios.patch("/api/super/users/bulk-approve", ids)
-    const { approvedIds, skippedIds } = res.data
+  return runBusy(async () => {
+    try {
+      const ids = selectedRows.value.map(r => r.userId)
+      const res = await axios.patch("/api/super/users/bulk-approve", ids)
+      const { approvedIds, skippedIds } = res.data
 
-    // 결과 메시지 구성
-    if (approvedIds.length > 0 && skippedIds.length === 0) {
-      alert(`일괄 승인 성공`)
-    } else if (approvedIds.length > 0 && skippedIds.length > 0) {
-      alert(`관리자 권한인 ${skippedIds.length}명 제외, ${approvedIds.length}명 승인 성공`)
-    } else if (approvedIds.length === 0 && skippedIds.length > 0) {
-      alert(`관리자 권한인 ${skippedIds.length}명 제외, 승인된 사용자가 없습니다`)
+      // 결과 메시지 구성
+      if (approvedIds.length > 0 && skippedIds.length === 0) {
+        alert(`일괄 승인 성공`)
+      } else if (approvedIds.length > 0 && skippedIds.length > 0) {
+        alert(`관리자 권한인 ${skippedIds.length}명 제외, ${approvedIds.length}명 승인 성공`)
+      } else if (approvedIds.length === 0 && skippedIds.length > 0) {
+        alert(`관리자 권한인 ${skippedIds.length}명 제외, 승인된 사용자가 없습니다`)
+      }
+
+      tableRef.value?.clearSelection?.();
+
+      // 테이블 새로고침 (DB 최신 상태 반영)
+      await fetchData()
+
+      // 선택 해제
+      selectedRows.value = []
+    } catch (err) {
+      console.error("일괄 승인 실패", err)
+      alert("일괄 승인 중 오류가 발생했습니다.")
     }
-
-    tableRef.value?.clearSelection?.();
-
-    // 테이블 새로고침 (DB 최신 상태 반영)
-    await fetchData()
-
-    // 선택 해제
-    selectedRows.value = []
-  } catch (err) {
-    console.error("일괄 승인 실패", err)
-    alert("일괄 승인 중 오류가 발생했습니다.")
-  }
+  })
 }
 
 // 3. 배지를 수정할 경우

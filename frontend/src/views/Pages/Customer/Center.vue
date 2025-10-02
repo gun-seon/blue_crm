@@ -107,6 +107,7 @@ const {
 });
 
 // 로딩 오버레이 설정
+const isRefreshing = ref(false)
 const uiLoading = ref(false)
 const busy = computed(() => tableLoading.value || isRefreshing.value || uiLoading.value)
 const showTableSpinner = ref(false)
@@ -161,14 +162,16 @@ async function loadCenters() {
 
 // ComponentCard select emit 핸들러
 function onSelectChange({ idx, value }: { idx:number; value:string }) {
-  if (idx !== 0) return; // 드롭다운 1개만 사용
-  if (value === '전체') {
-    centerId.value = null;
-  } else {
-    centerId.value = centerMap.value[value] ?? null;
-  }
-  setFilter("centerId", centerId.value); // 페이지 전용 필터 적용
-  fetchData();
+  return runBusy(async () => {
+    if (idx !== 0) return; // 드롭다운 1개만 사용
+    if (value === '전체') {
+      centerId.value = null;
+    } else {
+      centerId.value = centerMap.value[value] ?? null;
+    }
+    setFilter("centerId", centerId.value); // 페이지 전용 필터 적용
+    // fetchData();
+  })
 }
 
 // 버튼 라벨 토글용
@@ -179,23 +182,25 @@ const buttons = computed(() => [
 
 // ComponentCard button emit 핸들러
 async function onButtonClick(btn: string) {
-  if (btn === "오늘만 보기") {
-    const s = todayStr()
-    setGlobalFilters({ dateFrom: s, dateTo: s }) // 오늘만
-    todayOnly.value = true
-    await fetchData()
-    return
-  }
-  if (btn === "전체 보기") {
-    setGlobalFilters({ dateFrom: null, dateTo: null }) // 날짜 필터 초기화
-    todayOnly.value = false
-    await fetchData()
-    return
-  }
-  if (btn === '엑셀 다운로드') {
-    await downloadExcel();
-    return;
-  }
+  return runBusy(async () => {
+    if (btn === "오늘만 보기") {
+      const s = todayStr()
+      setGlobalFilters({ dateFrom: s, dateTo: s }) // 오늘만
+      todayOnly.value = true
+      // await fetchData()
+      return
+    }
+    if (btn === "전체 보기") {
+      setGlobalFilters({ dateFrom: null, dateTo: null }) // 날짜 필터 초기화
+      todayOnly.value = false
+      // await fetchData()
+      return
+    }
+    if (btn === '엑셀 다운로드') {
+      await downloadExcel();
+      return;
+    }
+  })
 }
 
 // 선택된 센터 이름 계산 (없으면 빈 문자열)
@@ -245,7 +250,6 @@ async function downloadExcel() {
   URL.revokeObjectURL(a.href);
 }
 
-const isRefreshing = ref(false)
 async function onRefresh() {
   if (isRefreshing.value) return
   isRefreshing.value = true

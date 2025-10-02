@@ -89,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import {onUnmounted, ref, watch} from 'vue'
+import {computed, onUnmounted, ref, watch} from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ComponentCard from '@/components/common/ComponentCard.vue'
@@ -120,6 +120,7 @@ const {
 })
 
 // 로딩 오버레이 설정
+const isRefreshing = ref(false)
 const uiLoading = ref(false)
 const busy = computed(() => tableLoading.value || isRefreshing.value || uiLoading.value)
 const showTableSpinner = ref(false)
@@ -157,8 +158,10 @@ function needSelection(): number[] {
 
 /** HQ 전용 구분 필터 */
 function onDivisionSelect({ value }: { value: string }) {
-  setFilter('division', value === '전체' ? null : value)
-  fetchData()
+  return runBusy(async () => {
+    setFilter('division', value === '전체' ? null : value)
+    await fetchData()
+  })
 }
 
 /** 컬럼 정의 */
@@ -210,8 +213,8 @@ const mgrColumns = [
 function onHqButton(btn: string) {
   if (btn === '회수하기') {
     const ids = needSelection()
-    if (!ids.length) return
 
+    if (!ids.length) return
     if (!confirm(ids.length + "개 DB를 회수하시겠습니까?")) return
 
     onConfirmRevoke(ids)
@@ -225,19 +228,21 @@ function onMgrButton(btn: string) {
 
 /** 회수 실행 */
 async function onConfirmRevoke(ids: number[]) {
-  try {
-    await axios.post('/api/work/revoke/hq', { customerIds: ids })
+  return runBusy(async () => {
+    try {
+      await axios.post('/api/work/revoke/hq', { customerIds: ids })
 
-    // 선택 초기화
-    selectedRows.value = []
-    tableRef.value?.clearSelection?.()
+      // 선택 초기화
+      selectedRows.value = []
+      tableRef.value?.clearSelection?.()
 
-    // 페이지 검사 후 새로고침
-    await refetchAndClamp()
-  } catch (e: any) {
-    console.error(e)
-    alert(e?.response?.data || '회수 중 오류가 발생했습니다.')
-  }
+      // 페이지 검사 후 새로고침
+      await refetchAndClamp()
+    } catch (e: any) {
+      console.error(e)
+      alert(e?.response?.data || '회수 중 오류가 발생했습니다.')
+    }
+  })
 }
 
 // 페이지 검사 후 새로고침
@@ -259,7 +264,6 @@ async function refetchAndClamp() {
 }
 
 // 수동 새로고침
-const isRefreshing = ref(false)
 async function onRefresh() {
   if (isRefreshing.value) return
   isRefreshing.value = true
