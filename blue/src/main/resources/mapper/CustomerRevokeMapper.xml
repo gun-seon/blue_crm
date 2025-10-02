@@ -52,7 +52,7 @@
     <sql id="ORDER_DEFAULT">
         <choose>
             <when test="sort == 'status'">
-                ORDER BY FIELD(c.customer_status,'회수','없음','신규','가망','재콜','부재1','부재2','부재3','부재4','부재5','거절','완료'),
+                ORDER BY FIELD(c.customer_status,'회수','없음','신규','가망','재콜','부재1','부재2','부재3','부재4','부재5','거절','자연풀','카피'),
                 c.customer_created_at DESC
             </when>
             <otherwise>
@@ -61,7 +61,7 @@
         </choose>
     </sql>
 
-    <!-- HQ: 상태가 없음/회수/완료 '아닌' 목록 -->
+    <!-- HQ: 상태가 없음/회수 '아닌' 목록 -->
     <select id="findListForHq" resultType="com.blue.customer.revoke.dto.RevokeListRowDto">
         SELECT
         c.customer_id         AS id,
@@ -81,7 +81,7 @@
         FROM customers c
         LEFT JOIN users   u   ON u.user_id   = c.user_id
         LEFT JOIN centers ctr ON ctr.center_id = u.center_id
-        WHERE c.customer_status NOT IN ('없음','회수','완료')
+        WHERE c.customer_status NOT IN ('없음','회수')
         <if test="division != null and division != ''">
             AND c.customer_division = #{division}
         </if>
@@ -94,14 +94,14 @@
         SELECT COUNT(*)
         FROM customers c
         LEFT JOIN users u ON u.user_id = c.user_id
-        WHERE c.customer_status NOT IN ('없음','회수','완료')
+        WHERE c.customer_status NOT IN ('없음','회수')
         <if test="division != null and division != ''">
             AND c.customer_division = #{division}
         </if>
         <include refid="LIST_FILTERS_COMMON"/>
     </select>
 
-    <!-- MANAGER: 현재담당=나 & 상태 NOT IN ('없음','회수','완료') -->
+    <!-- MANAGER: 현재담당=나 & 상태 NOT IN ('없음','회수') -->
     <select id="findListForManager" resultType="com.blue.customer.revoke.dto.RevokeListRowDto">
         SELECT
         c.customer_id         AS id,
@@ -117,7 +117,7 @@
         FROM customers c
         JOIN users u ON u.user_id = c.user_id
         WHERE c.user_id = #{managerUserId}
-        AND c.customer_status NOT IN ('없음','회수','완료')
+        AND c.customer_status NOT IN ('없음','회수')
         <include refid="LIST_FILTERS_COMMON"/>
         <include refid="ORDER_DEFAULT"/>
         LIMIT #{size} OFFSET #{offset}
@@ -128,7 +128,7 @@
         FROM customers c
         JOIN users u ON u.user_id = c.user_id
         WHERE c.user_id = #{managerUserId}
-        AND c.customer_status NOT IN ('없음','회수','완료')
+        AND c.customer_status NOT IN ('없음','회수')
         <include refid="LIST_FILTERS_COMMON"/>
     </select>
 
@@ -138,15 +138,15 @@
         FROM customers c
         WHERE c.customer_id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
-        AND c.customer_status NOT IN ('없음','회수','완료')
+        AND c.customer_status NOT IN ('없음','회수')
         FOR UPDATE
     </select>
 
     <!-- 회수 실행 -->
     <update id="updateToRevoked">
         UPDATE customers
-        SET customer_status      = '회수',
-        user_id              = NULL,
+        SET customer_status = '회수',
+        user_id = NULL,
         customer_promise_time = NULL
         WHERE customer_id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>

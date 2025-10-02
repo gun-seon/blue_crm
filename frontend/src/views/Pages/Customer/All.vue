@@ -7,7 +7,10 @@
         <!-- SUPERADMIN (본사) -->
         <ComponentCard
             v-if="role === 'SUPERADMIN'"
-            :selects="[ ['전체', '최초', '중복', '유효'] ]"
+            :selects="[
+                ['구분 전체', '최초', '유효', '중복'],
+                ['상태 전체', '부재1', '부재2', '부재3', '부재4', '부재5',
+                  '재콜', '신규', '가망', '자연풀', '카피', '거절', '없음', '회수'] ]"
             :buttons="['구분별 보기', '상태별 보기', '중복DB로 이동']"
             :active="adminActiveLabels"
             :showRefresh="true"
@@ -37,6 +40,7 @@
         <!-- MANAGER / STAFF -->
         <ComponentCard
             v-else
+            :selects="[['전체', '부재1', '부재2', '부재3', '부재4', '부재5', '재콜', '신규', '가망', '자연풀', '카피', '거절']]"
             :buttons=managerButtons
             :showRefresh="true"
             :refreshing="isRefreshing"
@@ -184,7 +188,7 @@ const adminColumns = [
       // 회수와 신규 상태는 수동으로 줄 수 없음
       // 회수 : DB회수하기 메뉴에서
       // 신규 : 한번도 분배가 되지 않은 항목만
-      options: ["부재1","부재2","부재3","부재4","부재5","재콜","가망","완료","거절"] },
+      options: ["부재1","부재2","부재3","부재4","부재5","재콜","가망","자연풀","카피","거절"] },
   { key: "reservation", label: "예약", type: "date", editable: notDuplicate }
 ];
 
@@ -202,7 +206,7 @@ const commonColumns = [
   { key: "memo", label: "메모", type: "iconButton", icon: EyeIcon, disabled: (row)=> row.origin==='DUPLICATE' },
   { key: "status", label: "상태", type: "badge",
       editable: notDuplicate,
-      options: ["부재1","부재2","부재3","부재4","부재5","재콜","가망","완료","거절"] },
+      options: ["부재1","부재2","부재3","부재4","부재5","재콜","가망","자연풀","카피","거절"] },
   { key: "reservation", label: "예약", type: "date", editable: notDuplicate }
 ];
 

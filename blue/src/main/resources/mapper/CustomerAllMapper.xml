@@ -76,7 +76,7 @@
                 FIELD(t.division, '최초','유효','중복'),
                 FIELD(t.status,
                 '부재1','부재2','부재3','부재4','부재5',
-                '재콜','신규','회수','가망','완료','거절','없음'),
+                '재콜','신규','가망','자연풀','카피','거절','없음','회수'),
                 /* 재콜 묶음 내부: 예약 없는 것 뒤로, 예약 빠른 순 */
                 CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,
                 CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,
@@ -89,7 +89,7 @@
                 ORDER BY
                 FIELD(t.status,
                 '부재1','부재2','부재3','부재4','부재5',
-                '재콜','신규','회수','가망','완료','거절','없음'),
+                '재콜','신규','가망','자연풀','카피','거절','없음','회수'),
                 CASE WHEN t.status='재콜' THEN (t.promiseAt IS NULL) END ASC,
                 CASE WHEN t.status='재콜' THEN t.promiseAt END ASC,
                 CASE WHEN t.status&lt;&gt;'재콜' THEN t.createdAt END DESC
@@ -234,7 +234,7 @@
                 ORDER BY
                     FIELD(c.customer_status,
                     '부재1','부재2','부재3','부재4','부재5',
-                    '재콜','신규','회수','가망','완료','거절','없음'),
+                    '재콜','신규','가망','자연풀','카피','거절','없음','회수'),
                     CASE WHEN c.customer_status='재콜' THEN (c.customer_promise_time IS NULL) END ASC,
                     CASE WHEN c.customer_status='재콜' THEN c.customer_promise_time END ASC,
                     CASE WHEN c.customer_status&lt;&gt;'재콜' THEN c.customer_created_at END DESC

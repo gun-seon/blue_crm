@@ -97,7 +97,7 @@ public class CustomerAllocateService {
     Integer ok = mapper.staffInSameCenter(me.getUserId(), req.getTargetUserId());
     if (ok == null || ok == 0) throw new IllegalArgumentException("같은 센터의 직원만 분배할 수 있습니다.");
     
-    // 조건에 맞는 대상만 잠금(현재담당=센터장 본인, 상태!=완료)
+    // 조건에 맞는 대상만 잠금(현재담당=센터장 본인)
     List<Long> lockIds = mapper.lockCustomersForManager(req.getCustomerIds(), me.getUserId());
     if (lockIds.isEmpty()) return new AllocateResult(0, req.getCustomerIds().size());
     

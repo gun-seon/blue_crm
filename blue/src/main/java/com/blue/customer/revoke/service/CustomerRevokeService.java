@@ -52,7 +52,7 @@ public class CustomerRevokeService {
       return new RevokeResult(0, 0);
     }
     
-    // 대상 잠금 (상태 NOT IN 없음/회수/완료)
+    // 대상 잠금 (상태 NOT IN 없음/회수)
     List<Long> lockIds = mapper.lockCustomersForRevoke(req.getCustomerIds());
     if (lockIds.isEmpty()) return new RevokeResult(0, req.getCustomerIds().size());
     

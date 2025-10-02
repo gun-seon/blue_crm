@@ -123,7 +123,8 @@
             <option value="부재5">부재5</option>
             <option value="재콜">재콜</option>
             <option value="가망">가망</option>
-            <option value="완료">완료</option>
+            <option value="자연풀">자연풀</option>
+            <option value="카피">카피</option>
             <option value="거절">거절</option>
           </select>
         </div>
