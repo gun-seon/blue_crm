@@ -117,19 +117,38 @@ const hqColumns = [
   { key: 'source',    label: 'DB출처',   type: 'text' },
   { key: 'content',   label: '내용',     type: 'text', ellipsis: { width: 150 } },
   { key: "status",    label: "상태",     type: "badge" },
-  { key: 'centerName',label: '센터',     type: 'badge' },
+  {
+    key: "centerName",
+    label: "센터",
+    type: "badge",
+    width: 100,
+    render: (val: any) => {
+      const text = (typeof val === "string" && val.trim().length > 0) ? val : "없음"
+      return `<span>${text}</span>`
+    },
+  },
   { key: 'staff',     label: '담당자',    type: 'text' },
 ]
 
 const mgrColumns = [
   { key: 'createdAt', label: 'DB생성일', type: 'text' },
+  { key: "",  label: "",   type: "text", ellipsis: { width: 10 } },
   // { key: 'category',  label: '카테고리', type: 'badge', options: ['주식','코인'] },
   { key: 'name',      label: '이름',     type: 'text' },
   { key: 'phone',     label: '전화번호', type: 'text', ellipsis: { width: 150 } },
   { key: 'source',    label: 'DB출처',   type: 'text' },
   { key: 'content',   label: '내용',     type: 'text', ellipsis: { width: 150 } },
   { key: "status",    label: "상태",     type: "badge" },
-  { key: 'centerName',label: '센터',     type: 'badge' },
+  {
+    key: "centerName",
+    label: "센터",
+    type: "badge",
+    width: 100,
+    render: (val: any) => {
+      const text = (typeof val === "string" && val.trim().length > 0) ? val : "없음"
+      return `<span>${text}</span>`
+    },
+  },
   { key: 'staff',     label: '담당자',    type: 'text' },
 ]
 

@@ -51,15 +51,15 @@
                 </otherwise>
             </choose>
         </if>
-        <if test="dateFrom != null and dateFrom != ''">
-            AND t.createdAt &gt;= #{dateFrom}
-        </if>
-        <if test="dateTo != null and dateTo != ''">
-            AND t.createdAt &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
-        </if>
-        <if test="category != null and category != ''">
-            AND t.category = #{category}
-        </if>
+<!--        <if test="dateFrom != null and dateFrom != ''">-->
+<!--            AND t.createdAt &gt;= #{dateFrom}-->
+<!--        </if>-->
+<!--        <if test="dateTo != null and dateTo != ''">-->
+<!--            AND t.createdAt &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)-->
+<!--        </if>-->
+<!--        <if test="category != null and category != ''">-->
+<!--            AND t.category = #{category}-->
+<!--        </if>-->
         <if test="division != null and division != ''">
             AND t.division = #{division}
         </if>
@@ -126,6 +126,7 @@
         t.id, t.origin, t.createdAt, t.staff, t.division, t.category,
         t.name, t.phone, t.source, t.content, t.memo, t.status, t.reservation
         FROM (
+        /* ===== customers 분기 ===== */
         SELECT
         c.customer_id           AS id,
         'CUSTOMER'              AS origin,
@@ -143,9 +144,24 @@
         DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
         FROM customers c
         LEFT JOIN users u ON u.user_id = c.user_id
+        WHERE 1=1
+        <!-- 날짜 푸시다운 -->
+        <if test="dateFrom != null and dateFrom != ''">
+            AND c.customer_created_at &gt;= #{dateFrom}
+        </if>
+        <if test="dateTo != null and dateTo != ''">
+            AND c.customer_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
+        </if>
+        <if test="division != null and division != ''">
+            AND c.customer_division = #{division}
+        </if>
+        <if test="status != null and status != ''">
+            AND c.customer_status = #{status}
+        </if>
 
         UNION ALL
 
+        /* ===== customers_duplicate 분기 ===== */
         SELECT
         d.duplicate_id          AS id,
         'DUPLICATE'             AS origin,
@@ -165,6 +181,14 @@
         JOIN customers c2 ON c2.customer_id = d.customer_id
         LEFT JOIN users u2 ON u2.user_id = c2.user_id
         WHERE d.duplicate_display = 1
+        <!-- 날짜 푸시다운 -->
+        <if test="dateFrom != null and dateFrom != ''">
+            AND d.duplicate_created_at &gt;= #{dateFrom}
+        </if>
+        <if test="dateTo != null and dateTo != ''">
+            AND d.duplicate_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
+        </if>
+        <!-- division/status는 외부 필터에서 처리: division='중복' 고정, status='없음' 고정 -->
         ) t
         WHERE 1=1
         <include refid="ADMIN_FILTERS"/>
@@ -174,6 +198,7 @@
 
     <select id="countAllForAdmin" resultType="int">
         SELECT COUNT(*) FROM (
+        /* ===== customers 분기 ===== */
         SELECT
         c.customer_id AS id,
         'CUSTOMER'    AS origin,
@@ -191,9 +216,24 @@
         DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
         FROM customers c
         LEFT JOIN users u ON u.user_id = c.user_id
+        WHERE 1=1
+        <!-- 날짜 푸시다운 -->
+        <if test="dateFrom != null and dateFrom != ''">
+            AND c.customer_created_at &gt;= #{dateFrom}
+        </if>
+        <if test="dateTo != null and dateTo != ''">
+            AND c.customer_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
+        </if>
+        <if test="division != null and division != ''">
+            AND c.customer_division = #{division}
+        </if>
+        <if test="status != null and status != ''">
+            AND c.customer_status = #{status}
+        </if>
 
         UNION ALL
 
+        /* ===== customers_duplicate 분기 ===== */
         SELECT
         d.duplicate_id AS id,
         'DUPLICATE'    AS origin,
@@ -213,10 +253,20 @@
         JOIN customers c2 ON c2.customer_id = d.customer_id
         LEFT JOIN users u2 ON u2.user_id = c2.user_id
         WHERE d.duplicate_display = 1
+        <!-- 날짜 푸시다운 -->
+        <if test="dateFrom != null and dateFrom != ''">
+            AND d.duplicate_created_at &gt;= #{dateFrom}
+        </if>
+        <if test="dateTo != null and dateTo != ''">
+            AND d.duplicate_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
+        </if>
+        <!-- division/status는 이 분기에서 고정값이라 내부 추가 조건 불필요 -->
         ) t
         WHERE 1=1
+        <!-- 키워드/가시권한/추가 외부 조건 유지 -->
         <include refid="ADMIN_FILTERS"/>
     </select>
+
 
     <!-- 고객 전용 공통 필터/정렬 (MANAGER/STAFF) -->
     <sql id="CUSTOMER_ONLY_FILTERS">
@@ -231,9 +281,9 @@
         <if test="dateTo != null and dateTo != ''">
             AND c.customer_created_at &lt; DATE_ADD(#{dateTo}, INTERVAL 1 DAY)
         </if>
-        <if test="category != null and category != ''">
-            AND c.customer_category = #{category}
-        </if>
+<!--        <if test="category != null and category != ''">-->
+<!--            AND c.customer_category = #{category}-->
+<!--        </if>-->
         <if test="division != null and division != ''">
             AND c.customer_division = #{division}  <!-- '최초','유효' -->
         </if>

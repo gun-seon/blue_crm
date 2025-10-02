@@ -77,7 +77,17 @@
                         : (col.editable ? startEdit(rowIndex, col.key, row[col.key]) : null)
                     "
                 >
-                  {{ row[col.key] }}
+                  <!-- render 함수가 있으면 그것을 사용 -->
+                  <span v-if="typeof col.render === 'function'" v-html="col.render(row[col.key], row)"></span>
+
+                                <!-- 없으면 빈문자열/공백 → '미배정' 폴백 -->
+                  <template v-else>
+                    {{
+                      (typeof row[col.key] === 'string'
+                          ? row[col.key].trim()
+                          : row[col.key]) || (col.emptyText ?? '미배정')
+                    }}
+                  </template>
                 </span>
 
               <select

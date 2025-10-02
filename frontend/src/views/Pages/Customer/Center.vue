@@ -77,7 +77,7 @@ const {
   }),
 });
 
-// 4컬럼 고정
+// 컬럼 고정
 const columns = [
   { key: "",  label: "",   type: "text", ellipsis: { width: 10 } },
   { key: "createdAt",  label: "생성일",   type: "text", ellipsis: { width: 150 } },
@@ -88,7 +88,7 @@ const columns = [
     label: "센터",
     type: "badge",
     width: 100,
-    render: (val: string) => `<span class="px-2 py-1 rounded-full bg-gray-100">${val ?? '미배정'}</span>`,
+    render: (val: string) => `<span>${val ?? '없음'}</span>`,
   },
   { key: "",  label: "",   type: "text", ellipsis: { width: 20 } },
 ];
