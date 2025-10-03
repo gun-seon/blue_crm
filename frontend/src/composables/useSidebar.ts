@@ -31,6 +31,12 @@ interface SidebarContextType {
   openSubmenu: Ref<string | null>
   toggleSidebar: () => void
   toggleMobileSidebar: () => void
+
+  openMobileSidebar: () => void
+  closeMobileSidebar: () => void
+  openSidebar: () => void
+  closeSidebar: () => void
+
   setIsHovered: (isHovered: boolean) => void
   setActiveItem: (item: string | null) => void
   toggleSubmenu: (item: string) => void
@@ -42,6 +48,12 @@ export function useSidebarProvider() {
   const isExpanded = ref(true)
   const isMobileOpen = ref(false)
   const isMobile = ref(false)
+
+  const openMobileSidebar  = () => { isMobileOpen.value = true }
+  const closeMobileSidebar = () => { isMobileOpen.value = false }
+  const openSidebar  = () => { if (!isMobile.value) isExpanded.value = true }
+  const closeSidebar = () => { if (!isMobile.value) isExpanded.value = false }
+
   const isHovered = ref(false)
   const activeItem = ref<string | null>(null)
   const openSubmenu = ref<string | null>(null)
@@ -95,6 +107,12 @@ export function useSidebarProvider() {
     openSubmenu,
     toggleSidebar,
     toggleMobileSidebar,
+
+    openMobileSidebar,
+    closeMobileSidebar,
+    openSidebar,
+    closeSidebar,
+
     setIsHovered,
     setActiveItem,
     toggleSubmenu,

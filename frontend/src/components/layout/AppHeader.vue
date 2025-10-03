@@ -1,6 +1,6 @@
 <template>
   <header
-      class="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 lg:border-b"
+      class="fixed inset-x-0 top-0 z-[99999] w-screen bg-white dark:bg-gray-900 lg:sticky lg:inset-x-auto lg:w-full lg:border-b dark:border-gray-800"
   >
     <div class="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
       <div
@@ -9,7 +9,7 @@
         <!-- 모바일에서만 -> 사이드바를 접을 수 있는 버튼 -->
         <button
             @click="handleToggle"
-            class="flex items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-99999 dark:border-gray-800 dark:text-gray-400 lg:h-11 lg:w-11 lg:border lg:hidden"
+            class="flex items-center justify-center w-10 h-10 text-gray-500 border-gray-200 rounded-lg z-[99999] dark:border-gray-800 dark:text-gray-400 lg:h-11 lg:w-11 lg:border lg:hidden"
             :class="[
             isMobileOpen
               ? 'lg:bg-transparent dark:lg:bg-transparent bg-gray-100 dark:bg-gray-800'
@@ -54,7 +54,7 @@
         <!-- 모바일에서만 -> 유저 프로필 접히는 버튼 -->
         <button
             @click="toggleApplicationMenu"
-            class="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg z-99999 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden"
+            class="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg z-[99999] hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden"
         >
           <svg
               width="24"
@@ -358,20 +358,29 @@ const test = async () => {
 }
 
 // 사이드바 토글
-const { toggleSidebar, toggleMobileSidebar, isMobileOpen } = useSidebar()
-const handleToggle = () => {
-  if (window.innerWidth >= 1024) {
-    toggleSidebar()
-  } else {
-    toggleMobileSidebar()
-  }
-}
+const { toggleSidebar, toggleMobileSidebar, isMobileOpen, closeMobileSidebar } = useSidebar()
 
 // 모바일용 -> 프로필 메뉴 토글
 const isApplicationMenuOpen = ref(false)
 const toggleApplicationMenu = () => {
-  isApplicationMenuOpen.value = !isApplicationMenuOpen.value
+  const next = !isApplicationMenuOpen.value
+  isApplicationMenuOpen.value = next
+  if (next) closeMobileSidebar() // 헤더앱 메뉴 열리면 사이드바 닫기
 }
+
+const handleToggle = () => {
+  if (window.innerWidth >= 1024) {
+    toggleSidebar()
+  } else {
+    // 사이드바 열 땐 헤더앱 메뉴 닫기
+    if (!isMobileOpen.value) isApplicationMenuOpen.value = false
+    toggleMobileSidebar()
+  }
+}
+
+// 세이프가드: 어떤 경로로 열려도 일관성 보장1
+watch(isMobileOpen, (open) => { if (open) isApplicationMenuOpen.value = false })
+watch(isApplicationMenuOpen, (open) => { if (open) closeMobileSidebar() })
 
 // 세션 (로그인 시간) 관련
 const timeLeft = ref(0)
