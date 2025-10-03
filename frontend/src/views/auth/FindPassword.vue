@@ -175,7 +175,8 @@
               <CommonGridShape />
               <div class="flex flex-col items-center max-w-xs">
                 <router-link to="/" class="block mb-4">
-                  <img width="231" height="48" src="/images/logo/dark_menu_logo.png" alt="Logo" />
+<!--                  <img width="231" height="48" src="/images/logo/dark_menu_logo.png" alt="Logo" />-->
+                  <img class="h-auto w-auto" src="/images/logo/dark_menu_logo.png" alt="Logo" />
                 </router-link>
 <!--                <p class="text-center text-gray-400 dark:text-white/60">-->
 <!--                  회사소개 한줄 소개 / 회사소개 한줄 소개 / 회사소개 한줄 소개 / 회사소개 한줄 소개-->

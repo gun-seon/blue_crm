@@ -116,22 +116,22 @@
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">기간내 DB 갯수 (중복 포함)</span>
-              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-if="userAggLoading" class="text-base text-gray-900 dark:text-gray-100">로딩 중 ...</b>
               <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbRangeWithDup.toLocaleString() }}</b>
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">기간내 DB 갯수 (유효DB만)</span>
-              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-if="userAggLoading" class="text-base text-gray-900 dark:text-gray-100">로딩 중 ...</b>
               <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbRangeOnly.toLocaleString() }}</b>
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">전체 DB 갯수 (중복 포함)</span>
-              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-if="userAggLoading" class="text-base text-gray-900 dark:text-gray-100">로딩 중 ...</b>
               <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbAllWithDup.toLocaleString() }}</b>
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">전체 DB 갯수 (유효DB만)</span>
-              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-if="userAggLoading" class="text-base text-gray-900 dark:text-gray-100">로딩 중 ...</b>
               <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbAllOnly.toLocaleString() }}</b>
             </li>
           </ul>
@@ -205,22 +205,22 @@
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">기간내 DB 갯수 (중복 포함)</span>
-              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-if="userAggLoading" class="text-base text-gray-900 dark:text-gray-100">로딩 중 ...</b>
               <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbRangeWithDup.toLocaleString() }}</b>
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">기간내 DB 갯수 (유효DB만)</span>
-              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-if="userAggLoading" class="text-base text-gray-900 dark:text-gray-100">로딩 중 ...</b>
               <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbRangeOnly.toLocaleString() }}</b>
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">전체 DB 갯수 (중복 포함)</span>
-              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-if="userAggLoading" class="text-base text-gray-900 dark:text-gray-100">로딩 중 ...</b>
               <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbAllWithDup.toLocaleString() }}</b>
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">전체 DB 갯수 (유효DB만)</span>
-              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-if="userAggLoading" class="text-base text-gray-900 dark:text-gray-100">로딩 중 ...</b>
               <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbAllOnly.toLocaleString() }}</b>
             </li>
           </ul>
