@@ -119,6 +119,12 @@ async function loadTree({ restoreExpandedKeys = null, focusUserId = null } = {})
   currentUser.value = data.currentUser
   // applySearch(globalFilters.keyword || "")
 
+  // 로그인 사용자가 센터 소속이면: 내 센터 브랜치만 펼침
+  if (currentUser.value?.centerId) {
+    // 현재 사용자까지의 상위(HQ/GROUP/CENTER)만 열림
+    forceOpenPathToUserId(currentUser.value.userId, { exclusive: true })
+  }
+
   // 펼침 복원 (있으면)
   if (restoreExpandedKeys) {
     expandKeys.value = new Set(restoreExpandedKeys)
@@ -126,7 +132,7 @@ async function loadTree({ restoreExpandedKeys = null, focusUserId = null } = {})
 
   // 특정 사용자 경로 강제 오픈 + 스크롤 (있으면)
   if (focusUserId) {
-    forceOpenPathToUserId(focusUserId)
+    forceOpenPathToUserId(focusUserId, { exclusive: false })
     await nextTick()
     const el = document.getElementById('user-' + focusUserId)
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
@@ -140,8 +146,10 @@ async function loadTree({ restoreExpandedKeys = null, focusUserId = null } = {})
 
 onMounted(loadTree)
 
-function forceOpenPathToUserId(userId) {
-  const open = new Set(expandKeys.value)
+function forceOpenPathToUserId(userId, { exclusive = false } = {}) {
+  // exclusive=true 이면 기존 펼침 무시하고 "내 경로만" 세팅
+  const open = exclusive ? new Set() : new Set(expandKeys.value)
+
   function dfs(list, ancestors = []) {
     for (const n of list) {
       const k = nodeKey(n)
