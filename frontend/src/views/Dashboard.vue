@@ -140,9 +140,9 @@
     </div>
 
     <!-- 센터장/담당자용 -->
-    <div v-else class="mt-2 grid grid-cols-12 gap-4 md:gap-6">
+    <div v-else class="mt-2 grid grid-cols-12 gap-4 md:gap-6 items-stretch">
       <!-- KPI -->
-      <div class="col-span-12 xl:col-span-4 space-y-4">
+      <div class="col-span-12 xl:col-span-4 space-y-4 xl:space-y-0 xl:grid xl:grid-rows-[1fr_1fr] xl:gap-4 xl:h-full xl:min-h-0" >
         <KpiCardCompact title="마크CRM 총 직원 수" :value="kpi.users" delta="11.0%" trend="up">
           <template #icon>
             <UserGroupIcon class="w-6 h-6 fill-gray-800 dark:fill-white/90" />
@@ -157,7 +157,7 @@
       </div>
 
       <!-- 통계: 담당자별 -->
-      <div class="col-span-12 xl:col-span-8 rounded-2xl border bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+      <div class="col-span-12 xl:col-span-8 xl:h-full rounded-2xl border bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
 
         <!-- 담당자별 (단일 선택) -->
         <div class="col-span-12 xl:col-span-6 rounded-2xl border border-gray-200 bg-white p-5
@@ -205,19 +205,23 @@
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">기간내 DB 갯수 (중복 포함)</span>
-              <b class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbRangeWithDup.toLocaleString() }}</b>
+              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbRangeWithDup.toLocaleString() }}</b>
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">기간내 DB 갯수 (유효DB만)</span>
-              <b class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbRangeOnly.toLocaleString() }}</b>
+              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbRangeOnly.toLocaleString() }}</b>
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">전체 DB 갯수 (중복 포함)</span>
-              <b class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbAllWithDup.toLocaleString() }}</b>
+              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbAllWithDup.toLocaleString() }}</b>
             </li>
             <li class="flex items-center justify-between px-4 py-3">
               <span class="text-sm text-gray-600 dark:text-gray-300">전체 DB 갯수 (유효DB만)</span>
-              <b class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbAllOnly.toLocaleString() }}</b>
+              <b v-if="userAggLoading">로딩 중 ...</b>
+              <b v-else class="text-base text-gray-900 dark:text-gray-100">{{ userAgg.dbAllOnly.toLocaleString() }}</b>
             </li>
           </ul>
         </div>

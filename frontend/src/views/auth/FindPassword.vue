@@ -177,9 +177,9 @@
                 <router-link to="/" class="block mb-4">
                   <img width="231" height="48" src="/images/logo/dark_menu_logo.png" alt="Logo" />
                 </router-link>
-                <p class="text-center text-gray-400 dark:text-white/60">
-                  회사소개 한줄 소개 / 회사소개 한줄 소개 / 회사소개 한줄 소개 / 회사소개 한줄 소개
-                </p>
+<!--                <p class="text-center text-gray-400 dark:text-white/60">-->
+<!--                  회사소개 한줄 소개 / 회사소개 한줄 소개 / 회사소개 한줄 소개 / 회사소개 한줄 소개-->
+<!--                </p>-->
               </div>
             </div>
           </div>
