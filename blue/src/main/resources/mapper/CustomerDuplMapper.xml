@@ -22,7 +22,7 @@
         <if test="keyword != null and keyword != ''">
             <choose>
                 <!-- SUPERADMIN 가시권한 N: 전화 앞3/뒤4 '정확일치'만, 이름/담당자 LIKE 허용 -->
-                <when test='visible == "N"'>
+                <when test="_parameter.containsKey('visible') and visible == 'N'">
                     AND (
                     t.name  LIKE CONCAT('%', #{keyword}, '%')
                     OR t.staff LIKE CONCAT('%', #{keyword}, '%')
