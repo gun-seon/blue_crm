@@ -35,6 +35,7 @@ public class CustomerDuplController {
       @RequestParam(required = false) String dateTo,
       @RequestParam(required = false) String category
   ) {
+    System.out.println(keyword);
     return service.getAll(auth.getName(), page, size, keyword, dateFrom, dateTo, category);
   }
 }
