@@ -535,8 +535,10 @@ const badgeClass = (value) => {
     case "대기":
     case "미할당":
       return "bg-[#FFF3CD] text-[#B7791F] dark:bg-[#4A3A12]/60 dark:text-[#C9A94B]/80"
-    case "now-none":
-      return "bg-[#E9D8FD] text-[#6B46C1] dark:bg-[#3B2165]/70 dark:text-[#C6A5F3]/80"
+    case "자연풀":
+      return "bg-[#D0F0F0] text-[#00796B] dark:bg-[#1B3C3C] dark:text-[#66C2A5]"
+    case "카피":
+      return "bg-[#E0D7F8] text-[#5B4B9A] dark:bg-[#312C5C] dark:text-[#B6A9E3]"
     case "가망":
       return "bg-[#EADBC8] text-[#8F6842] dark:bg-[#3E2C1E] dark:text-[#D4A373]/80"
     default:

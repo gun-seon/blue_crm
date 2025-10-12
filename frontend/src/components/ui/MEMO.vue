@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 flex items-center justify-center z-99999">
+  <div class="fixed inset-0 flex items-center justify-center z-[2147483645]">
     <!-- 배경 -->
     <div
         class="fixed inset-0 bg-black/40 dark:bg-black/60"
