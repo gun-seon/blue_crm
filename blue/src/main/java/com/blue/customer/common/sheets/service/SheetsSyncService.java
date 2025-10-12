@@ -212,7 +212,7 @@ public class SheetsSyncService {
     if (src == null) return new SyncResult(false, 0, "no_source");
     
     int start = (src.getCursorRow() == null ? 1 : src.getCursorRow()) + 1;
-    String range = src.getSheetName() + "!A" + start + ":" + END_COL + (start + BATCH_SIZE - 1);
+    String range = "'" + src.getSheetName() + "'!A" + start + ":" + END_COL + (start + BATCH_SIZE - 1);
     
     List<List<Object>> raw = fetchWithRetry(src.getSpreadsheetId(), range);
     if (raw == null || raw.isEmpty()) return new SyncResult(true, 0, "no_new");
@@ -306,14 +306,15 @@ public class SheetsSyncService {
     dto.setCustomerCreatedAt(at);                 // A
     dto.setCustomerName(asStr(get(r, 2)));        // C
     dto.setCustomerPhone(formatPhoneKR(asStr(get(r, 4)))); // E
-    dto.setCustomerMemo(asStr(get(r, 5)));        // F
     
-    String content = asStr(get(r, 6));        // G
+    String content = asStr(get(r, 5));        // F
     if (content != null && !content.isEmpty()) {
       dto.setCustomerContent("시청한 종목명 : " + content);
     } else {
-      dto.setCustomerContent(null);
+      dto.setCustomerContent("시청한 종목명 : X");
     }
+
+    dto.setCustomerMemo(asStr(get(r,6)));    // G
     
     dto.setCustomerSource(asStr(get(r, 8)));      // I
     return dto;
