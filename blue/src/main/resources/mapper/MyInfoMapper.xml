@@ -39,7 +39,8 @@
     <select id="findOneBySourceId" resultType="com.blue.auth.dto.SheetSettingsDto">
         SELECT
             spreadsheet_id AS sheetId,
-            cursor_row     AS startRow
+            cursor_row     AS startRow,
+            sheet_name     AS sheetName
         FROM gsheet_sources
         WHERE source_id = #{sourceId}
         LIMIT 1
@@ -50,6 +51,7 @@
         UPDATE gsheet_sources
         SET spreadsheet_id = #{sheetId},
             cursor_row     = #{startRow},
+            sheet_name     = #{sheetName},
             updated_at     = NOW()
         WHERE source_id     = #{sourceId}
     </update>

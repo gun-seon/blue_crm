@@ -362,6 +362,23 @@
                 <p v-if="sheetIdError" class="mt-1 text-sm text-error-500">{{ sheetIdError }}</p>
               </div>
 
+              <!-- 시트 제목 -->
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300">시트 제목</div>
+              <div class="col-start-2">
+                <input
+                    v-model="sheetName"
+                    :disabled="savingSheet || !sheetEditing"
+                    placeholder="예) Sheet1"
+                    @blur="validateSheetName"
+                    class="h-11 w-full rounded-lg border px-3 bg-white text-gray-800
+                     focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
+                     dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+                     disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200
+                     dark:disabled:bg-gray-900/40 dark:disabled:text-gray-500 dark:disabled:border-gray-700"
+                />
+                <p v-if="sheetNameError" class="mt-1 text-sm text-error-500">{{ sheetNameError }}</p>
+              </div>
+
               <!-- 시작 행 -->
               <div class="text-sm font-medium text-gray-700 dark:text-gray-300">마지막 행</div>
               <div class="col-start-2">
@@ -648,9 +665,11 @@ const startRow      = ref(1)
 const savingSheet   = ref(false)
 const sheetIdError  = ref('')
 const startRowError = ref('')
+const sheetName      = ref('')
+const sheetNameError = ref('')
 
 const sheetEditing  = ref(false)
-const originalSheet = ref({ sheetId: '', startRow: 1 })
+const originalSheet = ref({ sheetId: '', startRow: 1, sheetName: '' })
 
 /* 비번 보기 토글 */
 const showCurrentPw = ref(false)
@@ -917,9 +936,13 @@ async function changePassword() {
 async function loadSheetConfig() {
   try {
     const { data } = await axios.get('/api/me/sheet-settings', { withCredentials: true })
+
+    // 데이터 로드
     sheetId.value  = (data?.sheetId ?? '')
     startRow.value = Number(data?.startRow ?? 1)
-    originalSheet.value = { sheetId: sheetId.value, startRow: startRow.value }
+    sheetName.value = (data?.sheetName ?? '')
+
+    originalSheet.value = { sheetId: sheetId.value, startRow: startRow.value, sheetName: sheetName.value }
     sheetEditing.value = false // 초기엔 읽기전용
   } catch {
     // 값 없으면 기본값 유지, 편집 off
@@ -929,18 +952,23 @@ async function loadSheetConfig() {
 
 async function onSheetSave() {
   await saveSheetConfig()
-  originalSheet.value = { sheetId: sheetId.value, startRow: startRow.value }
+  originalSheet.value = { sheetId: sheetId.value, startRow: startRow.value, sheetName: sheetName.value }
   sheetEditing.value = false
 }
 function onSheetCancel() {
   sheetId.value  = originalSheet.value.sheetId
   startRow.value = originalSheet.value.startRow
+  sheetName.value = originalSheet.value.sheetName
   sheetEditing.value = false
 }
 
 function validateSheetId() {
   const v = (sheetId.value || '').trim()
   sheetIdError.value = v ? '' : 'Spreadsheet ID를 입력하세요.'
+}
+function validateSheetName() {
+  const v = (sheetName.value || '').trim()
+  sheetNameError.value = v ? '' : '시트 제목을 입력하세요.'
 }
 function validateStartRow() {
   const n = Number(startRow.value || 0)
@@ -954,8 +982,9 @@ function resetSheetForm() {
 }
 async function saveSheetConfig() {
   validateSheetId()
+  validateSheetName()
   validateStartRow()
-  if (sheetIdError.value || startRowError.value) {
+  if (sheetIdError.value || startRowError.value || sheetNameError.value) {
     alert('입력값을 확인하세요.')
     return
   }
@@ -969,7 +998,8 @@ async function saveSheetConfig() {
     savingSheet.value = true
     await axios.put('/api/me/sheet-settings', {
       sheetId: sheetId.value,
-      startRow: startRow.value
+      startRow: startRow.value,
+      sheetName: sheetName.value
     }, { withCredentials: true })
     alert('시트 설정이 저장되었습니다.')
   } catch (e) {

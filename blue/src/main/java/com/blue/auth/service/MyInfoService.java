@@ -79,8 +79,15 @@ public class MyInfoService {
     if (sheetId.length() > 80) {
       throw new AuthException("sheetId가 너무 깁니다. (최대 80자)", HttpStatus.BAD_REQUEST);
     }
+    
     int startRow = (dto.getStartRow() == null || dto.getStartRow() < 1) ? 1 : dto.getStartRow();
-    myInfoMapper.updateOne(1L, sheetId, startRow);
+    
+    String sheetName = (dto.getSheetName() == null) ? "" : dto.getSheetName().trim();
+    if (sheetName.length() > 100) {
+      throw new AuthException("sheetName이 너무 깁니다. (최대 100자)", HttpStatus.BAD_REQUEST);
+    }
+    
+    myInfoMapper.updateOne(1L, sheetId, startRow, sheetName);
   }
   
   // 센터관리

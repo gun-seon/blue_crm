@@ -7,7 +7,6 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-import java.util.Map;
 
 @Mapper
 public interface MyInfoMapper {
@@ -23,7 +22,8 @@ public interface MyInfoMapper {
   SheetSettingsDto findOneBySourceId(@Param("sourceId") long sourceId);
   int updateOne(@Param("sourceId") long sourceId,
                 @Param("sheetId") String sheetId,
-                @Param("startRow") int startRow);
+                @Param("startRow") int startRow,
+                @Param("sheetName") String sheetName);
   
   // 센터 관리
   List<CenterDto> findAll();
