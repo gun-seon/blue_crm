@@ -155,13 +155,21 @@
                   </label>
                   <div class="relative">
                     <input
+                        ref="passwordConfirmInput"
                         v-model="passwordConfirm"
-                        type="password"
+                        :type="showPasswordConfirm ? 'text' : 'password'"
                         placeholder="비밀번호 재입력"
                         class="h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs
                                placeholder:text-gray-400 focus:outline-hidden focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10
                                dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
                     />
+                    <span
+                        @click="togglePasswordConfirmVisibility"
+                        class="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                    >
+                      <EyeIcon v-if="showPasswordConfirm" class="w-5 h-5 text-gray-500 dark:text-gray-400"/>
+                      <EyeSlashIcon v-else class="w-5 h-5 text-gray-500 dark:text-gray-400"/>
+                    </span>
                   </div>
                   <p v-if="passwordConfirm && password !== passwordConfirm" class="mt-1 text-sm text-error-500">
                     비밀번호가 일치하지 않습니다.
@@ -267,6 +275,8 @@ useIdleRefresh({ enabled: () => verified.value, timeoutMs: 1000 * 60 * 3 })
 const codeInput = ref(null)
 const passwordInput = ref(null)
 const showPassword = ref(false)
+const passwordConfirmInput = ref(null)
+const showPasswordConfirm = ref(false)
 
 // 실시간 유저 피드백 (blur시 유효성 검사)
 const nameError = ref('')
@@ -381,6 +391,9 @@ const validatePhone = () => {
 // 비밀번호 보기
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
+}
+const togglePasswordConfirmVisibility = () => {
+  showPasswordConfirm.value = !showPasswordConfirm.value
 }
 const validatePassword = () => {
   if (password.value && password.value.length < 6) {
