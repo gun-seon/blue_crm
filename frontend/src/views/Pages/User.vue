@@ -314,6 +314,13 @@ async function onBadgeUpdate(row, key, newValue) {
     return;
   }
 
+  // === 승인된 직원은 super계정 만 '관리자'로 변경 가능 ===
+  if (key === "type" && newValue === "관리자" && row.requestStatus === "승인" && !auth.isSuper) {
+    alert("수정 권한이 없습니다.");
+    await fetchData();
+    return;
+  }
+
   // === 센터장 1명 제한 가드 ===
   try {
     // 1) 구분을 '센터장'으로 바꾸려는 경우
