@@ -577,6 +577,34 @@
       </div>
     </div>
   </AdminLayout>
+
+  <!-- 전역 로딩 오버레이 (메모 모달과 동일하게 body로 텔레포트) -->
+  <Teleport to="body">
+    <transition name="fade">
+      <div
+          v-if="downloading"
+          class="fixed inset-0 z-[2147483646]"
+          aria-live="polite" aria-busy="true" role="status"
+      >
+        <!-- 배경 -->
+        <div class="absolute inset-0 bg-black/5 dark:bg-black/60"></div>
+
+        <!-- 스피너 -->
+        <div class="absolute inset-0 z-[2147483647] flex items-center justify-center">
+          <div class="flex flex-col items-center gap-3">
+            <svg class="animate-spin h-8 w-8 text-blue-500" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10"
+                      stroke="currentColor" stroke-width="4" fill="none"/>
+              <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+            </svg>
+            <p class="text-sm text-gray-900 dark:text-white/90">불러오는 중…</p>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </Teleport>
+
 </template>
 
 <script setup>
