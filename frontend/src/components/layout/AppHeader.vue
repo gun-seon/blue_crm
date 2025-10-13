@@ -1,6 +1,6 @@
 <template>
   <header
-      class="fixed inset-x-0 top-0 z-[99999] w-screen bg-white dark:bg-gray-900 lg:sticky lg:inset-x-auto lg:w-full lg:border-b dark:border-gray-800"
+      class="fixed inset-x-0 top-0 z-[9998] w-screen bg-white dark:bg-gray-900 lg:sticky lg:inset-x-auto lg:w-full lg:border-b dark:border-gray-800"
   >
     <div class="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
       <div
