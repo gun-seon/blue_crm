@@ -15,6 +15,7 @@
               :columns="columns"
               :data="items"
               :showCheckbox="true"
+              :rowSelectable="isRowSelectable"
               :page="page"
               :totalPages="totalPages"
               @rowSelect="onRowSelect"
@@ -199,6 +200,12 @@ const columns = computed(() => {
   }
   return base;
 });
+
+// 요청상태가 승인이면 체크박스 비활성화
+function isRowSelectable(row) {
+  const isApproved = row.requestStatus === '승인';
+  return !isApproved;
+}
 
 // 배지 수정 가능 여부 검토
 function canEdit(row) {
