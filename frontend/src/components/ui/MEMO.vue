@@ -273,6 +273,7 @@ function initTimepicker(){
     // 처음 열릴 때 입력칸이 비어 있으면: 오늘 날짜 '선택 표시'(input은 그대로 비워둠)
     onReady: (_, __, ins) => {
       ins.calendarContainer.style.position = "fixed";
+      ins.calendarContainer.style.zIndex = "2147483648" // 모달보다 1단계 높게
 
       // X 버튼 추가
       if (!ins._clearButton) {

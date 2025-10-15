@@ -28,9 +28,9 @@ public class SheetsSyncService {
   
   // ===== 운영 파라미터 =====
   private static final int BATCH_SIZE = 200;
-  private static final String END_COL = "I";                 // A~I
-  private static final int MANUAL_DEBOUNCE_SEC = 1;          // 수동 1초
-  private static final int MANUAL_MAX_PER_MIN = 59;          // 수동 분당 상한
+  private static final String END_COL = "I"; // A~I
+  private static final int MANUAL_DEBOUNCE_SEC = 1; // 수동 1초
+  private static final int MANUAL_MAX_PER_MIN = 59; // 수동 분당 상한
   private static final ZoneId Z_SEOUL = ZoneId.of("Asia/Seoul");
   private static final LocalTime MAINT_START = LocalTime.of(0, 0); // [00:00
   private static final LocalTime MAINT_END   = LocalTime.of(1, 0); //  ,01:00)
