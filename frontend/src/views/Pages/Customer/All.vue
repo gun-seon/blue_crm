@@ -517,7 +517,7 @@ onMounted(() => {
     mineOnly.value = true;
     setFilter('mine', 'Y');
     setFilter('staffUserId', auth.userId);
-    changePage(1);
+    if (page.value !== 1) changePage(1);
   }
 });
 
