@@ -107,7 +107,7 @@
 </template>
 
 <script setup>
-import {ref, computed, onUnmounted, watch } from "vue";
+import {ref, computed, onUnmounted, watch, onMounted} from "vue";
 import { useAuthStore } from "@/stores/auth.js";
 import PageBreadcrumb from "@/components/common/PageBreadcrumb.vue";
 import AdminLayout from "@/components/layout/AdminLayout.vue";
@@ -447,7 +447,7 @@ function onCommonButtonClick(btn) {
     return
   }
 
-// MANAGER 전용: 내 DB만 보기 / 전체 보기 토글
+ // MANAGER 전용: 내 DB만 보기 / 전체 보기 토글
   if (btn === "내 DB만 보기" && isManager.value) {
     mineOnly.value = true;
     setFilter("mine", "Y");
@@ -511,4 +511,16 @@ async function refetchAndClamp() {
     changePage(page.value - 1);
   }
 }
+
+onMounted(() => {
+  mineOnly.value = (auth.role === 'MANAGER');
+  setFilter('mine', mineOnly.value ? 'Y' : null);
+  setFilter('staffUserId', mineOnly.value ? auth.userId : null);
+  changePage(1);
+});
+
+onUnmounted(() => {
+  globalFilters.mine = null;
+  globalFilters.staffUserId = null;
+});
 </script>
