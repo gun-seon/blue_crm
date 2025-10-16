@@ -513,10 +513,12 @@ async function refetchAndClamp() {
 }
 
 onMounted(() => {
-  mineOnly.value = (auth.role === 'MANAGER');
-  setFilter('mine', mineOnly.value ? 'Y' : null);
-  setFilter('staffUserId', mineOnly.value ? auth.userId : null);
-  changePage(1);
+  if (isManager.value) {
+    mineOnly.value = true;
+    setFilter('mine', 'Y');
+    setFilter('staffUserId', auth.userId);
+    changePage(1);
+  }
 });
 
 onUnmounted(() => {
