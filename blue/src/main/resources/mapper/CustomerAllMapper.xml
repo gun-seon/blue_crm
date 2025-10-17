@@ -336,7 +336,10 @@
         DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
         FROM customers c
         JOIN users u ON u.user_id = c.user_id
+
         WHERE c.user_id IN (SELECT user_id FROM users WHERE center_id = #{centerId})
+            AND c.customer_status != '없음'
+
         <include refid="CUSTOMER_ONLY_FILTERS"/>
         <include refid="CUSTOMER_ONLY_ORDER"/>
         LIMIT #{size} OFFSET #{offset}
@@ -346,7 +349,10 @@
         SELECT COUNT(*)
         FROM customers c
         JOIN users u ON u.user_id = c.user_id
+
         WHERE c.user_id IN (SELECT user_id FROM users WHERE center_id = #{centerId})
+            AND c.customer_status != '없음'
+
         <include refid="CUSTOMER_ONLY_FILTERS"/>
     </select>
 
@@ -368,7 +374,10 @@
         DATE_FORMAT(c.customer_promise_time, '%c월 %e일 %H:%i') AS reservation
         FROM customers c
         LEFT JOIN users u ON u.user_id = c.user_id
+
         WHERE c.user_id = #{userId}
+            AND c.customer_status != '없음'
+
         <include refid="CUSTOMER_ONLY_FILTERS"/>
         <include refid="CUSTOMER_ONLY_ORDER"/>
         LIMIT #{size} OFFSET #{offset}
@@ -378,7 +387,10 @@
         SELECT COUNT(*)
         FROM customers c
         JOIN users u ON u.user_id = c.user_id
+
         WHERE c.user_id = #{userId}
+            AND c.customer_status != '없음'
+
         <include refid="CUSTOMER_ONLY_FILTERS"/>
     </select>
 
