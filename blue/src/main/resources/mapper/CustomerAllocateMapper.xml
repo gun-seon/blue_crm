@@ -61,44 +61,48 @@
         </choose>
     </sql>
 
-    <!-- HQ: 상태 '없음','회수'만, division(최초/유효) 필터 -->
+    <!-- ================= HQ 목록: 담당자 없음 + 상태 ∈ {없음, 회수} ================= -->
     <select id="findListForHq" resultType="com.blue.customer.allocate.dto.AllocateListRowDto">
         SELECT
-        c.customer_id           AS id,
-        c.customer_name         AS name,
+            c.customer_id           AS id,
+            c.customer_name         AS name,
 
-        CASE WHEN #{visible} = 'Y'
-        THEN c.customer_phone
-        ELSE CONCAT(SUBSTRING_INDEX(c.customer_phone,'-',1), '-****-', SUBSTRING_INDEX(c.customer_phone,'-',-1))
-        END AS phone,
+            CASE WHEN #{visible} = 'Y'
+            THEN c.customer_phone
+            ELSE CONCAT(SUBSTRING_INDEX(c.customer_phone,'-',1), '-****-', SUBSTRING_INDEX(c.customer_phone,'-',-1))
+            END AS phone,
 
-        IFNULL((
-        SELECT GROUP_CONCAT(
-        CONCAT(
-        u2.user_name, '(',
-        RIGHT(REGEXP_REPLACE(u2.user_phone, '[^0-9]', ''), 4),
-        ')'
-        )
-        ORDER BY cpu.past_user_id
-        SEPARATOR ', '
-        )
-        FROM customer_past_users cpu
-        JOIN users u2 ON u2.user_id = cpu.user_id
-        WHERE cpu.customer_phone = c.customer_phone
-        ), '') AS paststaff,
+            IFNULL((
+                SELECT GROUP_CONCAT(
+                    CONCAT(
+                        u2.user_name, '(',
+                        RIGHT(REGEXP_REPLACE(u2.user_phone, '[^0-9]', ''), 4),
+                        ')'
+                    )
+                    ORDER BY cpu.past_user_id
+                    SEPARATOR ', '
+                )
 
-        u.user_name             AS staff,
-        c.customer_division     AS division,
-        c.customer_category     AS category,
-        c.customer_status       AS status,
-        ctr.center_name         AS centerName,
-        c.customer_source       AS source,
-        c.customer_content      AS content,
-        c.customer_created_at   AS createdAt
+                FROM customer_past_users cpu
+                JOIN users u2 ON u2.user_id = cpu.user_id
+                WHERE cpu.customer_phone = c.customer_phone
+            ), '') AS paststaff,
+
+            u.user_name             AS staff,
+            c.customer_division     AS division,
+            c.customer_category     AS category,
+            c.customer_status       AS status,
+            ctr.center_name         AS centerName,
+            c.customer_source       AS source,
+            c.customer_content      AS content,
+            c.customer_created_at   AS createdAt
         FROM customers c
         LEFT JOIN users u   ON u.user_id = c.user_id
         LEFT JOIN centers ctr ON ctr.center_id = u.center_id
-        WHERE c.customer_status IN ('없음','회수')
+
+        WHERE c.user_id IS NULL
+          AND c.customer_status IN ('없음','회수')
+
         <if test="division != null and division != ''">
             AND c.customer_division = #{division}
         </if>
@@ -111,33 +115,39 @@
         SELECT COUNT(*)
         FROM customers c
         LEFT JOIN users u ON u.user_id = c.user_id
-        WHERE c.customer_status IN ('없음','회수')
+
+        WHERE c.user_id IS NULL
+            AND c.customer_status IN ('없음','회수')
+
         <if test="division != null and division != ''">
             AND c.customer_division = #{division}
         </if>
         <include refid="LIST_FILTERS_COMMON"/>
     </select>
 
-    <!-- MANAGER: 현재담당=나 -->
+    <!-- ============== MANAGER 목록: 담당자=나 + 상태='없음' ============== -->
     <select id="findListForManager" resultType="com.blue.customer.allocate.dto.AllocateListRowDto">
         SELECT
-        c.customer_id           AS id,
-        c.customer_name         AS name,
-        c.customer_phone        AS phone,
+            c.customer_id           AS id,
+            c.customer_name         AS name,
+            c.customer_phone        AS phone,
 
-        <!-- 이력은 본사만 보이게 -->
-        NULL                    AS paststaff,
+            <!-- 이력은 본사만 노출 -->
+            NULL                    AS paststaff,
 
-        c.customer_division     AS division,
-        c.customer_category     AS category,
-        c.customer_status       AS status,
-        (SELECT center_name FROM centers WHERE center_id = u.center_id) AS centerName,
-        c.customer_source       AS source,
-        c.customer_content      AS content,
-        c.customer_created_at   AS createdAt
+            c.customer_division     AS division,
+            c.customer_category     AS category,
+            c.customer_status       AS status,
+            (SELECT center_name FROM centers WHERE center_id = u.center_id) AS centerName,
+            c.customer_source       AS source,
+            c.customer_content      AS content,
+            c.customer_created_at   AS createdAt
         FROM customers c
         JOIN users u ON u.user_id = c.user_id
+
         WHERE c.user_id = #{managerUserId}
+            AND c.customer_status = '없음'
+
         <include refid="LIST_FILTERS_COMMON"/>
         <include refid="ORDER_DEFAULT"/>
         LIMIT #{size} OFFSET #{offset}
@@ -147,53 +157,58 @@
         SELECT COUNT(*)
         FROM customers c
         JOIN users u ON u.user_id = c.user_id
+
         WHERE c.user_id = #{managerUserId}
+            AND c.customer_status = '없음'
+
         <include refid="LIST_FILTERS_COMMON"/>
     </select>
 
     <!-- 검증/조회 -->
     <select id="userBelongsToCenter" resultType="int">
-        SELECT COUNT(*) FROM users WHERE user_id = #{userId} AND center_id = #{centerId}
-    </select>
-
-    <select id="findCenterHeadUserId" resultType="long">
-        SELECT user_id
+        SELECT COUNT(*)
         FROM users
-        WHERE center_id = #{centerId}
-        AND user_role = 'MANAGER'
-        AND user_approved = 'Y'                  <!-- 승인된 센터장만 -->
-        ORDER BY user_created_at ASC
-        LIMIT 1
+        WHERE user_id = #{userId}
+          AND center_id = #{centerId}
     </select>
 
+    <!-- HQ가 대상 역할 판별 -->
+    <select id="findUserRole" resultType="string">
+        SELECT user_role FROM users WHERE user_id = #{userId} LIMIT 1
+    </select>
+
+    <!-- 같은 센터 여부 (팀장 자기자신 허용) -->
     <select id="staffInSameCenter" resultType="int">
         SELECT COUNT(*)
         FROM users s
         JOIN users m ON m.user_id = #{managerUserId}
         WHERE s.user_id   = #{staffUserId}
-        AND s.center_id = m.center_id
-        AND s.user_role = 'STAFF'
-        AND s.user_approved = 'Y'                <!-- 승인된 직원만 허용 -->
+            AND s.center_id = m.center_id
+            AND (s.user_role = 'STAFF' OR s.user_id = m.user_id)
+            AND s.user_approved = 'Y'                <!-- 승인된 직원만 허용 -->
     </select>
 
-
-    <!-- 잠금: HQ 대상 (상태: 없음/회수) -->
+    <!-- 잠금: HQ 대상 (담당자 없음 + 상태 없음/회수) -->
     <select id="lockCustomersForHq" resultType="long">
         SELECT c.customer_id
         FROM customers c
+
         WHERE c.customer_id IN
-        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+        AND c.user_id IS NULL
         AND c.customer_status IN ('없음','회수')
+
         FOR UPDATE
     </select>
 
-    <!-- 잠금: MANAGER 대상 (현재담당=센터장) -->
+    <!-- 잠금: MANAGER 대상 (현재담당=센터장 본인 + 상태=없음) -->
     <select id="lockCustomersForManager" resultType="long">
         SELECT c.customer_id
         FROM customers c
         WHERE c.customer_id IN
-        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
         AND c.user_id = #{managerUserId}
+        AND c.customer_status = '없음'
         FOR UPDATE
     </select>
 
@@ -203,11 +218,11 @@
         SELECT c.customer_phone, #{userId}
         FROM customers c
         WHERE c.customer_id IN
-        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
         AND NOT EXISTS (
             SELECT 1 FROM customer_past_users cpu
             WHERE cpu.customer_phone = c.customer_phone
-            AND cpu.user_id = #{userId}
+                AND cpu.user_id = #{userId}
         )
     </insert>
 
@@ -217,7 +232,6 @@
         FROM customer_past_users cpu
         JOIN customers c ON c.customer_phone = cpu.customer_phone
         WHERE cpu.user_id = #{managerUserId}
-        AND c.customer_status = '신규'   <!-- 신규일 때만 센터장 이력 제거 -->
         AND c.customer_id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
     </delete>
@@ -227,18 +241,26 @@
         UPDATE customers
         SET user_id = #{userId}
         WHERE customer_id IN
-        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
     </update>
 
-    <!-- 본사 분배: 상태를 '신규'로 강제 세팅 -->
+    <!-- 상태 '신규'로 통일 (HQ→직원, 팀장→본인/직원) -->
     <update id="updateStatusToNew">
         UPDATE customers
         SET customer_status = '신규'
         WHERE customer_id IN
+            <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <!-- 본사에서 센터장 분배시: '없음'으로 통일 -->
+    <update id="updateStatusToNone">
+        UPDATE customers
+        SET customer_status = '없음'
+        WHERE customer_id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
     </update>
 
-    <!-- 직원 검색 -->
+    <!-- 직원 검색: 같은 센터의 MANAGER/STAFF 모두 (센터장 자기자신 선택 가능) -->
     <select id="searchStaffForAllocate" resultType="com.blue.customer.allocate.dto.UserPickDto">
         SELECT
         u.user_id     AS userId,
@@ -246,8 +268,8 @@
         c.center_name AS centerName
         FROM users u
         LEFT JOIN centers c ON c.center_id = u.center_id
-        WHERE u.user_role = 'STAFF'
-        AND u.user_approved = 'Y'                <!-- 승인된 직원만 -->
+        WHERE u.user_role IN ('MANAGER','STAFF')
+            AND u.user_approved = 'Y'                <!-- 승인된 직원만 -->
         <if test="centerId != null">
             AND u.center_id = #{centerId}
         </if>
@@ -258,7 +280,6 @@
             )
         </if>
         ORDER BY u.user_name ASC
-        LIMIT 50
     </select>
 
     <!-- 분배용 센터 목록:

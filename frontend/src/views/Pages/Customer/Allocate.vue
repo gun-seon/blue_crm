@@ -206,6 +206,15 @@ function closeModal(){ modal.value.open = false }
 async function onConfirmAllocate(payload: { centerId?:number|null, userId?:number|null }){
   const ids = needSelection(); if (!ids.length) return
   await runBusy(async () => {
+    // 관리자가 분배할 경우: 센터 + 대상자(센터장/담당자) 선택 필수
+    if (modal.value.mode === 'HQ' && (!payload.centerId)) {
+      alert('센터를 선택하세요.')
+      return
+    } else if (modal.value.mode === 'HQ' && (!payload.userId)) {
+      alert('직원을 선택하세요.')
+      return
+    }
+
     if (modal.value.mode === 'HQ') {
       await axios.post('/api/work/allocate/hq', {
         customerIds: ids,

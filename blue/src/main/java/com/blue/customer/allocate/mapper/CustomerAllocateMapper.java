@@ -51,7 +51,9 @@ public interface CustomerAllocateMapper {
   
   // 검증/조회
   Integer userBelongsToCenter(@Param("userId") Long userId, @Param("centerId") Long centerId);
-  Long findCenterHeadUserId(@Param("centerId") Long centerId); // role=MANAGER, 가장 오래된
+  String  findUserRole(@Param("userId") Long userId);
+  
+  // 유저가 센터에 소속되어있는지 검사
   Integer staffInSameCenter(@Param("managerUserId") Long managerUserId,
                             @Param("staffUserId") Long staffUserId);
   
@@ -66,7 +68,8 @@ public interface CustomerAllocateMapper {
   
   // 소유자/상태
   int updateOwner(@Param("ids") List<Long> ids, @Param("userId") Long userId);
-  int updateStatusToNew(@Param("ids") List<Long> ids);
+  void updateStatusToNew(@Param("ids") List<Long> ids);
+  void updateStatusToNone(@Param("ids") List<Long> ids);
   
   // 직원 검색 (센터 제한 + 키워드)
   List<UserPickDto> searchStaffForAllocate(

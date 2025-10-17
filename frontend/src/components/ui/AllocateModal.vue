@@ -35,9 +35,9 @@
           </p>
         </div>
 
-        <!-- 직원 검색 (선택) -->
+        <!-- 직원 검색 -->
         <div class="space-y-2">
-          <label class="block text-sm text-gray-600 dark:text-gray-300">직원 검색 (선택)</label>
+          <label class="block text-sm text-gray-600 dark:text-gray-300">직원 검색</label>
           <div class="flex gap-2">
             <input
                 v-model.trim="query"
@@ -108,7 +108,7 @@
         <button
             class="h-10 px-4 rounded-lg bg-blue-600 text-white text-sm disabled:opacity-60"
             :disabled="submitting ||
-                  (mode==='HQ' && (!centerId || (!selectedCenter?.hasManager && !pickedUser))) ||
+                  (mode==='HQ' && (!centerId || !pickedUser)) ||
                   (mode==='MANAGER' && !pickedUser)"
             @click="confirm">
           {{ submitting ? '처리 중...' : '분배하기' }}
@@ -173,6 +173,14 @@ function selectUser(u:any){ pickedUser.value = u }
 async function confirm(){
   submitting.value = true
   try {
+    if (props.mode === 'HQ' && (!centerId.value)) {
+      alert('센터를 선택하세요.')
+      return
+    } else if (props.mode === 'HQ' && (!pickedUser.value?.userId)) {
+      alert('직원을 선택하세요.')
+      return
+    }
+
     emit('confirm', { centerId: centerId.value ?? undefined, userId: pickedUser.value?.userId ?? undefined })
   } finally { submitting.value = false }
 }
