@@ -84,6 +84,8 @@
         <if test="to != null and to != ''">
             AND DATE(c.customer_created_at) &lt;= #{to}
         </if>
+
+        AND c.customer_status != '없음'
         )
         UNION ALL
         (
@@ -112,7 +114,10 @@
         <if test="to != null and to != ''">
             AND DATE(d.duplicate_created_at) &lt;= #{to}
         </if>
+
+        AND c.customer_status != '없음'
         )
+
         ORDER BY created DESC
     </select>
 
