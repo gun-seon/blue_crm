@@ -32,8 +32,8 @@ public class CustomerRevokeService {
         total = mapper.countListForHq(keyword, dateFrom, dateTo, category, division, me.getVisible());
       }
       case "MANAGER" -> {
-        items = mapper.findListForManager(offset, size, keyword, dateFrom, dateTo, category, sort, me.getCenterId(), me.getVisible());
-        total = mapper.countListForManager(keyword, dateFrom, dateTo, category, me.getCenterId(), me.getVisible());
+        items = mapper.findListForManager(offset, size, keyword, dateFrom, dateTo, category, sort, me.getCenterId(), me.getVisible(), me.getUserId());
+        total = mapper.countListForManager(keyword, dateFrom, dateTo, category, me.getCenterId(), me.getVisible(), me.getUserId());
       }
       default -> throw new IllegalArgumentException("이 메뉴는 본사/센터장만 사용할 수 있습니다.");
     }
@@ -73,7 +73,7 @@ public class CustomerRevokeService {
     }
     
     // 같은 센터 소속 담당자의 건만 락
-    List<Long> lockIds = mapper.lockCustomersForRevokeByManager(req.getCustomerIds(), me.getCenterId());
+    List<Long> lockIds = mapper.lockCustomersForRevokeByManager(req.getCustomerIds(), me.getCenterId(), me.getUserId());
     if (lockIds.isEmpty()) return new RevokeResult(0, req.getCustomerIds().size());
     
     mapper.updateToRevoked(lockIds);

@@ -113,6 +113,7 @@
         c.customer_id         AS id,
         c.customer_name       AS name,
         c.customer_phone      AS phone,
+        u.user_name           AS staff,
         c.customer_division   AS division,
         c.customer_category   AS category,
         c.customer_status     AS status,
@@ -127,6 +128,10 @@
             AND c.user_id IS NOT NULL
             AND u.center_id = #{managerCenterId}
 
+        <if test="excludeUserId != null">
+            AND c.user_id != #{excludeUserId}        <!-- 본인 디비는 출력 제외 -->
+        </if>
+
         <include refid="LIST_FILTERS_COMMON"/>
         <include refid="ORDER_DEFAULT"/>
         LIMIT #{size} OFFSET #{offset}
@@ -140,6 +145,10 @@
         WHERE c.customer_status != '회수'
             AND c.user_id IS NOT NULL
             AND u.center_id = #{managerCenterId}
+
+        <if test="excludeUserId != null">
+            AND c.user_id != #{excludeUserId}        <!-- 본인 디비는 출력 제외 -->
+        </if>
 
         <include refid="LIST_FILTERS_COMMON"/>
     </select>
@@ -169,6 +178,10 @@
           WHERE u.user_id = c.user_id
             AND u.center_id = #{managerCenterId}
         )
+
+        <if test="excludeUserId != null">
+            AND c.user_id != #{excludeUserId}        <!-- 본인 디비는 출력 제외 -->
+        </if>
       FOR UPDATE
     </select>
 

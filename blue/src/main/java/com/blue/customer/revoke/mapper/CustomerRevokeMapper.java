@@ -36,17 +36,20 @@ public interface CustomerRevokeMapper {
                                             @Param("category") String category,
                                             @Param("sort") String sort,
                                             @Param("managerCenterId") Long managerCenterId,
-                                            @Param("visible") String visible);
+                                            @Param("visible") String visible,
+                                            @Param("excludeUserId") Long excludeUserId);
   int countListForManager(@Param("keyword") String keyword,
                           @Param("dateFrom") String dateFrom,
                           @Param("dateTo") String dateTo,
                           @Param("category") String category,
                           @Param("managerCenterId") Long managerCenterId,
-                          @Param("visible") String visible);
+                          @Param("visible") String visible,
+                          @Param("excludeUserId") Long excludeUserId);
   
   List<Long> lockCustomersForRevokeByHq(@Param("ids") List<Long> ids);
   List<Long> lockCustomersForRevokeByManager(@Param("ids") List<Long> ids,
-                                             @Param("managerCenterId") Long managerCenterId);
+                                             @Param("managerCenterId") Long managerCenterId,
+                                             @Param("excludeUserId") Long excludeUserId);
   
   int updateToRevoked(@Param("ids") List<Long> ids);
 }
