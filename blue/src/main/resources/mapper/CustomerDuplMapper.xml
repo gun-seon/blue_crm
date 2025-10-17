@@ -131,8 +131,11 @@
         FROM customers_duplicate d
         JOIN customers c ON c.customer_id = d.customer_id
         JOIN users u ON u.user_id = c.user_id
+
         WHERE d.duplicate_display = 0
-        AND u.center_id = #{centerId}
+            AND u.center_id = #{centerId}
+            AND c.customer_status != '없음'
+
         ) t
         WHERE 1=1
         <include refid="DUPL_FILTERS"/>
@@ -159,8 +162,11 @@
         FROM customers_duplicate d
         JOIN customers c ON c.customer_id = d.customer_id
         JOIN users u ON u.user_id = c.user_id
+
         WHERE d.duplicate_display = 0
-        AND u.center_id = #{centerId}
+            AND u.center_id = #{centerId}
+            AND c.customer_status != '없음'
+
         ) t
         WHERE 1=1
         <include refid="DUPL_FILTERS"/>
