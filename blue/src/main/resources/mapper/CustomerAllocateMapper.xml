@@ -265,7 +265,8 @@
         SELECT
         u.user_id     AS userId,
         u.user_name   AS userName,
-        c.center_name AS centerName
+        c.center_name AS centerName,
+        u.user_role   AS role
         FROM users u
         LEFT JOIN centers c ON c.center_id = u.center_id
         WHERE u.user_role IN ('MANAGER','STAFF')
@@ -279,7 +280,7 @@
             OR REPLACE(SUBSTRING_INDEX(u.user_phone, '-', -1), '-', '') LIKE REPLACE(#{q}, '-', '')
             )
         </if>
-        ORDER BY u.user_name ASC
+        ORDER BY FIELD(u.user_role, 'MANAGER','STAFF'), u.user_name ASC, u.user_id ASC
     </select>
 
     <!-- 분배용 센터 목록:

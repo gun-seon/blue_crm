@@ -23,14 +23,15 @@
                   dark:bg-gray-800 dark:text-gray-200">
             <option :value="null" disabled>센터를 선택하세요</option>
             <option v-for="c in centers" :key="c.centerId" :value="c.centerId">
-              {{ c.centerName }} (인원 {{ c.userCount }}명{{ c.hasManager ? ', 센터장 포함' : ', 센터장 없음' }})
+              {{ c.centerName }} (인원 {{ c.userCount }}명)
             </option>
           </select>
-          <p v-if="selectedCenter && !selectedCenter.hasManager"
-             class="text-xs text-amber-600 mt-1">
-            이 센터는 센터장이 없습니다. 센터 소속 직원을 선택해야 분배할 수 있어요.
-          </p>
-          <p v-else-if="centerId === null" class="text-xs text-gray-500 mt-1">
+
+<!--          <p v-if="selectedCenter && !selectedCenter.hasManager"-->
+<!--             class="text-xs text-amber-600 mt-1">-->
+<!--            이 센터는 센터장이 없습니다. 센터 소속 직원을 선택해야 분배할 수 있어요.-->
+<!--          </p>-->
+          <p v-if="centerId === null" class="text-xs text-gray-500 mt-1">
             먼저 센터를 선택하세요.
           </p>
         </div>
@@ -73,7 +74,8 @@
               >
                 <div class="text-sm text-gray-700 dark:text-gray-200">
                   <b>{{ u.userName }}</b>
-                  <span class="text-gray-400 ml-2">{{ u.centerName }}</span>
+                  <span class="text-gray-400 ml-2">({{ roleLabel(u) }})</span>
+<!--                  <span class="text-gray-400 ml-2">{{ u.centerName }}</span>-->
                 </div>
 
                 <!-- 버튼: 선택됨/선택 -->
@@ -125,15 +127,24 @@ import axios from '@/plugins/axios'
 const props = defineProps<{ mode: 'HQ'|'MANAGER', centerId?: number|null, selectedCount: number }>()
 const emit = defineEmits<{(e:'close'):void,(e:'confirm', payload:{ centerId?:number|null, userId?:number|null }):void}>()
 
-type CenterItem = { centerId:number; centerName:string; hasManager:boolean; userCount:number }
+type CenterItem = { centerId:number; centerName:string; userCount:number }
 const centers = ref<CenterItem[]>([])
 const centerId = ref<number|null>(null)
-const selectedCenter = computed(() => centers.value.find(c => c.centerId === centerId.value) || null)
 
 const users = ref<any[]>([])
 const query = ref('')
 const pickedUser = ref<any|null>(null)
 const submitting = ref(false)
+
+// 역할 라벨링
+function roleLabel(u:any): string {
+  const raw = String(
+      u.role ?? u.authority ?? u.auth ?? u.userRole ?? u.position ?? (u.isManager ? 'MANAGER' : '')
+      ).toUpperCase()
+
+  if (raw.includes('MANAGER')) return '센터장'
+  else if (raw.includes('STAFF')) return '담당자'
+}
 
 async function loadCenters(){
   if (props.mode !== 'HQ') return
