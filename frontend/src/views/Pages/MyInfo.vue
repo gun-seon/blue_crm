@@ -33,79 +33,80 @@
             <span>구분: <b class="text-gray-700 dark:text-gray-300">{{ roleLabel }}</b></span>
             <span>소속: <b class="text-gray-700 dark:text-gray-300">{{ orgLabel }}</b></span>
           </div>
-          <span v-if="!isVerified" class="text-gray-500 dark:text-gray-400 text-sm" >이메일 인증 후 내 정보 수정이 가능합니다.</span>
+<!--          <span v-if="!isVerified" class="text-gray-500 dark:text-gray-400 text-sm" >이메일 인증 후 내 정보 수정이 가능합니다.</span>-->
         </div>
 
         <!-- 공통 2열 폼 그리드 -->
         <div class="form-grid grid grid-cols-[6rem,1fr] items-start gap-x-3 gap-y-3">
 
           <!-- 이메일 -->
-          <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">이메일</div>
-          <div class="col-start-2">
-            <div class="flex items-center gap-3">
-              <span
-                  class="truncate flex-1 min-w-[12rem] text-gray-800 dark:text-gray-300 ml-2"
-                  :title="email || '-'"
-              >
-                {{ email || '-' }}
-              </span>
-              <button
-                  type="button"
-                  class="h-11 px-4 rounded-lg text-sm font-medium text-white transition
-               bg-brand-500 hover:bg-brand-600 disabled:opacity-50 ml-auto"
-                  :disabled="sendingCode || isVerified"
-                  @click="sendVerify"
-              >
-                {{ isVerified ? '인증완료' : (sendingCode ? '전송 중...' : (codeSent ? '&nbsp;&nbsp;재요청&nbsp;&nbsp;' : '인증요청')) }}
-              </button>
-            </div>
-          </div>
+<!--          <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">이메일</div>-->
+<!--          <div class="col-start-2">-->
+<!--            <div class="flex items-center gap-3">-->
+<!--              <span-->
+<!--                  class="truncate flex-1 min-w-[12rem] text-gray-800 dark:text-gray-300 ml-2"-->
+<!--                  :title="email || '-'"-->
+<!--              >-->
+<!--                {{ email || '-' }}-->
+<!--              </span>-->
+<!--              <button-->
+<!--                  type="button"-->
+<!--                  class="h-11 px-4 rounded-lg text-sm font-medium text-white transition-->
+<!--               bg-brand-500 hover:bg-brand-600 disabled:opacity-50 ml-auto"-->
+<!--                  :disabled="sendingCode || isVerified"-->
+<!--                  @click="sendVerify"-->
+<!--              >-->
+<!--                {{ isVerified ? '인증완료' : (sendingCode ? '전송 중...' : (codeSent ? '&nbsp;&nbsp;재요청&nbsp;&nbsp;' : '인증요청')) }}-->
+<!--              </button>-->
+<!--            </div>-->
+<!--          </div>-->
 
           <!-- (2번째 화면) 인증코드 입력: codeSent && !isVerified -->
-          <template v-if="codeSent && !isVerified">
-            <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">인증번호</div>
-            <div class="col-start-2">
-              <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                <input
-                    v-model="verifyCode"
-                    placeholder="메일로 받은 6자리"
-                    class="h-11 flex-1 min-w-[12rem] rounded-lg border px-3
-                 bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
-                 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-                />
-                <button
-                    type="button"
-                    class="h-11 px-4 rounded-lg text-sm font-medium
-                 bg-gray-100 hover:bg-gray-200 text-gray-700
-                 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10"
-                    :disabled="verifying"
-                    @click="verifyNow"
-                >
-                  {{ verifying ? '확인 중...' : '인증하기' }}
-                </button>
-              </div>
-            </div>
+<!--          <template v-if="codeSent && !isVerified">-->
+<!--            <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">인증번호</div>-->
+<!--            <div class="col-start-2">-->
+<!--              <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">-->
+<!--                <input-->
+<!--                    v-model="verifyCode"-->
+<!--                    placeholder="메일로 받은 6자리"-->
+<!--                    class="h-11 flex-1 min-w-[12rem] rounded-lg border px-3-->
+<!--                 bg-white text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10-->
+<!--                 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"-->
+<!--                />-->
+<!--                <button-->
+<!--                    type="button"-->
+<!--                    class="h-11 px-4 rounded-lg text-sm font-medium-->
+<!--                 bg-gray-100 hover:bg-gray-200 text-gray-700-->
+<!--                 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10"-->
+<!--                    :disabled="verifying"-->
+<!--                    @click="verifyNow"-->
+<!--                >-->
+<!--                  {{ verifying ? '확인 중...' : '인증하기' }}-->
+<!--                </button>-->
+<!--              </div>-->
+<!--            </div>-->
 
-            <div class="text-sm font-medium text-gray-700 dark:text-gray-300">남은시간</div>
-            <div class="col-start-2">
-              <div class="flex items-center justify-between">
-                <p class="text-sm text-blue-600">{{ mm }}:{{ ss }}</p>
-                <button
-                    type="button"
-                    class="px-3 py-2 rounded-lg text-sm
-                 text-gray-700 dark:text-gray-300
-                 hover:text-brand-500 disabled:opacity-50"
-                    :disabled="extendedOnce"
-                    @click="extendTime"
-                >
-                  &nbsp;&nbsp;1회 연장&nbsp;&nbsp;
-                </button>
-              </div>
-            </div>
-          </template>
+<!--            <div class="text-sm font-medium text-gray-700 dark:text-gray-300">남은시간</div>-->
+<!--            <div class="col-start-2">-->
+<!--              <div class="flex items-center justify-between">-->
+<!--                <p class="text-sm text-blue-600">{{ mm }}:{{ ss }}</p>-->
+<!--                <button-->
+<!--                    type="button"-->
+<!--                    class="px-3 py-2 rounded-lg text-sm-->
+<!--                 text-gray-700 dark:text-gray-300-->
+<!--                 hover:text-brand-500 disabled:opacity-50"-->
+<!--                    :disabled="extendedOnce"-->
+<!--                    @click="extendTime"-->
+<!--                >-->
+<!--                  &nbsp;&nbsp;1회 연장&nbsp;&nbsp;-->
+<!--                </button>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </template>-->
 
           <!-- (3번째 화면) 인증 완료 후: isVerified -->
-          <template v-if="isVerified">
+<!--          <template>-->
+
             <!-- 전화번호 -->
             <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mt-2">전화번호</div>
             <div class="col-start-2">
@@ -523,7 +524,7 @@
               <div class="col-start-2">
                 <div class="flex gap-2">
                   <input
-                      v-model.number="delegateIdInput"
+                      v-model="delegateIdInput"
                       placeholder="예) example@naver.com"
                       :disabled="!delegateEditing"
                       class="h-11 w-full rounded-lg border px-3
@@ -566,6 +567,10 @@
                           {{ roleHuman(candidate.userRole) }} / {{ candidate.centerName || '미할당' }}
                         </b>
                       </p>
+
+                      <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        * 위임 후 현재 계정의 슈퍼 권한은 해제됩니다. 진행 전에 꼭 확인하세요.
+                      </p>
                     </div>
                     <button
                         type="button"
@@ -576,14 +581,12 @@
                       {{ delegating ? '위임 중...' : '위임 확정' }}
                     </button>
                   </div>
-                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    위임 후 현재 계정의 슈퍼 권한은 해제됩니다. 진행 전에 꼭 확인하세요.
-                  </p>
                 </div>
               </template>
 
             </template>
-          </template>
+
+<!--          </template>-->
 
           <!-- 바닥 여백 확보를 위한 구분선 -->
           <div class="col-span-2 mb-6">
@@ -631,9 +634,7 @@ import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline'
 import axios from '@/plugins/axios.js'
-import { useMailStore } from '@/stores/mail'
 import { onBeforeRouteLeave } from 'vue-router'
-import { useIdleRefresh } from '@/composables/useIdleRefresh.js'
 
 /* ===== 기본 프로필 ===== */
 const email = ref('')
@@ -687,75 +688,12 @@ function onPwCancel() {
   resetPwForm()
 }
 
-// 화면에 찍힐 남은 시간
-const mail = useMailStore()
-
-let ttlTimer = null
-const extendedOnce = ref(false)
-const mm = computed(() => String(Math.floor((mail.ttl ?? 0) / 60)).padStart(2, '0'))
-const ss = computed(() => String((mail.ttl ?? 0) % 60).padStart(2, '0'))
-
-function startTtlTimer() {
-  stopTtlTimer()
-  ttlTimer = setInterval(() => {
-    if (mail.ttl > 0) {
-      // Pinia 상태를 1초씩 감소 (UI가 즉시 반응)
-      mail.ttl -= 1
-    } else {
-      // TTL 만료 시 입력 행 접고(선택), 타이머 종료
-      stopTtlTimer()
-      codeSent.value = false
-    }
-  }, 1000)
-}
-
-function stopTtlTimer() {
-  if (ttlTimer) {
-    clearInterval(ttlTimer)
-    ttlTimer = null
-  }
-}
-onUnmounted(() => stopTtlTimer())
-
 onMounted(async () => {
   await loadMe()
-  if (!mail.email) mail.email = email.value
 
   // 스프레드시트 설정 초기 로드
   await loadSheetConfig()
-
-  // 코드 요청 버튼 누른 상태(codeSent=true)일 때만 TTL 확인
-  if (codeSent.value) {
-    try {
-      const t = await mail.getCodeTtl()
-      if (t > 0 && !mail.codeVerified) {
-        codeSent.value = true
-        extendedOnce.value = false
-        startTtlTimer()
-      } else {
-        codeSent.value = false
-        stopTtlTimer()
-      }
-    } catch (e) {
-      if (e?.response?.status === 410) {
-        codeSent.value = false
-        stopTtlTimer()
-      } else {
-        console.error('getCodeTtl 실패', e)
-      }
-    }
-  }
 })
-
-/* ===== 메일 인증 (인라인) ===== */
-const codeSent   = ref(false)
-const sendingCode = ref(false)
-const verifying   = ref(false)
-const verifyCode  = ref('')
-
-// TTL 확인용
-const verified = ref(false)
-const isVerified = computed(() => verified.value)
 
 /* 서버에서 내 정보 로드 */
 async function loadMe() {
@@ -764,7 +702,6 @@ async function loadMe() {
     name.value  = data.userName
     email.value = data.userEmail
     phone.value = data.userPhone
-    mail.email  = data.userEmail
 
     if (data.userRole === 'SUPERADMIN') roleLabel.value = '관리자'
     else if (data.userRole === 'MANAGER') roleLabel.value = '센터장'
@@ -779,62 +716,6 @@ async function loadMe() {
     /* 프로필 로드 실패는 조용히 무시 */
   }
 }
-
-/* 인증: 코드 전송 */
-async function sendVerify() {
-  if (!email.value) {
-    alert('이메일 정보를 불러오지 못했습니다.')
-    return
-  }
-  try {
-    sendingCode.value = true
-    mail.email = email.value
-    const res = await mail.sendCode(email.value)
-    if (!res) return
-    codeSent.value = true
-    extendedOnce.value = false
-    startTtlTimer() // 전송 후 바로 카운트다운 시작
-  } finally {
-    sendingCode.value = false
-  }
-}
-
-/* 인증: 코드 확인 */
-async function verifyNow() {
-  if (!verifyCode.value) {
-    alert('인증코드를 입력하세요.')
-    return
-  }
-  // store에 대상 이메일 지정
-  if (!mail.email) mail.email = email.value
-  const ok = await mail.verifyCode(verifyCode.value)
-  if (!ok) return
-
-  // 인증 성공 → 코드 입력행 숨김, TTL 타이머는 의미 없어졌으니 정지
-  verified.value = true
-  stopTtlTimer()
-  codeSent.value = false
-}
-
-/* 인증: 1회 연장 */
-async function extendTime() {
-  if (extendedOnce.value) return
-  if (!mail.email) mail.email = email.value
-  const res = await mail.extendCode() // mail.ttl 갱신됨
-  if (!res) return
-  extendedOnce.value = true
-  startTtlTimer() // 연장 후 다시 카운트다운 (TTL이 늘어났으니 초기화)
-}
-
-/* 인증: 뒤로가기 잔상 방지 */
-function resetEmailFlow() {
-  verified.value = false
-  codeSent.value = false
-  stopTtlTimer()
-  // 선택: mail.reset?.()  // 스토어까지 비우고 싶으면
-}
-onBeforeRouteLeave(() => { resetEmailFlow() })
-onUnmounted(() => { resetEmailFlow() })
 
 /* ===== 전화번호 ===== */
 const formatPhoneInput = () => {
@@ -1073,9 +954,6 @@ async function deleteCenter(id) {
 
 // 특별계정 켜지면 센터 목록 불러오기
 watch(() => isSuperEmail.value, async (ok) => { if (ok) await fetchCenters() }, { immediate: true })
-
-// 인증 완료 후에만 3분 유휴 감시
-const idle = useIdleRefresh({ enabled: () => isVerified.value, timeoutMs: 1000 * 60 * 3 })
 
 // -----------------------
 

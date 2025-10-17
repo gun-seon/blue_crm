@@ -74,7 +74,7 @@
               >
                 <div class="text-sm text-gray-700 dark:text-gray-200">
                   <b>{{ u.userName }}</b>
-                  <span class="text-gray-400 ml-2">({{ roleLabel(u) }})</span>
+                  <span class="text-gray-400 ml-2">({{ u.role === 'MANAGER' ? '센터장' : '담당자' }})</span>
 <!--                  <span class="text-gray-400 ml-2">{{ u.centerName }}</span>-->
                 </div>
 
@@ -92,9 +92,9 @@
             </ul>
           </div>
 
-          <p v-if="pickedUser" class="text-xs text-gray-500 dark:text-gray-400">
-            선택됨: <b>{{ pickedUser.userName }}</b>
-          </p>
+<!--          <p v-if="pickedUser" class="text-xs text-gray-500 dark:text-gray-400">-->
+<!--            선택됨: <b>{{ pickedUser.userName }}</b>-->
+<!--          </p>-->
         </div>
       </div>
 
@@ -135,16 +135,6 @@ const users = ref<any[]>([])
 const query = ref('')
 const pickedUser = ref<any|null>(null)
 const submitting = ref(false)
-
-// 역할 라벨링
-function roleLabel(u:any): string {
-  const raw = String(
-      u.role ?? u.authority ?? u.auth ?? u.userRole ?? u.position ?? (u.isManager ? 'MANAGER' : '')
-      ).toUpperCase()
-
-  if (raw.includes('MANAGER')) return '센터장'
-  else if (raw.includes('STAFF')) return '담당자'
-}
 
 async function loadCenters(){
   if (props.mode !== 'HQ') return
