@@ -27,7 +27,7 @@
           />
         </ComponentCard>
 
-        <!-- MANAGER (센터장) - 추후 기능 확장시 -->
+        <!-- MANAGER (센터장) -->
         <ComponentCard
             v-else-if="role === 'MANAGER'"
             :buttons="['회수하기']"
@@ -222,7 +222,12 @@ function onHqButton(btn: string) {
 }
 function onMgrButton(btn: string) {
   if (btn === '회수하기') {
-    alert('회수는 본사만 가능합니다.')
+    const ids = needSelection()
+
+    if (!ids.length) return
+    if (!confirm(ids.length + "개 DB를 회수하시겠습니까?")) return
+
+    onConfirmRevokeByMgr(ids)
   }
 }
 
@@ -231,6 +236,24 @@ async function onConfirmRevoke(ids: number[]) {
   return runBusy(async () => {
     try {
       await axios.post('/api/work/revoke/hq', { customerIds: ids })
+
+      // 선택 초기화
+      selectedRows.value = []
+      tableRef.value?.clearSelection?.()
+
+      // 페이지 검사 후 새로고침
+      await refetchAndClamp()
+    } catch (e: any) {
+      console.error(e)
+      alert(e?.response?.data || '회수 중 오류가 발생했습니다.')
+    }
+  })
+}
+
+async function onConfirmRevokeByMgr(ids: number[]) {
+  return runBusy(async () => {
+    try {
+      await axios.post('/api/work/revoke/manager', { customerIds: ids })
 
       // 선택 초기화
       selectedRows.value = []

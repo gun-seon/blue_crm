@@ -32,8 +32,8 @@ public class CustomerRevokeService {
         total = mapper.countListForHq(keyword, dateFrom, dateTo, category, division, me.getVisible());
       }
       case "MANAGER" -> {
-        items = mapper.findListForManager(offset, size, keyword, dateFrom, dateTo, category, sort, me.getUserId(), me.getVisible());
-        total = mapper.countListForManager(keyword, dateFrom, dateTo, category, me.getUserId(), me.getVisible());
+        items = mapper.findListForManager(offset, size, keyword, dateFrom, dateTo, category, sort, me.getCenterId(), me.getVisible());
+        total = mapper.countListForManager(keyword, dateFrom, dateTo, category, me.getCenterId(), me.getVisible());
       }
       default -> throw new IllegalArgumentException("이 메뉴는 본사/센터장만 사용할 수 있습니다.");
     }
@@ -53,12 +53,30 @@ public class CustomerRevokeService {
     }
     
     // 대상 잠금 (상태 NOT IN 없음/회수)
-    List<Long> lockIds = mapper.lockCustomersForRevoke(req.getCustomerIds());
+    List<Long> lockIds = mapper.lockCustomersForRevokeByHq(req.getCustomerIds());
     if (lockIds.isEmpty()) return new RevokeResult(0, req.getCustomerIds().size());
     
     // 회수 처리: 상태=회수, 담당자=NULL, 예약시간=NULL
     mapper.updateToRevoked(lockIds);
     
+    return new RevokeResult(lockIds.size(), req.getCustomerIds().size() - lockIds.size());
+  }
+  
+  @Transactional
+  public RevokeResult revokeByManager(String callerEmail, RevokeReq req) {
+    UserContextDto me = mapper.findUserContextByEmail(callerEmail);
+    if (me == null || !"MANAGER".equals(me.getRole())) {
+      throw new IllegalArgumentException("센터장만 수행할 수 있습니다.");
+    }
+    if (req.getCustomerIds() == null || req.getCustomerIds().isEmpty()) {
+      return new RevokeResult(0, 0);
+    }
+    
+    // 같은 센터 소속 담당자의 건만 락
+    List<Long> lockIds = mapper.lockCustomersForRevokeByManager(req.getCustomerIds(), me.getCenterId());
+    if (lockIds.isEmpty()) return new RevokeResult(0, req.getCustomerIds().size());
+    
+    mapper.updateToRevoked(lockIds);
     return new RevokeResult(lockIds.size(), req.getCustomerIds().size() - lockIds.size());
   }
 }

@@ -61,7 +61,7 @@
         </choose>
     </sql>
 
-    <!-- HQ: 상태가 없음/회수 '아닌' 목록 -->
+    <!-- HQ 목록: 담당자 있는 건 + '회수'가 아닌 건 -->
     <select id="findListForHq" resultType="com.blue.customer.revoke.dto.RevokeListRowDto">
         SELECT
         c.customer_id         AS id,
@@ -81,7 +81,10 @@
         FROM customers c
         LEFT JOIN users   u   ON u.user_id   = c.user_id
         LEFT JOIN centers ctr ON ctr.center_id = u.center_id
-        WHERE c.customer_status NOT IN ('없음','회수')
+
+        WHERE c.customer_status != '회수'
+            AND c.user_id IS NOT NULL
+
         <if test="division != null and division != ''">
             AND c.customer_division = #{division}
         </if>
@@ -94,14 +97,17 @@
         SELECT COUNT(*)
         FROM customers c
         LEFT JOIN users u ON u.user_id = c.user_id
-        WHERE c.customer_status NOT IN ('없음','회수')
+
+        WHERE c.customer_status != '회수'
+            AND c.user_id IS NOT NULL
+
         <if test="division != null and division != ''">
             AND c.customer_division = #{division}
         </if>
         <include refid="LIST_FILTERS_COMMON"/>
     </select>
 
-    <!-- MANAGER: 현재담당=나 & 상태 NOT IN ('없음','회수') -->
+    <!-- MANAGER 목록: 같은 센터의 담당자가 보유 + '회수'가 아닌 건 -->
     <select id="findListForManager" resultType="com.blue.customer.revoke.dto.RevokeListRowDto">
         SELECT
         c.customer_id         AS id,
@@ -116,8 +122,11 @@
         c.customer_created_at AS createdAt
         FROM customers c
         JOIN users u ON u.user_id = c.user_id
-        WHERE c.user_id = #{managerUserId}
-        AND c.customer_status NOT IN ('없음','회수')
+
+        WHERE c.customer_status != '회수'
+            AND c.user_id IS NOT NULL
+            AND u.center_id = #{managerCenterId}
+
         <include refid="LIST_FILTERS_COMMON"/>
         <include refid="ORDER_DEFAULT"/>
         LIMIT #{size} OFFSET #{offset}
@@ -127,19 +136,40 @@
         SELECT COUNT(*)
         FROM customers c
         JOIN users u ON u.user_id = c.user_id
-        WHERE c.user_id = #{managerUserId}
-        AND c.customer_status NOT IN ('없음','회수')
+
+        WHERE c.customer_status != '회수'
+            AND c.user_id IS NOT NULL
+            AND u.center_id = #{managerCenterId}
+
         <include refid="LIST_FILTERS_COMMON"/>
     </select>
 
-    <!-- 회수 잠금 -->
-    <select id="lockCustomersForRevoke" resultType="long">
-        SELECT c.customer_id
-        FROM customers c
-        WHERE c.customer_id IN
+    <!-- 회수 잠금(HQ): 담당자 있음 + '회수'가 아님 -->
+    <select id="lockCustomersForRevokeByHq" resultType="long">
+      SELECT c.customer_id
+      FROM customers c
+      WHERE c.customer_id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
-        AND c.customer_status NOT IN ('없음','회수')
-        FOR UPDATE
+        AND c.customer_status != '회수'
+        AND c.user_id IS NOT NULL
+      FOR UPDATE
+    </select>
+
+    <!-- 회수 잠금(MANAGER): 같은 센터 소속 담당자의 건 + '회수'가 아님 -->
+    <select id="lockCustomersForRevokeByManager" resultType="long">
+      SELECT c.customer_id
+      FROM customers c
+      WHERE c.customer_id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+        AND c.customer_status != '회수'
+        AND c.user_id IS NOT NULL
+        AND EXISTS (
+          SELECT 1
+          FROM users u
+          WHERE u.user_id = c.user_id
+            AND u.center_id = #{managerCenterId}
+        )
+      FOR UPDATE
     </select>
 
     <!-- 회수 실행 -->

@@ -35,4 +35,10 @@ public class CustomerRevokeController {
   public RevokeResult revokeByHq(Authentication auth, @RequestBody RevokeReq req) {
     return service.revokeByHq(auth.getName(), req);
   }
+  
+  // 센터장 회수 실행
+  @PostMapping("/work/revoke/manager")
+  public RevokeResult revokeByManager(Authentication auth, @RequestBody RevokeReq req) {
+    return service.revokeByManager(auth.getName(), req);
+  }
 }
