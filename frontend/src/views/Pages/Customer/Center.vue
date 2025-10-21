@@ -91,7 +91,6 @@ const {
   fetchData, changePage, setSize, setFilter
 } = useTableQuery({
   url: "/api/work/center/db",
-  pageSize: 10,
   externalFilters: globalFilters,     // 날짜/카테고리/검색은 전역필터
   useExternalKeys: {
     from: "dateFrom",

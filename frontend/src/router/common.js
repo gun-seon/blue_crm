@@ -2,7 +2,6 @@ export default [
     { path: '/login', component: () => import('@/views/auth/LoginView.vue') },
     { path: '/signup', component: () => import('@/views/auth/SignupView.vue') },
     { path: '/find-password', component: () => import('@/views/auth/FindPassword.vue') },
-    { path: '/find-password', component: () => import('@/views/Errors/FourZeroFour.vue') },
     // 로그인이 필요한 페이지
     // 대시보드
     {
@@ -24,7 +23,7 @@ export default [
     },
     // 센터DB
     {
-        path: '/db/Center',
+        path: '/db/center',
         component: () => import('@/views/Pages/Customer/Center.vue'),
         meta: { requiresAuth: true, role: ['SUPERADMIN'] }
     },

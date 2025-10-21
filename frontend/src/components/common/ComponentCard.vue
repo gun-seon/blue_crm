@@ -18,13 +18,13 @@
       <div class="flex flex-wrap items-center gap-1 px-1 py-1">
         <!-- 왼쪽 그룹 -->
         <div class="flex flex-wrap items-center gap-1">
-          <!-- 고정 select (10, 20, 30) -->
+          <!-- 고정 select (30, 50, 100) -->
           <select
               @input="$emit('changeSize', $event.target.value)"
               class="w-25 h-11 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1
                text-sm focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10
                dark:bg-gray-800 dark:text-gray-400 text-gray-500">
-            <option v-for="n in [10,20,30]" :key="n" :value="n">{{ n }}개</option>
+            <option v-for="n in [30,50,100]" :key="n" :value="n" :selected="n === 50">{{ n }}개</option>
           </select>
 
           <!-- 부모에서 넘겨준 select 리스트 -->

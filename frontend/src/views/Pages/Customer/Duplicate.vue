@@ -94,7 +94,6 @@ const {
   setSize
 } = useTableQuery({
   url: '/api/work/duplicate',        // STAFF도 접근 가능 (SecurityConfig의 /api/work/**)
-  pageSize: 10,
   externalFilters: globalFilters,     // 날짜/카테고리/키워드 공용
   useExternalKeys: {
     from: 'dateFrom',
