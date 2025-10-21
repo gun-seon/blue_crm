@@ -46,13 +46,13 @@
                 :aria-pressed="active && active.includes(btn) ? 'true' : 'false'"
                 :data-state="active && active.includes(btn) ? 'on' : 'off'"
                 :class="[
-    // 기존 디자인 그대로
-    'w-30 h-11 px-3 py-1 rounded-lg border border-gray-200 text-sm font-medium ' +
-    'text-gray-500 hover:bg-gray-100 ' +
-    'dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800',
-    // ✅ 활성(토글됨)일 때 hover와 동일한 배경 유지
-    active && active.includes(btn) ? 'bg-gray-100 dark:bg-gray-800' : ''
-  ]"
+                   // 기존 디자인 그대로
+                  'w-30 h-11 px-3 py-1 rounded-lg border border-gray-200 text-sm font-medium ' +
+                  'text-gray-500 hover:bg-gray-100 ' +
+                  'dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800',
+                  // 활성(토글됨)일 때 hover와 동일한 배경 유지
+                  active && active.includes(btn) ? 'bg-gray-100 dark:bg-gray-800' : ''
+                ]"
             >
               {{ btn }}
             </button>
