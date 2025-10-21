@@ -118,7 +118,6 @@ const {
   error        // 에러 상태
 } = useTableQuery({
   url: "/api/super/users", // 실제 API 엔드포인트
-  pageSize: 10,                 // 기본 페이지 크기
   externalFilters: globalFilters, // Header.vue에서 keyword 값 반영됨
   useExternalKeys: { keyword: "keyword" }, // 딱 검색어만 API 파라미터로 넘김
   mapper: (res) => {

@@ -115,7 +115,6 @@ const pageTitle = ref('DB 분배하기')
 // ===== 테이블 & 페이징 =====
 const { items, page, totalPages, fetchData, changePage, setSize, setFilter, loading: tableLoading } = useTableQuery({
   url: '/api/work/allocate/list',
-  pageSize: 10,
   externalFilters: globalFilters,
   useExternalKeys: { from: 'dateFrom', to: 'dateTo', category: 'category', keyword: 'keyword' },
   mapper: (res:any) => ({ items: res.data.items, totalPages: res.data.totalPages, totalCount: res.data.totalCount })

@@ -171,7 +171,6 @@ const {
   setFilter
 } = useTableQuery({
   url: "/api/work/db", // 공통 API
-  pageSize: 10,
   externalFilters: globalFilters,
   useExternalKeys: {
     from: "dateFrom",

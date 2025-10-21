@@ -499,7 +499,7 @@ onMounted(() => {
   const end = new Date(today.getFullYear(), today.getMonth(), today.getDate())
 
   // 시작일 = 종료일 기준 3개월 전(말일 보정)
-  const start = shiftMonthsClamped(end, -1)
+  const start = shiftMonthsClamped(end, -3)
 
   // 리액티브 값 주입 → 기존 watch가 flatpickr에 반영
   endDate.value = end

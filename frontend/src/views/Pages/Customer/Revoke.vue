@@ -109,7 +109,6 @@ const {
   items, page, totalPages, fetchData, changePage, setSize, setFilter, loading: tableLoading,
 } = useTableQuery({
   url: '/api/work/revoke/list',
-  pageSize: 10,
   externalFilters: globalFilters,
   useExternalKeys: { from: 'dateFrom', to: 'dateTo', category: 'category', keyword: 'keyword' },
   mapper: (res: any) => ({
