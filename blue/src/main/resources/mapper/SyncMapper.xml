@@ -109,29 +109,29 @@
         )
     </select>
 
-    <!-- B열 업데이트 (임시) -->
-    <update id="appendMemoByPhoneAt">
-        UPDATE customers
-        SET customer_memo =
-        CASE
-        WHEN customer_memo IS NULL OR customer_memo = ''
-        THEN #{line}
-        ELSE CONCAT(customer_memo, CHAR(10), #{line})
-        END
-        WHERE customer_phone = #{phone}
-        AND customer_created_at = #{createdAt}
-    </update>
+<!--    &lt;!&ndash; B열 업데이트 (임시) &ndash;&gt;-->
+<!--    <update id="appendMemoByPhoneAt">-->
+<!--        UPDATE customers-->
+<!--        SET customer_memo =-->
+<!--        CASE-->
+<!--        WHEN customer_memo IS NULL OR customer_memo = ''-->
+<!--        THEN #{line}-->
+<!--        ELSE CONCAT(customer_memo, CHAR(10), #{line})-->
+<!--        END-->
+<!--        WHERE customer_phone = #{phone}-->
+<!--        AND customer_created_at = #{createdAt}-->
+<!--    </update>-->
 
-    <update id="appendDuplicateMemoByPhoneAt">
-        UPDATE customers_duplicate d
-            JOIN customers c ON c.customer_id = d.customer_id
-        SET d.duplicate_memo =
-                CASE WHEN d.duplicate_memo IS NULL OR d.duplicate_memo = ''
-                         THEN #{line}
-                     ELSE CONCAT(d.duplicate_memo, CHAR(10), #{line})
-                    END
-        WHERE c.customer_phone = #{phone}
-          AND d.duplicate_created_at = #{createdAt}
-    </update>
+<!--    <update id="appendDuplicateMemoByPhoneAt">-->
+<!--        UPDATE customers_duplicate d-->
+<!--            JOIN customers c ON c.customer_id = d.customer_id-->
+<!--        SET d.duplicate_memo =-->
+<!--                CASE WHEN d.duplicate_memo IS NULL OR d.duplicate_memo = ''-->
+<!--                         THEN #{line}-->
+<!--                     ELSE CONCAT(d.duplicate_memo, CHAR(10), #{line})-->
+<!--                    END-->
+<!--        WHERE c.customer_phone = #{phone}-->
+<!--          AND d.duplicate_created_at = #{createdAt}-->
+<!--    </update>-->
 
 </mapper>
