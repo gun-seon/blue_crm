@@ -40,4 +40,12 @@ public interface SyncMapper {
                                @Param("name") String name,
                                @Param("memo") String memo,
                                @Param("content") String content);
+  
+  // B열 업데이트 (임시)
+  int appendMemoByPhoneAt(@Param("phone") String phoneFormatted,
+                          @Param("createdAt") LocalDateTime createdAt,
+                          @Param("line") String line);
+  int appendDuplicateMemoByPhoneAt(@Param("phone") String phoneFormatted,
+                                   @Param("createdAt") LocalDateTime createdAt,
+                                   @Param("line") String line);
 }
