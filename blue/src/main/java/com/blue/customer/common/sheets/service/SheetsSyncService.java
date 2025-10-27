@@ -35,6 +35,10 @@ public class SheetsSyncService {
   private static final LocalTime MAINT_START = LocalTime.of(0, 0); // [00:00
   private static final LocalTime MAINT_END   = LocalTime.of(1, 0); //  ,01:00)
   
+//  // 유지보수시간 임시 확장
+//  private static final LocalTime MAINT_START = LocalTime.of(0, 0); // [00:00
+//  private static final LocalTime MAINT_END   = LocalTime.of(5, 0); //  ,05:00)
+  
   public record SyncResult(boolean executed, int rows, String reason) {}
   
   // ====== 락 키 ======
@@ -54,6 +58,7 @@ public class SheetsSyncService {
   // ====== 수동 ======
   @Transactional
   public SyncResult manualRefresh(long sourceId) {
+    // 아래줄 제거시 유지보수 시간대에도 새로고침 가능
     if (inMaintenanceWindow()) return new SyncResult(false, 0, "maintenance_window");
     
     String rateKey = "gsync:rate:" + sourceId;
@@ -301,22 +306,38 @@ public class SheetsSyncService {
   
   private CustomerUpsertDto mapRow(List<Object> r) {
     CustomerUpsertDto dto = new CustomerUpsertDto();
+    
+    // A : 생성일 -> customer_created_at
     LocalDateTime at = parseCreatedAtKST(asStr(get(r, 0)));
     if (at == null) at = LocalDateTime.now(Z_SEOUL);
-    dto.setCustomerCreatedAt(at);                 // A
-    dto.setCustomerName(asStr(get(r, 2)));        // C
-    dto.setCustomerPhone(formatPhoneKR(asStr(get(r, 4)))); // E
+    dto.setCustomerCreatedAt(at);
     
-    String content = asStr(get(r, 5));        // F
-    if (content != null && !content.isEmpty()) {
-      dto.setCustomerContent("시청한 종목명 : " + content);
+    // C : 이름 -> customer_name
+    dto.setCustomerName(asStr(get(r, 2)));
+    
+    // E : 연락처 -> customer_phone
+    dto.setCustomerPhone(formatPhoneKR(asStr(get(r, 4))));
+    
+    // F : 종목명 + B : 선택한 항목 -> customer_memo
+    String memoF = asStr(get(r, 5)); // F (종목명)
+    String valueB  = asStr(get(r, 1)); // B (선택한 항목)
+    if (memoF != null && !memoF.isEmpty()) {
+      memoF = "시청한 종목명 : " + memoF.trim();
     } else {
-      dto.setCustomerContent("시청한 종목명 : X");
+      memoF = "시청한 종목명 : X";
     }
-
-    dto.setCustomerMemo(asStr(get(r,6)));    // G
+    if (valueB != null && !valueB.isEmpty()) {
+      valueB = "선택한 항목 : " + valueB.trim();
+    } else {
+      valueB = "선택한 항목 : X";
+    }
+    dto.setCustomerMemo(memoF + '\n' + valueB);
     
-    dto.setCustomerSource(asStr(get(r, 8)));      // I
+    // G : 하고싶은말(메모 아님) -> customer_content
+    dto.setCustomerContent(asStr(get(r,6)));
+    
+    // I : 출처 -> customer_source
+    dto.setCustomerSource(asStr(get(r, 8)));
     return dto;
   }
   
@@ -411,6 +432,8 @@ public class SheetsSyncService {
         dup.setDuplicateMemo(row.getCustomerMemo());
         dup.setDuplicateContent(row.getCustomerContent());
         dup.setDuplicateSource(row.getCustomerSource());
+        dup.setDuplicateCategory("주식"); // 기본값 명시
+        dup.setDuplicateDisplay(1); // 기본값 명시
         mapper.insertDuplicateMinimal(dup);
         n++;
       } else {
@@ -428,4 +451,78 @@ public class SheetsSyncService {
   // ====== helpers ======
   private static Object get(List<Object> r, int i){ return i<r.size()? r.get(i): null; }
   private static String asStr(Object o){ return o==null? null: String.valueOf(o).trim(); }
+  
+// B열 백필 비활성화
+//  // ===== B열 → memo 백필 전용 (임시/원샷) =====
+//  public record BBackfillResult(
+//      int scanned, int withB, int updated, int unmatched, int skippedInvalid,
+//      List<String> unmatchedRows // 백필 실패한 데이터를 보관할 리스트
+//  ) {}
+//
+//  @Transactional
+//  public BBackfillResult backfillBIntoMemoOnce(long sourceId) {
+//    // 1) 소스/커서 조회 (커서까지만)
+//    GsheetSourceDto src = mapper.findSourceById(sourceId);
+//    if (src == null) {
+//      log.warn("[B-Backfill] no source id={}", sourceId);
+//      return new BBackfillResult(0,0,0,0,0, Collections.emptyList());
+//    }
+//    final int endRow = Optional.ofNullable(src.getCursorRow()).orElse(1);
+//    if (endRow < 2) return new BBackfillResult(0,0,0,0,0, Collections.emptyList());
+//
+//    int scanned = 0, withB = 0, updated = 0, unmatched = 0, skippedInvalid = 0;
+//    List<String> unmatchedRows = new ArrayList<>();
+//
+//    // 2) 2행~cursor까지 A~I 범위를 batch로 읽음 (A:생성일, B:백필값, E:전화)
+//    for (int start = 2; start <= endRow; start += BATCH_SIZE) {
+//      int last = Math.min(endRow, start + BATCH_SIZE - 1);
+//      String range = "'" + src.getSheetName() + "'!A" + start + ":" + END_COL + last;
+//
+//      List<List<Object>> raw = fetchWithRetry(src.getSpreadsheetId(), range);
+//      if (raw == null || raw.isEmpty()) continue;
+//
+//      for (List<Object> r : raw) {
+//        scanned++;
+//
+//        LocalDateTime createdAt = parseCreatedAtKST(asStr(get(r, 0))); // A
+//        String bValue           = asStr(get(r, 1));                    // B
+//        String phoneFmt         = formatPhoneKR(asStr(get(r, 4)));     // E
+//
+//        if (createdAt == null || phoneFmt == null) { skippedInvalid++; continue; }
+//        if (bValue == null || bValue.isEmpty()) continue;
+//        withB++;
+//
+//        String line = "선택한 항목 : " + bValue;
+//
+//        // 3) 메모만 업데이트 (기존 메모 유지 + 줄바꿈 추가)
+//        int n = mapper.appendMemoByPhoneAt(phoneFmt, createdAt, line);
+//        if (n > 0) {
+//          // base(customers)에서 매칭됨
+//          updated++;
+//        } else {
+//          // base에 없으면 duplicate(customers_duplicate) 쪽도 시도
+//          int m = mapper.appendDuplicateMemoByPhoneAt(phoneFmt, createdAt, line);
+//          if (m > 0) {
+//            updated++;   // 이 시트 행은 성공 처리로 카운트
+//          } else {
+//            unmatched++; // 둘 다 못 찾음
+//
+//            // 구글 스프레드 시트 기준 - 매칭되지 못한 데이터 로깅
+//            unmatchedRows.add(String.format(
+//                "날짜=%s, 전화=%s, 선택항목=%s, 이름=%s, 출처=%s",
+//                createdAt, phoneFmt, bValue, asStr(get(r, 2)), asStr(get(r, 8))
+//            ));
+//          }
+//        }
+//      }
+//    }
+//
+//    log.info("[B-Backfill] sid={} scanned={} withB={} updated={} unmatched={} skippedInvalid={}",
+//        sourceId, scanned, withB, updated, unmatched, skippedInvalid);
+//    if (!unmatchedRows.isEmpty()) {
+//      log.warn("[B-Backfill] unmatched list ↓↓↓");
+//      unmatchedRows.forEach(v -> log.warn("  {}", v));
+//    }
+//    return new BBackfillResult(scanned, withB, updated, unmatched, skippedInvalid, unmatchedRows);
+//  }
 }
