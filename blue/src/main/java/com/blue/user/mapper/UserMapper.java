@@ -36,4 +36,7 @@ public interface UserMapper {
   int countManagersInCenter(@Param("centerName") String centerName,
                             @Param("excludeUserId") Long excludeUserId);
   
+  // 센터장(팀장)에서 다른 역할로 변경 직후: 해당 센터장(팀장)이 들고 있던 디비중 상태='없음'만 회수
+  int autoRecallStatusNoneByOwner(Long userId);
+  
 }

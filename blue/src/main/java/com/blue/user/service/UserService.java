@@ -87,8 +87,32 @@ public class UserService {
       }
     }
     
-    // 조건 통과한 경우만 업데이트 실행
+    // 어느 직급에서 어느 직급으로 변경되었는지 확인하기 위해,
+    // 업데이트 이전 직급과 업데이트 희망 직급을 둘 다 저장
+    String oldRole = target.getUserRole();
+    String newRole = oldRole;
+    if ("type".equals(field)) {
+      if ("관리자".equals(value)) newRole = "SUPERADMIN";
+      else if ("센터장".equals(value)) newRole = "MANAGER";
+      else if ("담당자".equals(value)) newRole = "STAFF";
+    }
+    
+    // 조건 통과한 경우만 실제 업데이트 실행
     userMapper.updateUserField(userId, field, value);
+    
+    // 업데이트가 성공적일 경우
+    // 다음 각 경우에 대해 상태가 '없음'인 디비를 회수
+    if ("type".equals(field)) {
+      // 1. 센터장이였다가 -> 담당자로 강등된 경우
+      boolean demoteManagerToStaff = "MANAGER".equals(oldRole) && "STAFF".equals(newRole);
+      // 2. 센터장이였다가 -> 본사로 승급된 경우
+      boolean managerToHq = "MANAGER".equals(oldRole) && "SUPERADMIN".equals(newRole);
+      
+      // 위 두 경우중 하나라도 해당 된다면 회수 처리
+      if (demoteManagerToStaff || managerToHq) {
+        userMapper.autoRecallStatusNoneByOwner(userId);
+      }
+    }
   }
   
   // 직원관리 페이지에서 직원에 대한 일괄수정이 발생한 경우
